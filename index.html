@@ -134,9 +134,50 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .tiles .big{font-size:clamp(20px,6vh,30px)}
 .tiles .big.sm{font-size:clamp(15px,4.2vh,22px);white-space:normal;line-height:1.05}
 
-/* forecast strip */
-.hours{padding:6px 8px;overflow-x:auto;scrollbar-width:none}
-.hours::-webkit-scrollbar{display:none}
+/* bottom deck: forecast / music / ISS */
+.deck{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:6px 10px 6px 6px;height:clamp(96px,21vh,176px);box-sizing:border-box}
+.tabs{display:flex;flex-direction:column;justify-content:center;gap:4px}
+.tab{position:relative;font-family:var(--f-label);font-size:10px;letter-spacing:.08em;color:var(--muted);background:transparent;border:0;padding:7px 12px;cursor:pointer;text-align:left;white-space:nowrap}
+.tab:hover{color:var(--sun)}
+.tab[aria-selected="true"]{color:var(--ink);background:var(--cyan)}
+.badge{position:absolute;top:3px;right:3px;width:6px;height:6px;background:var(--pink);box-shadow:0 0 6px var(--pink);animation:blink 1s steps(1) infinite}
+.pane{min-width:0;min-height:0;display:flex;align-items:center}
+#pane-fc{overflow-x:auto;scrollbar-width:none}
+#pane-fc::-webkit-scrollbar{display:none}
+#pane-fc>*{flex:1;min-width:0}
+/* music */
+.music{display:flex;align-items:center;gap:14px;width:100%;height:100%;min-width:0}
+#art{height:100%;max-height:150px;aspect-ratio:1;width:auto;flex:none;box-shadow:0 0 0 3px var(--ink),0 0 0 5px var(--c-2),0 0 18px var(--glow,rgba(255,79,184,.5))}
+.trk{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.mTop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.linkbtn{font-family:var(--f-label);font-size:9px;letter-spacing:.08em;color:var(--muted);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+.linkbtn:hover{color:var(--sun)}
+.tinfo{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tname{font-family:var(--f-num);font-size:clamp(22px,5.5vh,38px);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tart{font-weight:600;font-size:clamp(12px,2.6vh,16px);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog{display:flex;align-items:center;gap:8px;font-family:var(--f-label);font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums}
+.segs{flex:1;display:grid;grid-template-columns:repeat(40,minmax(0,1fr));gap:2px;height:8px}
+.segs i{background:rgba(68,241,255,.15)}
+.segs i.on{background:var(--cyan);box-shadow:0 0 5px var(--cyan)}
+.ctrls{display:flex;gap:2px;flex:none}
+.ctrl{width:44px;height:40px;padding:0;display:grid;place-items:center}
+.ic{display:block;width:14px;height:14px;background:var(--ink)}
+.ic.play{clip-path:polygon(15% 0,100% 50%,15% 100%)}
+.ic.pause{background:linear-gradient(90deg,var(--ink) 0 35%,transparent 35% 65%,var(--ink) 65%)}
+.ic.next{clip-path:polygon(0 0,65% 50%,65% 0,85% 0,85% 100%,65% 100%,65% 50%,0 100%)}
+.ic.prev{clip-path:polygon(100% 0,35% 50%,35% 0,15% 0,15% 100%,35% 100%,35% 50%,100% 100%)}
+.mConnect{display:flex;flex-direction:column;gap:6px;width:100%}
+.mConnect .row input{font-size:14px;font-family:ui-monospace,monospace}
+/* ISS */
+.iss{display:flex;align-items:center;gap:14px;width:100%;height:100%;min-width:0}
+#map{height:100%;max-height:160px;aspect-ratio:2;width:auto;max-width:56%;flex:none;object-fit:contain;box-shadow:0 0 0 2px var(--c-3)}
+.issStats{flex:1;min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px;align-content:center}
+.issStats .big{font-size:clamp(17px,4.4vh,26px)}
+.pass{font-family:var(--f-label);font-size:10px;letter-spacing:.06em;color:var(--sun);line-height:1.4}
+/* header now-playing chip */
+.np{max-width:32ch}
+.np b{color:var(--pink)}
+.np span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hourRow{display:grid;grid-template-columns:repeat(12,minmax(52px,1fr));gap:4px}
 .hr{display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px 0}
 .hr .t{font-family:var(--f-label);font-size:9px;letter-spacing:.06em;color:var(--muted)}
@@ -204,6 +245,8 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
   .logo{font-size:22px} .sub{display:none} .panel{padding:6px 10px;gap:4px}
   .hr canvas{width:20px;height:20px} .hr .v{font-size:16px} .pbar,.hr .p{display:none}
   .moonTxt{font-size:11px}
+  .deck{height:92px;padding:4px 8px 4px 4px} .tab{padding:4px 8px;font-size:9px}
+  .ctrl{width:36px;height:32px} .issStats .mini:nth-child(n+4){display:none}
 }
 @media (orientation:portrait){
   body{overflow-x:hidden;overflow-y:auto}
@@ -217,7 +260,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
 @media (prefers-reduced-motion:reduce){
   #crt{display:none}
   [data-boot],.reveal,.pop,.bubble.boing,.flip,.hit,.glitch,.sheet,.sheetBox,.sheet.out,.sheet.out .sheetBox{animation:none!important}
-  .caret,.mood[data-s="crit"],.spark,.panel.scanning::after{animation:none}
+  .caret,.mood[data-s="crit"],.spark,.panel.scanning::after,.badge{animation:none}
   .pbar i{transition:none}
 }
 </style>
@@ -237,6 +280,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <span class="sub" id="sub">LIVE STATS · v0.4</span>
     </div>
     <div class="status">
+      <button class="tag np" id="npChip" type="button" hidden><b>♪</b><span id="npTxt"></span></button>
       <button class="tag" id="placeBtn" type="button"><b>AT</b><span id="place">SET LOCATION</span></button>
       <button class="tag" id="soundBtn" type="button" aria-pressed="false">SOUND OFF</button>
       <span class="tag"><span class="dot" id="netDot"></span><span id="netTxt">ONLINE</span></span>
@@ -307,9 +351,50 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
     </section>
   </main>
 
-  <footer class="hours frame" aria-label="Next 12 hours" data-boot style="--anim:wipeR;--bd:.8s">
-    <div class="hourRow" id="hours" hidden></div>
-    <div class="empty" id="hoursEmpty">THE NEXT 12 HOURS SHOW UP HERE ONCE PIP KNOWS WHERE YOU ARE</div>
+  <footer class="deck frame" aria-label="Forecast, music and ISS" data-boot style="--anim:wipeR;--bd:.8s">
+    <div class="tabs" role="tablist" aria-label="Bottom deck">
+      <button class="tab" role="tab" id="tab-fc" data-tab="fc" aria-selected="true" aria-controls="pane-fc" type="button">FORECAST</button>
+      <button class="tab" role="tab" id="tab-music" data-tab="music" aria-selected="false" aria-controls="pane-music" type="button">MUSIC<span class="badge" id="badge-music" hidden></span></button>
+      <button class="tab" role="tab" id="tab-iss" data-tab="iss" aria-selected="false" aria-controls="pane-iss" type="button">ISS<span class="badge" id="badge-iss" hidden></span></button>
+    </div>
+    <div class="pane" id="pane-fc" role="tabpanel" aria-labelledby="tab-fc">
+      <div class="hourRow" id="hours" hidden></div>
+      <div class="empty" id="hoursEmpty">THE NEXT 12 HOURS SHOW UP HERE ONCE PIP KNOWS WHERE YOU ARE</div>
+    </div>
+    <div class="pane" id="pane-music" role="tabpanel" aria-labelledby="tab-music" hidden>
+      <div class="music" id="musicLive" hidden>
+        <canvas class="px" id="art" width="40" height="40" aria-hidden="true"></canvas>
+        <div class="trk">
+          <div class="mTop"><span class="lbl" id="mDevice">NOW PLAYING</span><button class="linkbtn" id="mOut" type="button">DISCONNECT</button></div>
+          <div class="tinfo tap" data-say="track"><span class="tname" id="mTitle">--</span><span class="tart" id="mArtist">--</span></div>
+          <div class="prog"><span id="mPos">0:00</span><div class="segs" id="mSegs"></div><span id="mDur">0:00</span></div>
+        </div>
+        <div class="ctrls">
+          <button class="chip ctrl" id="mPrev" type="button" aria-label="Previous track"><span class="ic prev"></span></button>
+          <button class="chip ctrl hot" id="mPlay" type="button" aria-label="Play or pause"><span class="ic pause" id="mPlayIc"></span></button>
+          <button class="chip ctrl" id="mNext" type="button" aria-label="Next track"><span class="ic next"></span></button>
+        </div>
+      </div>
+      <div class="mConnect" id="musicConnect">
+        <p class="msg" id="mMsg">Connect Spotify and Pip will show what's playing and vibe along.</p>
+        <form class="row" id="spotForm">
+          <input id="spotId" type="text" placeholder="Spotify Client ID" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Spotify Client ID">
+          <button class="chip hot" type="submit">CONNECT SPOTIFY</button>
+        </form>
+      </div>
+    </div>
+    <div class="pane" id="pane-iss" role="tabpanel" aria-labelledby="tab-iss" hidden>
+      <div class="iss">
+        <canvas class="px tap" id="map" width="128" height="64" data-say="map" aria-label="World map with the space station's position"></canvas>
+        <div class="issStats">
+          <div class="mini tap" data-say="issOver"><span class="lbl">Over</span><span class="big sm" id="issOver">--</span></div>
+          <div class="mini tap" data-say="issAlt"><span class="lbl">Altitude</span><span class="big" id="issAlt">--</span></div>
+          <div class="mini tap" data-say="issSpeed"><span class="lbl">Speed</span><span class="big" id="issSpeed">--</span></div>
+          <div class="mini tap" data-say="issDist"><span class="lbl">From you</span><span class="big" id="issDist">--</span></div>
+          <div class="mini tap" data-say="issPass" style="grid-column:span 2"><span class="lbl">Next pass over you</span><span class="pass" id="issPass">--</span></div>
+        </div>
+      </div>
+    </div>
   </footer>
 </div>
 
@@ -328,6 +413,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
@@ -443,7 +529,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)closeSheet()})
 function setLoc(loc){
   S.loc=loc;store.set('pp.loc',loc);S.wx=null;S.wxErr=null;S.revealed=false;
   ['temp','feels','hum','wind','hi','lo','rainMax','uv'].forEach(id=>{$(id)._to=null});
-  closeSheet();renderPlace();restart($('placeBtn'),'flip');loadWeather();
+  closeSheet();renderPlace();restart($('placeBtn'),'flip');loadWeather();computePasses();renderISS();
 }
 function renderPlace(){$('place').textContent=S.loc?S.loc.name.toUpperCase():'SET LOCATION'}
 async function placeName(lat,lon){
@@ -622,6 +708,333 @@ function sweepArc(){ // replay the sun's path from the horizon to now
   arcAnim=requestAnimationFrame(step);
 }
 
+/* ---------- bottom deck tabs ---------- */
+const TABS=['fc','music','iss'];
+let tab=TABS.includes(store.get('pp.tab'))?store.get('pp.tab'):'fc';
+function setTab(t,anim=true){
+  if(!TABS.includes(t))return;const changed=t!==tab;tab=t;store.set('pp.tab',t);
+  TABS.forEach(k=>{$('tab-'+k).setAttribute('aria-selected',String(k===t));$('pane-'+k).hidden=k!==t});
+  const badge=$('badge-'+t);if(badge)badge.hidden=true;
+  if(anim&&changed){restart($('pane-'+t),'reveal');sfx('tap')}
+  if(t==='iss'){drawMap(performance.now());renderISS()}
+  if(t==='music')renderMusic();
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+function flagTab(t){if(tab!==t){const b=$('badge-'+t);if(b)b.hidden=false}}
+
+/* ---------- Spotify: now playing ---------- */
+const SPOTIFY_CLIENT_ID='';   // optional: paste your Client ID here instead of typing it in the page
+const REDIRECT=location.origin+location.pathname;
+const SP_SCOPES='user-read-currently-playing user-read-playback-state user-modify-playback-state';
+const M={id:store.get('pp.spotId')||SPOTIFY_CLIENT_ID,tok:store.get('pp.spotTok'),state:null,fetchedAt:0,trackId:null,timer:0,err:'',justConnected:false,idleArt:false};
+const rnd=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return Array.from(a,b=>'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[b%62]).join('')};
+const b64url=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const mMsg=t=>{$('mMsg').textContent=t};
+async function spotLogin(){
+  if(SANDBOX){mMsg('Spotify sign-in only works on the live Safari link.');return}
+  const id=($('spotId').value.trim()||M.id||'').trim();
+  if(!/^[0-9a-f]{32}$/i.test(id)){mMsg('Paste the 32-character Client ID from your Spotify developer app.');restart($('spotId'),'glitch');return}
+  M.id=id;store.set('pp.spotId',id);
+  const ver=rnd(64),st=rnd(16);store.set('pp.spotVer',ver);store.set('pp.spotState',st);
+  const ch=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ver)));
+  const q=new URLSearchParams({response_type:'code',client_id:id,scope:SP_SCOPES,redirect_uri:REDIRECT,code_challenge_method:'S256',code_challenge:ch,state:st});
+  sfx('open');mMsg('Opening Spotify...');
+  setTimeout(()=>{location.href='https://accounts.spotify.com/authorize?'+q},250);
+}
+async function tokenReq(body){
+  const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error_description||j.error||('HTTP '+r.status));
+  M.tok={access:j.access_token,refresh:j.refresh_token||(M.tok&&M.tok.refresh),exp:Date.now()+(j.expires_in||3600)*1000};
+  store.set('pp.spotTok',M.tok);
+}
+async function spotCallback(){
+  const p=new URLSearchParams(location.search);if(!p.has('code')&&!p.has('error'))return;
+  history.replaceState(null,'',REDIRECT);setTab('music',false);
+  if(p.get('error')){mMsg(p.get('error')==='access_denied'?'Spotify connection was cancelled. Tap Connect to try again.':'Spotify said: '+p.get('error'));return}
+  const ver=store.get('pp.spotVer');
+  if(!ver||p.get('state')!==store.get('pp.spotState')){mMsg('That sign-in started in a different window. Tap Connect again from here.');return}
+  try{
+    await tokenReq({grant_type:'authorization_code',code:p.get('code'),redirect_uri:REDIRECT,client_id:M.id,code_verifier:ver});
+    store.set('pp.spotVer',null);M.justConnected=true;
+  }catch(e){mMsg(`Couldn't finish connecting (${e.message}). Check that your Spotify app's redirect URI is exactly ${REDIRECT}`)}
+}
+async function accessToken(){
+  if(!M.tok)return null;
+  if(Date.now()>M.tok.exp-60e3){
+    try{await tokenReq({grant_type:'refresh_token',refresh_token:M.tok.refresh,client_id:M.id})}
+    catch(e){spotLogout('Your Spotify sign-in expired. Connect again.');return null}
+  }
+  return M.tok.access;
+}
+async function spApi(path,opt={}){
+  const t=await accessToken();if(!t)return{status:401};
+  const r=await fetch('https://api.spotify.com/v1'+path,{method:opt.method||'GET',headers:{Authorization:'Bearer '+t}});
+  if(r.status===401&&!opt.retried&&M.tok){M.tok.exp=0;return spApi(path,{...opt,retried:true})}
+  const j=r.status===204?null:await r.json().catch(()=>null);
+  return{status:r.status,json:j,retry:+r.headers.get('Retry-After')||0};
+}
+function spotLogout(msg){M.tok=null;M.state=null;M.trackId=null;store.set('pp.spotTok',null);clearTimeout(M.timer);renderMusic();if(msg)mMsg(msg)}
+async function pollSpotify(){
+  clearTimeout(M.timer);if(!M.tok)return;
+  let wait=4000;
+  if(!document.hidden){
+    try{
+      const r=await spApi('/me/player?additional_types=episode');
+      if(r.status===200&&r.json&&r.json.item){
+        const it=r.json.item,ep=it.type==='episode',imgs=(ep?it.images:it.album&&it.album.images)||[];
+        M.state={playing:!!r.json.is_playing,progress:r.json.progress_ms||0,duration:it.duration_ms||0,title:it.name,
+          artist:ep?((it.show&&it.show.name)||'Podcast'):(it.artists||[]).map(a=>a.name).join(', '),
+          album:ep?'':((it.album&&it.album.name)||''),art:(imgs[1]||imgs[0]||{}).url||'',
+          device:r.json.device&&r.json.device.name,id:it.id||it.uri};
+        M.fetchedAt=performance.now();M.err='';
+        if(M.state.id!==M.trackId){const quiet=M.trackId===null&&!M.justConnected;M.trackId=M.state.id;onNewTrack(quiet)}
+        M.justConnected=false;
+        if(!M.state.playing)wait=8000;
+      }else if(r.status===204||r.status===200){if(M.state){M.state=null;M.trackId=null;M.idleArt=false}wait=10000}
+      else if(r.status===429)wait=Math.max(10,r.retry)*1000;
+      else if(r.status===403){M.err='Spotify blocked this app. Check that your account is listed under Users in the developer dashboard and has Premium.';wait=30000}
+    }catch(e){wait=15000}
+    renderMusic();
+  }
+  M.timer=setTimeout(pollSpotify,wait);
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&M.tok)pollSpotify()});
+function onNewTrack(quiet){
+  const s=M.state;M.idleArt=false;drawArt(s.art);
+  if(quiet)return;
+  flagTab('music');restart($('npChip'),'flip');
+  if(S.mood==='music'){say(`Now playing: ${s.title} by ${s.artist}.`);kick(1);faceBurst('note',6);sfx('data')}
+}
+function rgbToHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;
+  if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h/=6}return[h,s,l]}
+const hsl=(h,s,l)=>`hsl(${Math.round(h*360)},${Math.round(s*100)}%,${Math.round(l*100)}%)`;
+function setAlbumColor(rgb){
+  const prev={b:MOODS.music.b,d:MOODS.music.d};let b='#ff8fd0',d='#e0569f';
+  if(rgb){const[h,s]=rgbToHsl(...rgb),ss=Math.max(s,.6);b=hsl(h,ss,.7);d=hsl(h,ss,.5)}
+  MOODS.music.b=b;MOODS.music.d=d;$('art').style.setProperty('--glow',b);
+  if(S.mood==='music'&&prev.b!==b&&!reduce){MOODS._prev=prev;S.trans={from:'_prev',t0:performance.now(),quick:false,burst:false};S.wash={c:b,a:.2}}
+}
+const NOTE_BIG=["....pppppppppp..","....pppppppppp..","....p........p..","....p........p..","....p........p..","....p........p..","..ppp......ppp..",".pppp.....pppp..",".pppp.....pppp..","..pp.......pp..."];
+function drawNoteArt(){const c=$('art').getContext('2d');c.fillStyle='#1a0c40';c.fillRect(0,0,40,40);paint(c,NOTE_BIG,12,15)}
+let artReq=0;
+function drawArt(url,plain){
+  const cv=$('art'),c=cv.getContext('2d'),my=++artReq;
+  if(!url){drawNoteArt();setAlbumColor(null);return}
+  const img=new Image();if(!plain)img.crossOrigin='anonymous';
+  img.onload=()=>{
+    if(my!==artReq)return;c.imageSmoothingEnabled=true;c.clearRect(0,0,40,40);c.drawImage(img,0,0,40,40);
+    let col=null;
+    try{ // posterize into chunky pixel art and pull the album's main color
+      const id=c.getImageData(0,0,40,40),d=id.data;let r=0,g=0,b=0,k=0;
+      for(let i=0;i<d.length;i+=4){for(let j=0;j<3;j++)d[i+j]=Math.round(d[i+j]/51)*51;
+        const R=d[i],G=d[i+1],B=d[i+2],mx=Math.max(R,G,B),sat=mx-Math.min(R,G,B);if(mx>50){const w=1+sat/24;r+=R*w;g+=G*w;b+=B*w;k+=w}}
+      c.putImageData(id,0,0);if(k)col=[r/k,g/k,b/k];
+    }catch(e){}
+    setAlbumColor(col);restart(cv,'pop');
+  };
+  img.onerror=()=>{if(!plain&&my===artReq)drawArt(url,true)};
+  img.src=url;
+}
+const segEls=[];(()=>{const w=$('mSegs');for(let i=0;i<40;i++){const e=document.createElement('i');w.appendChild(e);segEls.push(e)}})();
+const fmtMs=ms=>{const s=Math.max(0,Math.floor(ms/1000));return`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`};
+const musicPos=()=>{const s=M.state;if(!s)return 0;return Math.min(s.duration,s.progress+(s.playing?performance.now()-M.fetchedAt:0))};
+function renderMusic(){
+  const on=!!M.tok;$('musicLive').hidden=!on;$('musicConnect').hidden=on;
+  if(!on){if(!$('spotId').value)$('spotId').value=M.id||'';$('npChip').hidden=true;renderProgress();return}
+  const s=M.state;
+  if(s){
+    if($('mTitle').textContent!==s.title){$('mTitle').textContent=s.title;restart($('mTitle'),'glitch')}
+    $('mArtist').textContent=s.album?`${s.artist} · ${s.album}`:s.artist;
+    $('mDevice').textContent=(s.playing?'NOW PLAYING':'PAUSED')+(s.device?' · '+s.device.toUpperCase():'');
+    $('mPlayIc').className='ic '+(s.playing?'pause':'play');
+    $('npChip').hidden=!s.playing;$('npTxt').textContent=`${s.title} · ${s.artist}`;
+  }else{
+    $('mTitle').textContent='Nothing playing';
+    $('mArtist').textContent=M.err||"Start something in Spotify and I'll pick it up.";
+    $('mDevice').textContent=M.err?'SPOTIFY ERROR':'CONNECTED';$('mPlayIc').className='ic play';$('npChip').hidden=true;
+    if(!M.idleArt){M.idleArt=true;drawArt('');}
+  }
+  renderProgress();
+}
+function renderProgress(){
+  const s=M.state;
+  if(!s||!M.tok){segEls.forEach(e=>e.classList.remove('on'));$('mPos').textContent='0:00';$('mDur').textContent='0:00';return}
+  const p=musicPos(),on=s.duration?Math.round(p/s.duration*40):0;
+  segEls.forEach((e,i)=>e.classList.toggle('on',i<on));
+  $('mPos').textContent=fmtMs(p);$('mDur').textContent=fmtMs(s.duration);
+}
+async function control(kind){
+  if(!M.tok)return;
+  restart($(kind==='play'?'mPlay':kind==='next'?'mNext':'mPrev'),'hit');sfx('tap');kick(.6);
+  const s=M.state;let r;
+  try{
+    if(kind==='play')r=await spApi(s&&s.playing?'/me/player/pause':'/me/player/play',{method:'PUT'});
+    else r=await spApi(kind==='next'?'/me/player/next':'/me/player/previous',{method:'POST'});
+  }catch(e){say("Couldn't reach Spotify. Check the connection.");return}
+  if(r.status===403)say("Spotify won't let me control playback on this account. That needs Premium.");
+  else if(r.status===404)say('No active Spotify device. Open Spotify on your phone or iPad first.');
+  else if(kind==='play'&&s){s.progress=musicPos();M.fetchedAt=performance.now();s.playing=!s.playing;renderMusic()}
+  setTimeout(pollSpotify,700);
+}
+$('mPlay').onclick=()=>control('play');$('mNext').onclick=()=>control('next');$('mPrev').onclick=()=>control('prev');
+$('spotForm').addEventListener('submit',e=>{e.preventDefault();spotLogin()});
+$('mOut').onclick=()=>{sfx('close');spotLogout('Disconnected. Your Client ID is saved if you want to reconnect.')};
+$('npChip').onclick=()=>setTab('music');
+
+/* ---------- ISS tracker ---------- */
+const DEG=Math.PI/180,KM_MI=0.621371;
+const ISS={sat:null,mode:'',pos:null,track:[],trail:[],passes:null,err:'',land:null,night:null,nightAt:0,sub:null,overhead:null,alerted:{}};
+const jd=t=>t/864e5+2440587.5;
+function sunVec(t){const n=jd(t)-2451545,L=(280.46+.9856474*n)*DEG,g=(357.528+.9856003*n)*DEG;
+  const lam=L+(1.915*Math.sin(g)+.02*Math.sin(2*g))*DEG,eps=(23.439-4e-7*n)*DEG;
+  return[Math.cos(lam),Math.cos(eps)*Math.sin(lam),Math.sin(eps)*Math.sin(lam)]}
+const gmstRad=t=>((((280.46061837+360.98564736629*(jd(t)-2451545))%360)+360)%360)*DEG;
+function sunAlt(lat,lon,t){const s=sunVec(t),th=gmstRad(t)+lon*DEG,la=lat*DEG;
+  return Math.asin(s[0]*Math.cos(la)*Math.cos(th)+s[1]*Math.cos(la)*Math.sin(th)+s[2]*Math.sin(la))/DEG}
+function sunlit(e,t){const s=sunVec(t),dp=e.x*s[0]+e.y*s[1]+e.z*s[2];if(dp>0)return true;
+  return Math.hypot(e.x-dp*s[0],e.y-dp*s[1],e.z-dp*s[2])>6371}
+function issAt(t){
+  if(!ISS.sat||!window.satellite)return null;
+  try{const d=new Date(t),pv=satellite.propagate(ISS.sat,d);if(!pv||!pv.position||!pv.velocity)return null;
+    const g=satellite.gstime(d),gd=satellite.eciToGeodetic(pv.position,g),v=pv.velocity;
+    return{lat:satellite.degreesLat(gd.latitude),lon:satellite.degreesLong(gd.longitude),alt:gd.height,speed:Math.hypot(v.x,v.y,v.z)*3600,eci:pv.position}}
+  catch(e){return null}
+}
+function ecef(lat,lon,h){const r=6371+h,la=lat*DEG,lo=lon*DEG;return[r*Math.cos(la)*Math.cos(lo),r*Math.cos(la)*Math.sin(lo),r*Math.sin(la)]}
+function look(p){ // elevation/azimuth of the ISS from your spot (spherical Earth, plenty for pointing)
+  if(!S.loc||!p)return null;
+  const o=ecef(S.loc.lat,S.loc.lon,0),s=ecef(p.lat,p.lon,p.alt),d=[s[0]-o[0],s[1]-o[1],s[2]-o[2]],rng=Math.hypot(...d);
+  const la=S.loc.lat*DEG,lo=S.loc.lon*DEG,dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const up=[Math.cos(la)*Math.cos(lo),Math.cos(la)*Math.sin(lo),Math.sin(la)],east=[-Math.sin(lo),Math.cos(lo),0],north=[-Math.sin(la)*Math.cos(lo),-Math.sin(la)*Math.sin(lo),Math.cos(la)];
+  return{el:Math.asin(dot(d,up)/rng)/DEG,az:((Math.atan2(dot(d,east),dot(d,north))/DEG)+360)%360,range:rng};
+}
+function groundMi(p){if(!S.loc||!p)return null;const a=S.loc.lat*DEG,b=p.lat*DEG,dl=(p.lon-S.loc.lon)*DEG;
+  return 6371*Math.acos(clamp(Math.sin(a)*Math.sin(b)+Math.cos(a)*Math.cos(b)*Math.cos(dl),-1,1))*KM_MI}
+const DIR8=['N','NE','E','SE','S','SW','W','NW'],DIRW=['north','northeast','east','southeast','south','southwest','west','northwest'];
+const dir8=az=>DIR8[Math.round(az/45)%8],dirW=az=>DIRW[Math.round(az/45)%8];
+async function loadTLE(){
+  let l1,l2;
+  try{const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544/tles');const j=await r.json();l1=j.line1;l2=j.line2}catch(e){}
+  if(!l1){try{const r=await fetch('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE');const t=(await r.text()).trim().split(/\r?\n/).map(x=>x.trim());const i=t.findIndex(x=>x.startsWith('1 '));if(i>=0){l1=t[i];l2=t[i+1]}}catch(e){}}
+  if(l1&&l2&&window.satellite){
+    try{ISS.sat=satellite.twoline2satrec(l1.trim(),l2.trim());ISS.pos=issAt(Date.now());if(!ISS.pos)throw new Error('bad TLE');
+      ISS.mode='sgp4';ISS.err='';computeTrack();computePasses();setTimeout(loadTLE,6*3600e3);renderISS();return}
+    catch(e){ISS.sat=null}
+  }
+  if(ISS.mode!=='poll'){ISS.mode='poll';pollISS()}
+}
+async function pollISS(){ // fallback: live position only, from the public feed
+  try{const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544');const j=await r.json();
+    ISS.pos={lat:j.latitude,lon:j.longitude,alt:j.altitude,speed:j.velocity,visibility:j.visibility};ISS.err='';
+    ISS.trail.push([j.latitude,j.longitude]);if(ISS.trail.length>90)ISS.trail.shift();
+  }catch(e){ISS.err=SANDBOX?'sandbox':'net'}
+  renderISS();setTimeout(pollISS,ISS.err?30000:5000);
+}
+function computeTrack(){if(ISS.mode!=='sgp4'&&!ISS.sat)return;const now=Date.now(),out=[];for(let m=0;m<=95;m++){const p=issAt(now+m*60e3);if(p)out.push([p.lat,p.lon])}ISS.track=out}
+function computePasses(){
+  if(!ISS.sat||!S.loc){ISS.passes=null;return}
+  const out=[];let cur=null;const end=Date.now()+36*3600e3;
+  for(let t=Date.now();t<end&&out.length<8;t+=30e3){
+    const p=issAt(t),lk=look(p);if(!lk)continue;
+    if(lk.el>10){if(!cur)cur={start:t,max:lk.el,maxT:t,azStart:lk.az,azEnd:lk.az,end:t};if(lk.el>cur.max){cur.max=lk.el;cur.maxT=t}cur.azEnd=lk.az;cur.end=t}
+    else if(cur){const pm=issAt(cur.maxT);cur.visible=sunAlt(S.loc.lat,S.loc.lon,cur.maxT)<-6&&!!pm&&sunlit(pm.eci,cur.maxT);out.push(cur);cur=null}
+  }
+  ISS.passes=out;
+}
+const nextPasses=()=>{const now=Date.now();return(ISS.passes||[]).filter(p=>p.end+30e3>now)};
+function when(t){const d=new Date(t),now=new Date(),tom=new Date(now);tom.setDate(now.getDate()+1);const tm=fmtTime(d).toUpperCase();
+  if(d.toDateString()===now.toDateString())return'TODAY '+tm;if(d.toDateString()===tom.toDateString())return'TOMORROW '+tm;
+  return d.toLocaleDateString([],{weekday:'short'}).toUpperCase()+' '+tm}
+function passText(){
+  if(!S.loc)return'SET A LOCATION TO SEE WHEN IT FLIES OVER YOU';
+  if(ISS.mode!=='sgp4')return ISS.mode==='poll'?'PASS TIMES NEED ORBIT DATA. SHOWING LIVE POSITION ONLY.':'CALCULATING...';
+  const ps=nextPasses();if(!ps.length)return'NO PASSES ABOVE 10° IN THE NEXT 36 HOURS';
+  const p=ps[0];let s=`${p.start<=Date.now()?'HAPPENING NOW':when(p.start)} · ${n(p.max)}° UP · ${dir8(p.azStart)} TO ${dir8(p.azEnd)}${p.visible?' · VISIBLE':''}`;
+  if(!p.visible){const v=ps.find(q=>q.visible);if(v)s+=` · BEST VIEW ${when(v.start)}`}
+  return s;
+}
+const fmtLL=(lat,lon)=>`${Math.abs(lat).toFixed(0)}°${lat>=0?'N':'S'} ${Math.abs(lon).toFixed(0)}°${lon>=0?'E':'W'}`;
+function renderISS(){
+  const p=ISS.pos;
+  if(!p){['issOver','issAlt','issSpeed','issDist'].forEach(id=>$(id).textContent='--');
+    $('issPass').textContent=ISS.err==='sandbox'?'ISS DATA LOADS ON THE LIVE SAFARI LINK':ISS.err?"CAN'T REACH THE ISS FEED. RETRYING.":'LOCKING ON...';return}
+  $('issOver').textContent=fmtLL(p.lat,p.lon);
+  $('issAlt').innerHTML=`${n(p.alt*KM_MI)}<small>MI</small>`;
+  $('issSpeed').innerHTML=`${n(p.speed*KM_MI).toLocaleString()}<small>MPH</small>`;
+  const d=groundMi(p);$('issDist').innerHTML=d!=null?`${n(d).toLocaleString()}<small>MI</small>`:'--';
+  $('issPass').textContent=passText();
+}
+function issChecks(){
+  const p=ISS.pos,lk=look(p),now=Date.now();
+  ISS.overhead=lk&&lk.el>10?lk:null;
+  if(ISS.overhead){const dark=sunAlt(S.loc.lat,S.loc.lon,now)<-6,lit=p.eci?sunlit(p.eci,now):p.visibility==='daylight';ISS.overhead.visible=dark&&lit}
+  for(const q of nextPasses()){
+    if(q.visible&&!ISS.alerted[q.start]&&q.start>now&&q.start-now<5*60e3){
+      ISS.alerted[q.start]=1;flagTab('iss');sfx('mood');kick(1);
+      say(`Heads up! The ISS rises in the ${dirW(q.azStart)} in ${Math.max(1,Math.round((q.start-now)/60e3))} min, and it should be visible.`);
+    }
+  }
+}
+// pixel world map: land from Natural Earth (world-atlas), real day/night shading, ground track, you
+const MW=128,MH=64,mapC=$('map').getContext('2d');
+async function loadLand(){
+  try{const r=await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-110m.json');ISS.land=rasterLand(await r.json())}catch(e){ISS.land=null}
+  drawMap(performance.now());
+}
+function rasterLand(topo){
+  const W=MW*2,H=MH*2,cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
+  const[sx,sy]=topo.transform.scale,[tx,ty]=topo.transform.translate;
+  const arcs=topo.arcs.map(a=>{let x=0,y=0;return a.map(([dx,dy])=>{x+=dx;y+=dy;return[x*sx+tx,y*sy+ty]})});
+  const X=lon=>(lon+180)/360*W,Y=lat=>(90-lat)/180*H;
+  const ringPts=idx=>{const pts=[];idx.forEach((i,k)=>{const a=i<0?arcs[~i].slice().reverse():arcs[i];pts.push(...(k?a.slice(1):a))});return pts};
+  const polys=[];const geom=g=>{if(g.type==='Polygon')polys.push(g.arcs);else if(g.type==='MultiPolygon')g.arcs.forEach(p=>polys.push(p));else if(g.type==='GeometryCollection')g.geometries.forEach(geom)};
+  geom(topo.objects.land);
+  c.fillStyle='#fff';c.beginPath();
+  polys.forEach(poly=>{const rings=poly.map(ringPts);if(rings[0].some(p=>p[1]<-60))return; // Antarctica drawn as a band below
+    rings.forEach(r=>{r.forEach((p,j)=>j?c.lineTo(X(p[0]),Y(p[1])):c.moveTo(X(p[0]),Y(p[1])));c.closePath()})});
+  c.fill('evenodd');c.fillRect(0,Y(-68),W,H);
+  const d=c.getImageData(0,0,W,H).data,mask=new Uint8Array(MW*MH);
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){let a=0;for(let j=0;j<2;j++)for(let i=0;i<2;i++)a+=d[((y*2+j)*W+(x*2+i))*4+3];mask[y*MW+x]=a>300?1:0}
+  return mask;
+}
+function computeNight(t){
+  const s=sunVec(t),dec=Math.asin(s[2]);let sl=(Math.atan2(s[1],s[0])-gmstRad(t))/DEG;sl=((sl%360)+540)%360-180;
+  const arr=new Float32Array(MW*MH);
+  for(let y=0;y<MH;y++){const la=(90-(y+.5)*180/MH)*DEG;for(let x=0;x<MW;x++){const lo=((x+.5)*360/MW-180)*DEG;
+    arr[y*MW+x]=Math.sin(la)*Math.sin(dec)+Math.cos(la)*Math.cos(dec)*Math.cos(lo-sl*DEG)}}
+  ISS.night=arr;ISS.sub=[dec/DEG,sl];ISS.nightAt=t;
+}
+const mpx=(lat,lon)=>[Math.floor((((lon+180)%360+360)%360)/360*MW),Math.floor((90-lat)/180*MH)];
+function drawMap(t){
+  const c=mapC,now=Date.now();if(!ISS.night||now-ISS.nightAt>60e3)computeNight(now);
+  const img=c.createImageData(MW,MH),d=img.data,L=ISS.land;
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
+    const i=y*MW+x,z=ISS.night[i],land=L?L[i]:0;
+    const coast=land&&((x>0&&!L[i-1])||(x<MW-1&&!L[i+1])||(y>0&&!L[i-MW])||(y<MH-1&&!L[i+MW]));
+    const col=land?(coast?[199,166,255]:[124,108,240]):((x+y)%4===0?[34,30,100]:[22,18,72]);
+    const k=z>.05?1:z<-.1?.36:.36+(z+.1)/.15*.64;
+    d[i*4]=col[0]*k;d[i*4+1]=col[1]*k;d[i*4+2]=Math.min(255,col[2]*k*(k<1?1.2:1));d[i*4+3]=255;
+  }
+  c.putImageData(img,0,0);
+  c.fillStyle='rgba(169,150,220,.28)';
+  for(let lo=-150;lo<180;lo+=30){const[x]=mpx(0,lo);for(let y=0;y<MH;y+=3)c.fillRect(x,y,1,1)}
+  for(let la=-60;la<=60;la+=30){const[,y]=mpx(la,0);for(let x=0;x<MW;x+=3)c.fillRect(x,y,1,1)}
+  if(ISS.sub){const[x,y]=mpx(ISS.sub[0],ISS.sub[1]);paint(c,[".y.","yyy",".y."],x-1,y-1)}
+  c.fillStyle=C.cyan;
+  ISS.track.forEach(([la,lo],i)=>{if(i%2)return;const[x,y]=mpx(la,lo);c.globalAlpha=1-i/ISS.track.length*.75;c.fillRect(x,y,1,1)});
+  ISS.trail.forEach(([la,lo],i)=>{const[x,y]=mpx(la,lo);c.globalAlpha=(i+1)/ISS.trail.length*.8;c.fillRect(x,y,1,1)});
+  c.globalAlpha=1;
+  if(S.loc&&(reduce||Math.floor(t/500)%2)){const[x,y]=mpx(S.loc.lat,S.loc.lon);c.fillStyle=C.pink;c.fillRect(x-1,y,3,1);c.fillRect(x,y-1,1,3)}
+  const p=ISS.pos;
+  if(p){const[x,y]=mpx(p.lat,p.lon);
+    c.fillStyle='rgba(68,241,255,.6)';
+    for(let a=0;a<6.283;a+=.1){const la=clamp(p.lat+20*Math.sin(a),-89,89),lo=p.lon+20*Math.cos(a)/Math.max(.25,Math.cos(la*DEG));const[fx,fy]=mpx(la,lo);c.fillRect(fx,fy,1,1)}
+    paint(c,["cc.cc","ccwcc","cc.cc"],x-2,y-1);
+    if(!reduce&&Math.floor(t/300)%2){c.fillStyle='#fff';c.fillRect(x,y-2,1,1);c.fillRect(x,y+2,1,1)}
+  }
+}
+
 /* ---------- device ---------- */
 $('scr').innerHTML=`${screen.width}×${screen.height} <small>@${devicePixelRatio}x</small>`;
 $('cores').textContent=navigator.hardwareConcurrency||'--';
@@ -640,6 +1053,7 @@ function renderDevice(){
   tween($('taps'),S.taps,{ms:200});
   const on=navigator.onLine,dot=$('netDot');if(dot.classList.contains('off')===on){dot.classList.toggle('off',!on);$('netTxt').textContent=on?'ONLINE':'OFFLINE';restart($('netTxt'),'glitch')}
   $('clock').textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  renderProgress();issChecks();if(tab==='iss')renderISS();
 }
 
 /* ---------- speech ---------- */
@@ -672,6 +1086,8 @@ function moodLine(m){
     case'sunny':return`${t}° and sunny in ${place()}. Shades on.`;
     case'cloudy':return`${t}° and ${cond} in ${place()}.`;
     case'dizzy':return"Whoa, whoa. Too many pokes. Everything's spinning...";
+    case'music':return M.state?`Now playing: ${M.state.title} by ${M.state.artist}. Vibing.`:'Vibing.';
+    case'iss':{const o=ISS.overhead;return o?`The ISS is right above you! Look ${dirW(o.az)}, about ${n(o.el)}° up. ${o.visible?'It should be a bright moving dot right now.':"It's too bright out to spot it, but it's up there."}`:'The ISS is overhead!'}
     case'poke':{const a=['Hehe, that tickles!','Boop!',"Hey! I'm working here.",`That's poke number ${S.pokes}.`,'Again! Again!'];return a[S.pokes%a.length]}
   }
   return'';
@@ -695,6 +1111,20 @@ function about(key,el){
     case'cores':return`This ${DEVICE} shows me ${navigator.hardwareConcurrency||'some'} CPU cores. Safari may cap that number.`;
     case'up':return`This page has been open for ${fmtDur(Date.now()-S.start)}. I've been counting.`;
     case'taps':return`You've tapped ${S.taps} times and poked me ${S.pokes} times.`;
+    case'track':{const s=M.state;if(!s)return M.tok?"Nothing's playing. Start something in Spotify.":'Connect Spotify and I\'ll show what you\'re listening to.';
+      return`"${s.title}" by ${s.artist}${s.album?`, from ${s.album}`:''}. ${fmtMs(s.duration-musicPos())} left${s.device?` on ${s.device}`:''}.`}
+    case'map':case'issOver':{const p=ISS.pos;if(!p)return ISS.err==='sandbox'?'The ISS feed loads on the live Safari link.':'Still locking on to the ISS...';
+      const [x,y]=mpx(p.lat,p.lon),wet=ISS.land?!ISS.land[y*MW+x]:null;
+      return`The ISS is over ${wet===null?'':wet?'the ocean at ':'land at '}${fmtLL(p.lat,p.lon)}. Cyan dots are its next orbit, the pink cross is you, and the shading is real night.`}
+    case'issAlt':{const p=ISS.pos;if(!p)return'Still locking on to the ISS...';const mi=p.alt*KM_MI;return`It's flying ${n(mi)} miles up, about ${n(mi/6.6)} times higher than a passenger jet.`}
+    case'issSpeed':{const p=ISS.pos;if(!p)return'Still locking on to the ISS...';return`${n(p.speed*KM_MI).toLocaleString()} mph. It laps the planet about every 92 minutes, so the crew sees 16 sunrises a day.`}
+    case'issDist':{const p=ISS.pos,d=groundMi(p),lk=look(p);if(d==null)return'Set a location and I\'ll tell you how far away it is.';
+      return`It's ${n(d).toLocaleString()} miles from you along the ground${lk&&lk.el>0?`, and ${n(lk.el)}° above your horizon to the ${dirW(lk.az)}`:''}.`}
+    case'issPass':{if(!S.loc)return'Set a location and I\'ll work out when the ISS flies over you.';const ps=nextPasses();
+      if(ISS.mode!=='sgp4')return"I can see where the ISS is, but I couldn't load its orbit to predict passes.";
+      if(!ps.length)return'No passes higher than 10° in the next day and a half.';
+      const p=ps[0],v=ps.find(q=>q.visible);
+      return`Next pass: ${when(p.start).toLowerCase()}, rising in the ${dirW(p.azStart)} and peaking ${n(p.max)}° up.${p.visible?" It'll be dark and the station will be lit, so look for a bright moving dot.":v?` Best viewing chance: ${when(v.start).toLowerCase()}.`:' None of the upcoming passes are in the dark, so it will be hard to see.'}`}
     case'hour':{const h=nextHours()[+el.dataset.i];if(!h)return NOWX;return`${+el.dataset.i===0?'This hour':'At '+fmtHour(h.t)}: ${n(h.temp)}°, ${(WXNAME[h.code]||'').toLowerCase()}, ${h.p}% chance of rain.`}
   }
   return'';
@@ -709,6 +1139,8 @@ function facts(){
   }
   if(si)out.push(si.day?`Sunset at ${fmtTime(new Date(si.set))}. ${fmtDur(si.set-Date.now())} of daylight left.`:`Sunrise at ${fmtTime(new Date(si.nextRise))}, in ${fmtDur(si.nextRise-Date.now())}.`);
   out.push(about('moon'));
+  if(M.state&&M.state.playing)out.push(about('track'));
+  if(ISS.pos){out.push(about('issDist'));if(S.loc&&ISS.mode==='sgp4')out.push(about('issPass'))}
   if(S.fps)out.push(about('fps'));
   if(S.ping!=null)out.push(about('ping'));
   out.push('Tap any number and I\'ll tell you about it.');
@@ -760,7 +1192,9 @@ const MOODS={
   sunny:{label:'SUNNY',s:'hype',b:'#ffe34d',d:'#e0a623'},
   cloudy:{label:'CLOUDY',s:'ok',b:'#ff8fd0',d:'#e0569f'},
   poke:{label:'HEHE',s:'hype',b:'#ff8fd0',d:'#e0569f'},
-  dizzy:{label:'DIZZY',s:'warn',b:'#c6ff7a',d:'#7ccf2a'}
+  dizzy:{label:'DIZZY',s:'warn',b:'#c6ff7a',d:'#7ccf2a'},
+  music:{label:'VIBING',s:'hype',b:'#ff8fd0',d:'#e0569f'},
+  iss:{label:'ISS OVERHEAD',s:'hype',b:'#dfe3f0',d:'#aeb2c6'}
 };
 function weatherMood(){
   if(!navigator.onLine)return'offline';
@@ -782,7 +1216,10 @@ function weatherMood(){
 function moodFor(now){
   if(now<S.dizzyUntil)return'dizzy';
   if(now<S.pokeUntil)return'poke';
-  return weatherMood();
+  if(navigator.onLine&&ISS.overhead)return'iss';
+  const w=weatherMood();
+  if(M.state&&M.state.playing&&w!=='storm'&&w!=='offline'&&w!=='nodata')return'music';
+  return w;
 }
 function setMood(m,now){
   const prev=S.mood;S.mood=m;const el=$('mood');
@@ -873,24 +1310,37 @@ const FACE={
   sunny:{eye:'shades',mouth:'grin',blush:1,per:300,squash:1,orb:420,fx:'sparkle'},
   cloudy:{eye:'open',mouth:'smile',blush:1,per:420,orb:700},
   poke:{eye:'happy',mouth:'big',blush:1,per:110,squash:1,orb:160,fx:'sparkle'},
-  dizzy:{eye:'spiral',mouth:'wave',per:200,orb:110,fx:'dizzy',wobble:1}
+  dizzy:{eye:'spiral',mouth:'wave',per:200,orb:110,fx:'dizzy',wobble:1},
+  music:{eye:'happy',mouth:'grin',blush:1,per:250,squash:1,orb:300,fx:'music'},
+  iss:{eye:'star',mouth:'o',blush:1,per:220,orb:150,fx:'sparkle'}
 };
 // face particles: hearts, stars and sparks that fly off Pip
 const FP=[];
 const HEART=["pp.pp","ppppp",".ppp.","..p.."];
 const STAR=[".y.","yyy",".y."];
+const NOTE=["..nnn","..n.n","..n..","nnn..","nnn.."];
 function faceBurst(kind,count){
   if(reduce)return;
   for(let i=0;i<count;i++){const a=-Math.PI/2+(Math.random()-.5)*2.6,sp=26+Math.random()*30;
-    FP.push({x:32+(Math.random()-.5)*14,y:20+(Math.random()-.5)*8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,kind})}
+    FP.push({x:32+(Math.random()-.5)*14,y:20+(Math.random()-.5)*8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,kind,c:Math.random()<.5?'c':'p'})}
 }
 function updateFP(dt){
-  for(let i=FP.length-1;i>=0;i--){const p=FP[i];p.vy+=48*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt*1.1;if(p.life<=0)FP.splice(i,1)}
+  for(let i=FP.length-1;i>=0;i--){const p=FP[i];if(p.kind!=='note')p.vy+=48*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt*1.1;if(p.life<=0)FP.splice(i,1)}
 }
 function drawFP(t){
   for(const p of FP){fc.globalAlpha=clamp(p.life*1.6,0,1);const x=Math.round(p.x),y=Math.round(p.y);
-    if(p.kind==='heart')spr(HEART,x-2,y-2);else if(p.kind==='star')spr(STAR,x-1,y-1);else sparkAt(x,y,(Math.floor(t/120)+x)%2)}
+    if(p.kind==='heart')spr(HEART,x-2,y-2);else if(p.kind==='star')spr(STAR,x-1,y-1);
+    else if(p.kind==='note')spr(NOTE.map(r=>r.replace(/n/g,p.c)),x-2,y-2);
+    else sparkAt(x,y,(Math.floor(t/120)+x)%2)}
   fc.globalAlpha=1;
+}
+function headphones(cx,cy,rx,ry,t){
+  for(let a=Math.PI*1.06;a<=Math.PI*1.94;a+=.03){const x=Math.round(cx+Math.cos(a)*(rx+2)),y=Math.round(cy-1+Math.sin(a)*(ry+3));
+    fc.fillStyle=COL['#'];fc.fillRect(x,y,1,2);fc.fillStyle=COL.L;fc.fillRect(x,y,1,1)}
+  const cup=["#####","#ppp#","#pwp#","#ppp#","#ppp#","#####"];
+  spr(cup,cx-rx-3,cy-4);spr(cup,cx+rx-1,cy-4);
+  if(!reduce&&t-(S.noteT||0)>650){S.noteT=t;const left=Math.random()<.5;
+    FP.push({x:left?cx-rx-4:cx+rx+4,y:cy-6,vx:(left?-1:1)*(4+Math.random()*8),vy:-20-Math.random()*10,life:1.3,kind:'note',c:Math.random()<.5?'c':'p'})}
 }
 function blob(cx,cy,rx,ry,b,d,ob,od,prog){
   for(let y=cy-ry-1;y<=cy+ry+1;y++)for(let x=cx-rx-1;x<=cx+rx+1;x++){
@@ -966,6 +1416,7 @@ function drawFace(t){
   else if(morphing)mk='o';
   else if(talking&&m!=='sleep'&&m!=='dizzy'&&Math.floor(t/110)%2)mk='o';
   const M=MOUTH[mk];spr(M,cx-Math.floor(M[0].length/2),cy+4);
+  if(f.fx==='music')headphones(cx,cy,rx,ry,t);
   drawOrbit(32,40,ot,true,orbPer);
   if(f.fx==='umbrella')umbrella(cx,Math.max(1,cy-23));
   if(f.fx==='sweat')spr([".c.","ccc","cwc",".c."],cx+12,cy-8+Math.floor(((reduce?0:t)/90)%8));
@@ -1012,7 +1463,8 @@ function drawBg(t,dt){
   bx.fillStyle=gr;bx.fillRect(0,0,BW,BH);
   const cx=Math.floor(BW/2),cy=Math.floor(BH*.47);
   const c=S.wx&&S.wx.current,temp=c?c.temperature_2m:70,wind=c?c.wind_speed_10m:6;
-  const bpm=78+clamp(temp,0,110)*.45+S.pokeE*40;
+  const playing=M.state&&M.state.playing;
+  const bpm=(playing?120:78+clamp(temp,0,110)*.45)+S.pokeE*40;
   if(!reduce&&t-lastBeat>60000/bpm){lastBeat=t;rings.push({r:4,c:RINGC[ringN%4],tilt:ringN%2?.24:-.24,ph:Math.random()*6.28});ringN++}
   const grow=16+wind*1.2+S.pokeE*30;
   for(let k=rings.length-1;k>=0;k--){
@@ -1059,7 +1511,7 @@ function drawBg(t,dt){
   for(let k=bparts.length-1;k>=0;k--){const p=bparts[k];p.life-=dt/1000*1.4;if(p.life<=0){bparts.splice(k,1);continue}
     p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vx*=.95;p.vy*=.95;bgSpark(Math.round(p.x),Math.round(p.y),p.life>.5?2:1,p.life)}
   bx.globalAlpha=1;
-  const nb=Math.floor(BW/3),energy=clamp(.3+wind/30+S.pokeE*.6,0,1),maxH=BH*.28,te=reduce?t*.1:t;
+  const nb=Math.floor(BW/3),energy=clamp(.3+wind/30+S.pokeE*.6+(playing?.4:0),0,1),maxH=BH*.28,te=reduce?t*.1:t;
   for(let i=0;i<nb;i++){
     const v=(Math.sin(te/180*(1+i%3*.3)+i*.9)+Math.sin(te/97+i*2.1)+Math.sin(te/410+i*.35))/3;
     const h=Math.round((.15+((v+1)/2)*.85)*energy*maxH);
@@ -1088,10 +1540,17 @@ function frame(now){
   drawBg(now,dt);drawFace(now);
   uiAcc+=dt;if(uiAcc>250){uiAcc=0;renderDevice()}
   skyAcc+=dt;if(skyAcc>30000){skyAcc=0;drawArc();drawMoon();if(S.wx){renderWx();renderHours(false)}}
+  issAcc+=dt;if(issAcc>(tab==='iss'?66:1000)){issAcc=0;if(ISS.mode==='sgp4')ISS.pos=issAt(Date.now());if(tab==='iss')drawMap(now)}
+  if(now-trackAt>60e3){trackAt=now;computeTrack()}
+  if(now-passAt>15*60e3){passAt=now;computePasses()}
   requestAnimationFrame(frame);
 }
-renderPlace();renderWx();renderHours(false);renderDevice();drawMoon();drawArc();
+let issAcc=0,trackAt=performance.now(),passAt=performance.now();
+setTab(tab,false);
+renderPlace();renderWx();renderHours(false);renderMusic();renderDevice();drawMoon();drawArc();drawMap(0);
 if(S.loc)setTimeout(loadWeather,reduce?0:900);
+spotCallback().then(()=>{renderMusic();pollSpotify()});
+loadTLE();loadLand();
 requestAnimationFrame(frame);
 })();
 </script>
