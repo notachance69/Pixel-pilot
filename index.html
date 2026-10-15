@@ -135,12 +135,16 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .tiles .big.sm{font-size:clamp(15px,4.2vh,22px);white-space:normal;line-height:1.05}
 
 /* bottom deck: forecast / music / ISS */
-.deck{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:6px 10px 6px 6px;height:clamp(96px,21vh,176px);box-sizing:border-box}
-.tabs{display:flex;flex-direction:column;justify-content:center;gap:4px}
-.tab{position:relative;font-family:var(--f-label);font-size:10px;letter-spacing:.08em;color:var(--muted);background:transparent;border:0;padding:7px 12px;cursor:pointer;text-align:left;white-space:nowrap}
+.deck{display:grid;grid-template-columns:minmax(0,1fr);padding:6px 10px;height:clamp(96px,21vh,176px);box-sizing:border-box}
+.tabs{display:flex;gap:4px;align-items:center}
+.tab{position:relative;font-family:var(--f-label);font-size:12px;letter-spacing:.08em;color:var(--text);background:var(--panel);border:0;padding:8px 14px;margin:2px;cursor:pointer;white-space:nowrap;
+  box-shadow:0 -2px 0 0 var(--c-1),-2px 0 0 0 var(--c-2),0 2px 0 0 var(--c-3),2px 0 0 0 var(--c-3)}
 .tab:hover{color:var(--sun)}
-.tab[aria-selected="true"]{color:var(--ink);background:var(--cyan)}
-.badge{position:absolute;top:3px;right:3px;width:6px;height:6px;background:var(--pink);box-shadow:0 0 6px var(--pink);animation:blink 1s steps(1) infinite}
+.tab[aria-selected="true"]{color:var(--ink);background:var(--chrome-btn)}
+.tab .tic{color:var(--pink);margin-right:6px}
+.tab[aria-selected="true"] .tic{color:#b0136f}
+.badge{position:absolute;top:-4px;right:-4px;width:8px;height:8px;background:var(--pink);box-shadow:0 0 8px var(--pink);animation:blink 1s steps(1) infinite}
+@media (max-width:1250px){.sub{display:none}}
 .pane{min-width:0;min-height:0;display:flex;align-items:center}
 #pane-fc{overflow-x:auto;scrollbar-width:none}
 #pane-fc::-webkit-scrollbar{display:none}
@@ -245,7 +249,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
   .logo{font-size:22px} .sub{display:none} .panel{padding:6px 10px;gap:4px}
   .hr canvas{width:20px;height:20px} .hr .v{font-size:16px} .pbar,.hr .p{display:none}
   .moonTxt{font-size:11px}
-  .deck{height:92px;padding:4px 8px 4px 4px} .tab{padding:4px 8px;font-size:9px}
+  .deck{height:92px;padding:4px 8px} .tab{padding:5px 9px;font-size:10px}
   .ctrl{width:36px;height:32px} .issStats .mini:nth-child(n+4){display:none}
 }
 @media (orientation:portrait){
@@ -278,6 +282,11 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <span class="spark" style="--s:20px" aria-hidden="true"></span>
       <span class="logo">PIXEL PILOT</span>
       <span class="sub" id="sub">LIVE STATS · v0.4</span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Bottom panel">
+      <button class="tab" role="tab" id="tab-fc" data-tab="fc" aria-selected="true" aria-controls="pane-fc" type="button"><span class="tic" aria-hidden="true">✸</span>FORECAST</button>
+      <button class="tab" role="tab" id="tab-music" data-tab="music" aria-selected="false" aria-controls="pane-music" type="button"><span class="tic" aria-hidden="true">♪</span>MUSIC<span class="badge" id="badge-music" hidden></span></button>
+      <button class="tab" role="tab" id="tab-iss" data-tab="iss" aria-selected="false" aria-controls="pane-iss" type="button"><span class="tic" aria-hidden="true">✦</span>ISS<span class="badge" id="badge-iss" hidden></span></button>
     </div>
     <div class="status">
       <button class="tag np" id="npChip" type="button" hidden><b>♪</b><span id="npTxt"></span></button>
@@ -351,12 +360,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
     </section>
   </main>
 
-  <footer class="deck frame" aria-label="Forecast, music and ISS" data-boot style="--anim:wipeR;--bd:.8s">
-    <div class="tabs" role="tablist" aria-label="Bottom deck">
-      <button class="tab" role="tab" id="tab-fc" data-tab="fc" aria-selected="true" aria-controls="pane-fc" type="button">FORECAST</button>
-      <button class="tab" role="tab" id="tab-music" data-tab="music" aria-selected="false" aria-controls="pane-music" type="button">MUSIC<span class="badge" id="badge-music" hidden></span></button>
-      <button class="tab" role="tab" id="tab-iss" data-tab="iss" aria-selected="false" aria-controls="pane-iss" type="button">ISS<span class="badge" id="badge-iss" hidden></span></button>
-    </div>
+  <footer class="deck frame" id="deck" aria-label="Forecast, music and ISS" data-boot style="--anim:wipeR;--bd:.8s">
     <div class="pane" id="pane-fc" role="tabpanel" aria-labelledby="tab-fc">
       <div class="hourRow" id="hours" hidden></div>
       <div class="empty" id="hoursEmpty">THE NEXT 12 HOURS SHOW UP HERE ONCE PIP KNOWS WHERE YOU ARE</div>
@@ -715,7 +719,8 @@ function setTab(t,anim=true){
   if(!TABS.includes(t))return;const changed=t!==tab;tab=t;store.set('pp.tab',t);
   TABS.forEach(k=>{$('tab-'+k).setAttribute('aria-selected',String(k===t));$('pane-'+k).hidden=k!==t});
   const badge=$('badge-'+t);if(badge)badge.hidden=true;
-  if(anim&&changed){restart($('pane-'+t),'reveal');sfx('tap')}
+  if(anim){restart($('pane-'+t),'reveal');sfx('tap');
+    const r=$('deck').getBoundingClientRect();if(r.bottom>innerHeight||r.top<0)$('deck').scrollIntoView({behavior:reduce?'auto':'smooth',block:'end'})}
   if(t==='iss'){drawMap(performance.now());renderISS()}
   if(t==='music')renderMusic();
 }
@@ -1051,7 +1056,8 @@ function renderDevice(){
   const s=Math.floor((Date.now()-S.start)/1000);
   $('up').textContent=s>=3600?`${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`:`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   tween($('taps'),S.taps,{ms:200});
-  const on=navigator.onLine,dot=$('netDot');if(dot.classList.contains('off')===on){dot.classList.toggle('off',!on);$('netTxt').textContent=on?'ONLINE':'OFFLINE';restart($('netTxt'),'glitch')}
+  const on=navigator.onLine,dot=$('netDot');if(dot.classList.contains('off')===on||$('netTxt').hidden===!on){dot.classList.toggle('off',!on);$('netTxt').textContent='OFFLINE';$('netTxt').hidden=on;if(!on)restart($('netTxt'),'glitch')}
+  dot.title=on?'Online':'Offline';
   $('clock').textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
   renderProgress();issChecks();if(tab==='iss')renderISS();
 }
@@ -1550,6 +1556,9 @@ setTab(tab,false);
 renderPlace();renderWx();renderHours(false);renderMusic();renderDevice();drawMoon();drawArc();drawMap(0);
 if(S.loc)setTimeout(loadWeather,reduce?0:900);
 spotCallback().then(()=>{renderMusic();pollSpotify()});
+if(!store.get('pp.seenTabs')&&!new URLSearchParams(location.search).has('code')){ // one-time tour of the new tabs
+  setTimeout(()=>{store.set('pp.seenTabs',true);['music','iss'].forEach(flagTab);restart($('tab-music'),'hit');
+    say('New! Tap MUSIC up top to connect Spotify, or ISS to track the space station.');kick(1)},(reduce?0:BOOT-performance.now())+3500)}
 loadTLE();loadLand();
 requestAnimationFrame(frame);
 })();
