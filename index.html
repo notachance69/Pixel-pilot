@@ -435,6 +435,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
+const BUILD='20261015-143724'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -1555,6 +1556,21 @@ let issAcc=0,trackAt=performance.now(),passAt=performance.now();
 setTab(tab,false);
 renderPlace();renderWx();renderHours(false);renderMusic();renderDevice();drawMoon();drawArc();drawMap(0);
 if(S.loc)setTimeout(loadWeather,reduce?0:900);
+/* self-update: Home Screen apps on iOS hold on to old copies, so check the live page for a newer build */
+{const q=new URLSearchParams(location.search);if(q.has('v')&&!q.has('code'))history.replaceState(null,'',location.pathname)}
+async function checkUpdate(){
+  if(SANDBOX||BUILD.startsWith('__')||!navigator.onLine)return;
+  try{
+    const t=await(await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'})).text();
+    const m=t.match(/const BUILD='([^']+)'/);
+    if(m&&m[1]!==BUILD&&store.get('pp.updTried')!==m[1]){
+      store.set('pp.updTried',m[1]);say('Update found! Grabbing the new version...');kick(1.2);faceBurst('star',10);sfx('data');
+      setTimeout(()=>location.replace(location.pathname+'?v='+encodeURIComponent(m[1])),1800);
+    }
+  }catch(e){}
+}
+setTimeout(checkUpdate,(reduce?0:1250)+5000);setInterval(checkUpdate,30*60e3);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
 spotCallback().then(()=>{renderMusic();pollSpotify()});
 if(!store.get('pp.seenTabs')&&!new URLSearchParams(location.search).has('code')){ // one-time tour of the new tabs
   setTimeout(()=>{store.set('pp.seenTabs',true);['music','iss'].forEach(flagTab);restart($('tab-music'),'hit');
