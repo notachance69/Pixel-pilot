@@ -2,7 +2,7 @@
 
 Pip is an animated pixel emoticon assistant that shows live local weather, the sun and moon, and real stats from the device you open it on. Pip's mood changes with the weather, and every tap gets an animation.
 
-**Live page:** https://notachance69.github.io/pixel-pilot/
+**Live page:** https://notachance69.github.io/Pixel-pilot/
 
 Open it in Safari on an iPad or phone, turn the device sideways, and tap **Use my location** (or search a city). Add it to your Home Screen to run it full-screen.
 
