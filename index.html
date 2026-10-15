@@ -723,7 +723,7 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setT
 function flagTab(t){if(tab!==t){const b=$('badge-'+t);if(b)b.hidden=false}}
 
 /* ---------- Spotify: now playing ---------- */
-const SPOTIFY_CLIENT_ID='';   // optional: paste your Client ID here instead of typing it in the page
+const SPOTIFY_CLIENT_ID='88223a790e5d43de82e0bc91f92199a0';   // public app ID (PKCE needs no secret)
 const REDIRECT=location.origin+location.pathname;
 const SP_SCOPES='user-read-currently-playing user-read-playback-state user-modify-playback-state';
 const M={id:store.get('pp.spotId')||SPOTIFY_CLIENT_ID,tok:store.get('pp.spotTok'),state:null,fetchedAt:0,trackId:null,timer:0,err:'',justConnected:false,idleArt:false};
