@@ -435,7 +435,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
-const BUILD='20261015-143724'; // stamped at publish; the page compares it with the live copy to update itself
+const BUILD='20261015-154446'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -736,23 +736,43 @@ const M={id:store.get('pp.spotId')||SPOTIFY_CLIENT_ID,tok:store.get('pp.spotTok'
 const rnd=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return Array.from(a,b=>'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[b%62]).join('')};
 const b64url=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const mMsg=t=>{$('mMsg').textContent=t};
-async function spotLogin(){
+async function spotLogin(auto){
   if(SANDBOX){mMsg('Spotify sign-in only works on the live Safari link.');return}
+  if(!auto)store.set('pp.spotAutoAt',0);
   const id=($('spotId').value.trim()||M.id||'').trim();
   if(!/^[0-9a-f]{32}$/i.test(id)){mMsg('Paste the 32-character Client ID from your Spotify developer app.');restart($('spotId'),'glitch');return}
   M.id=id;store.set('pp.spotId',id);
   const ver=rnd(64),st=rnd(16);store.set('pp.spotVer',ver);store.set('pp.spotState',st);
   const ch=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ver)));
   const q=new URLSearchParams({response_type:'code',client_id:id,scope:SP_SCOPES,redirect_uri:REDIRECT,code_challenge_method:'S256',code_challenge:ch,state:st});
-  sfx('open');mMsg('Opening Spotify...');
-  setTimeout(()=>{location.href='https://accounts.spotify.com/authorize?'+q},250);
+  if(!auto)sfx('open');mMsg(auto?'Reconnecting to Spotify...':'Opening Spotify...');
+  setTimeout(()=>{location.href='https://accounts.spotify.com/authorize?'+q},auto?50:250);
 }
 async function tokenReq(body){
-  const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)});
+  let r;
+  try{r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)})}
+  catch(e){const err=new Error('network');err.network=true;throw err}
   const j=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(j.error_description||j.error||('HTTP '+r.status));
+  if(!r.ok){const err=new Error(j.error_description||j.error||('HTTP '+r.status));err.network=r.status>=500||r.status===429;throw err}
   M.tok={access:j.access_token,refresh:j.refresh_token||(M.tok&&M.tok.refresh),exp:Date.now()+(j.expires_in||3600)*1000};
   store.set('pp.spotTok',M.tok);
+}
+// one refresh at a time: Spotify rotates refresh tokens, so two parallel refreshes would void each other
+let refreshing=null;
+function refreshTok(){
+  if(refreshing)return refreshing;
+  refreshing=(async()=>{
+    const latest=store.get('pp.spotTok');
+    if(latest&&latest.exp>Date.now()+60e3){M.tok=latest;return}
+    await tokenReq({grant_type:'refresh_token',refresh_token:(latest||M.tok).refresh,client_id:M.id});
+  })().finally(()=>{refreshing=null});
+  return refreshing;
+}
+// if Spotify really did revoke the sign-in, bounce through Spotify once; it skips the approval screen for apps you've already approved
+function autoReconnect(){
+  const last=store.get('pp.spotAutoAt')||0;
+  if(SANDBOX||!M.id||Date.now()-last<10*60e3){spotLogout('Spotify needs you to sign in again. Tap Connect.');return}
+  store.set('pp.spotAutoAt',Date.now());spotLogin(true);
 }
 async function spotCallback(){
   const p=new URLSearchParams(location.search);if(!p.has('code')&&!p.has('error'))return;
@@ -768,10 +788,10 @@ async function spotCallback(){
 async function accessToken(){
   if(!M.tok)return null;
   if(Date.now()>M.tok.exp-60e3){
-    try{await tokenReq({grant_type:'refresh_token',refresh_token:M.tok.refresh,client_id:M.id})}
-    catch(e){spotLogout('Your Spotify sign-in expired. Connect again.');return null}
+    try{await refreshTok()}
+    catch(e){if(!e.network)autoReconnect();return null}   // network hiccup: keep the sign-in and try again next poll
   }
-  return M.tok.access;
+  return M.tok&&M.tok.access;
 }
 async function spApi(path,opt={}){
   const t=await accessToken();if(!t)return{status:401};
@@ -783,6 +803,8 @@ async function spApi(path,opt={}){
 function spotLogout(msg){M.tok=null;M.state=null;M.trackId=null;store.set('pp.spotTok',null);clearTimeout(M.timer);renderMusic();if(msg)mMsg(msg)}
 async function pollSpotify(){
   clearTimeout(M.timer);if(!M.tok)return;
+  if(M.busy){M.timer=setTimeout(pollSpotify,1500);return}
+  M.busy=true;
   let wait=4000;
   if(!document.hidden){
     try{
@@ -803,7 +825,8 @@ async function pollSpotify(){
     }catch(e){wait=15000}
     renderMusic();
   }
-  M.timer=setTimeout(pollSpotify,wait);
+  M.busy=false;
+  if(M.tok)M.timer=setTimeout(pollSpotify,wait);
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&M.tok)pollSpotify()});
 function onNewTrack(quiet){
@@ -885,7 +908,7 @@ async function control(kind){
 }
 $('mPlay').onclick=()=>control('play');$('mNext').onclick=()=>control('next');$('mPrev').onclick=()=>control('prev');
 $('spotForm').addEventListener('submit',e=>{e.preventDefault();spotLogin()});
-$('mOut').onclick=()=>{sfx('close');spotLogout('Disconnected. Your Client ID is saved if you want to reconnect.')};
+$('mOut').onclick=()=>{sfx('close');store.set('pp.spotAutoAt',Date.now());spotLogout('Disconnected. Your Client ID is saved if you want to reconnect.')};
 $('npChip').onclick=()=>setTab('music');
 
 /* ---------- ISS tracker ---------- */
