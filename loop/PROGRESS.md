@@ -37,3 +37,10 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Tests: 25 checks. The first run failed one: the gym note pushed the rain warning out of the Brief. Fixed by only nudging when actionable and ranking it after weather.
 - Scores: Works 5, Useful 5, Delight 5, Clarity 4, Resilience 4, Privacy 5 (only dates stored), Performance 5.
 - Next: confirm the real 24GO report format with Chance; then `calendar`.
+
+## 2026-10-16, round 5: real-data check + promote
+- Checked Chance's real Gmail via the Claude Gmail connector: about 200 emails from 24 Hour Fitness, all promotions ("Training Day 10/15", "Rams tickets October 18th", "Your Club Check-In Is Changing"). No check-in reports yet.
+- Found a false-positive bug: a yearless future date in a promo was rolled back a year and counted as a gym day. Fixed: Promotions/Social mail never counts, report text must read like a check-in history, no year rollback, and the Gmail query skips promotions.
+- Added two tests modeled on the real promos. 25/25.
+- Promoted to live at Chance's request (he expected to see the new tabs on the live link).
+- Note: connecting Gmail to Claude is not the same as Pixel Pilot's own Google sign-in; the page still needs its OAuth Client ID.

@@ -584,7 +584,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
-const BUILD='20261016-094117'; // stamped at publish; the page compares it with the live copy to update itself
+const BUILD='20261016-113558'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -1451,8 +1451,8 @@ function extractDates(text,emailT){
     for(const x of line.matchAll(/\b(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])\/(\d{4}|\d{2})\b/g))add(+x[3],+x[1]-1,+x[2],line);
     for(const x of line.matchAll(/\b(20\d\d)-(\d\d)-(\d\d)\b/g))add(+x[1],+x[2]-1,+x[3],line);
     for(const x of line.matchAll(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/gi)){
-      const m=MONTHS.indexOf(x[1].toLowerCase().slice(0,3)),d=+x[2];let y=x[3]?+x[3]:new Date(emailT).getFullYear();
-      if(!x[3]&&new Date(y,m,d)>eDay)y--;add(y,m,d,line)}
+      const m=MONTHS.indexOf(x[1].toLowerCase().slice(0,3)),d=+x[2],y=x[3]?+x[3]:new Date(emailT).getFullYear();
+      add(y,m,d,line)}   // no guessing last year for a yearless future date: promos love "Saturday, October 18th"
     for(const x of line.matchAll(/\b(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{4})\b/gi))add(+x[3],MONTHS.indexOf(x[2].toLowerCase().slice(0,3)),+x[1],line);
   });
   return[...out].sort();
@@ -1472,8 +1472,10 @@ async function pdfText(bytes){
 }
 async function gymDatesFromMsg(id){
   const m=await gApi(`messages/${id}?format=full`),hd={};((m.payload&&m.payload.headers)||[]).forEach(x=>{hd[x.name.toLowerCase()]=x.value});
-  const t=+m.internalDate||Date.now(),subj=hd.subject||'';
+  const t=+m.internalDate||Date.now(),subj=hd.subject||'',L=m.labelIds||[];
   if(GYM_SUBJECT.test(subj))return[dayKey(new Date(t))];
+  const reportSubj=/check[\s-]?in (history|report)|visit history|club visits/i.test(subj);
+  if(!reportSubj&&(L.includes('CATEGORY_PROMOTIONS')||L.includes('CATEGORY_SOCIAL')))return[];   // gym marketing never counts
   let text=subj+'\n';
   const walk=async p=>{if(!p)return;const mt=(p.mimeType||'').toLowerCase(),fn=(p.filename||'').toLowerCase();
     let data=p.body&&p.body.data;
@@ -1485,14 +1487,14 @@ async function gymDatesFromMsg(id){
       else if(mt.startsWith('text/')||/\.(csv|txt)$/.test(fn))text+=new TextDecoder().decode(bytes)+'\n'}
     for(const c of p.parts||[])await walk(c)};
   await walk(m.payload);
-  if(!/check[\s-]?in|visit/i.test(text))return[];   // marketing mail from the gym doesn't count
+  if(!reportSubj&&!/check[\s-]?in history|visit history|checked in|check[\s-]?in report/i.test(text))return[];   // must read like a check-in report
   return extractDates(text,t);
 }
 async function loadGym(){
   if(!G.on||!G.tok||G.needTap||GY.busy||Date.now()>G.tok.exp-60e3)return;
   GY.busy=true;
   try{
-    const q='(from:24hourfitness.com OR from:24go.co OR from:24hourfit.com OR subject:"pixel pilot gym") newer_than:400d';
+    const q='(subject:"pixel pilot gym" OR subject:"check-in history" OR subject:"visit history" OR ((from:24hourfitness.com OR from:24go.co) -category:promotions)) newer_than:400d';
     const L=await gApi('messages?maxResults=80&q='+encodeURIComponent(q));
     for(const m of L.messages||[]){if(GY.email[m.id])continue;try{GY.email[m.id]=await gymDatesFromMsg(m.id)}catch(e){}}
     store.set('pp.gymEmail',GY.email);GY.at=Date.now();GY.err='';

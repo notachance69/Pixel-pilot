@@ -105,7 +105,7 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 
 /* buddy */
 .buddy{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:0;min-width:0}
-.bubble{position:relative;box-sizing:border-box;width:100%;background:var(--paper);color:var(--ink);font-family:var(--f-talk);font-weight:600;
+.bubble{position:relative;flex:none;box-sizing:border-box;width:100%;background:var(--paper);color:var(--ink);font-family:var(--f-talk);font-weight:600;
   font-size:clamp(12px,3.6vh,16px);line-height:1.3;padding:8px 12px;min-height:calc(2.6em + 16px);margin:var(--px);
   box-shadow:0 calc(-1*var(--px)) 0 0 var(--ink),0 var(--px) 0 0 var(--ink),calc(-1*var(--px)) 0 0 0 var(--ink),var(--px) 0 0 0 var(--ink),0 0 0 6px var(--pink)}
 .bubble::after{content:"";position:absolute;left:calc(50% - 4px);bottom:-14px;width:8px;height:8px;background:var(--paper);box-shadow:4px 4px 0 0 var(--paper)}
@@ -178,6 +178,57 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .issStats{flex:1;min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px;align-content:center}
 .issStats .big{font-size:clamp(17px,4.4vh,26px)}
 .pass{font-family:var(--f-label);font-size:10px;letter-spacing:.06em;color:var(--sun);line-height:1.4}
+.deck{transition:height .3s steps(6)}
+.deck.tall{height:clamp(150px,40vh,340px)}
+/* inbox */
+.inbox{display:grid;grid-template-columns:minmax(150px,210px) minmax(0,1fr);gap:14px;width:100%;height:100%;min-height:0}
+.inSum{display:flex;flex-direction:column;gap:6px;justify-content:center;min-width:0}
+.inSum .big{font-size:clamp(26px,6vh,42px)}
+.filters{display:flex;gap:4px;flex-wrap:wrap}
+.fchip{font-family:var(--f-label);font-size:9px;letter-spacing:.06em;padding:5px 8px;border:0;background:var(--panel);color:var(--muted);box-shadow:0 0 0 1px var(--c-3);cursor:pointer}
+.fchip[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
+.mlist{list-style:none;margin:0;padding:0;overflow-y:auto;min-height:0;height:100%;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
+.mrow{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:2px 10px;align-items:baseline;padding:6px 8px;cursor:pointer;border-left:3px solid transparent}
+.mrow:hover,.mrow.open{background:rgba(68,241,255,.08)}
+.mrow.imp{border-left-color:var(--pink)}
+.mdot{width:6px;height:6px;background:var(--cyan);align-self:center}
+.mdot.read{background:transparent;box-shadow:inset 0 0 0 1px var(--c-3)}
+.mfrom{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mtime{font-family:var(--f-label);font-size:9px;color:var(--muted);white-space:nowrap}
+.msub{grid-column:2/4;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mtags{display:inline-flex;gap:4px;margin-left:6px;vertical-align:1px}
+.mtag{font-family:var(--f-label);font-size:8px;letter-spacing:.06em;padding:1px 5px;background:var(--pink);color:var(--ink);font-weight:400}
+.mtag[data-k="MONEY"]{background:var(--lime)}.mtag[data-k="DEADLINE"]{background:var(--sun)}.mtag[data-k="TRAVEL"]{background:var(--cyan)}
+.mtag[data-k="VIP"]{background:var(--chrome-btn)}.mtag[data-k="DELIVERY"]{background:#c7a6ff}.mtag[data-k="SECURITY"]{background:var(--c-2)}
+.mmore{grid-column:2/4;font-size:13px;line-height:1.45;color:var(--text);white-space:normal;padding-top:4px;display:flex;flex-direction:column;gap:6px}
+.mmore a{font-family:var(--f-label);font-size:10px;letter-spacing:.06em;color:var(--cyan)}
+/* brief */
+.brief{display:grid;grid-template-columns:minmax(0,2fr) repeat(4,minmax(0,1fr));gap:10px;width:100%;height:100%;min-height:0}
+.bHello{display:flex;flex-direction:column;gap:5px;justify-content:center;min-width:0;min-height:0}
+.bHello h3{margin:0;font-family:var(--f-num);font-weight:400;font-size:clamp(20px,3.8vh,30px);text-wrap:balance;line-height:1;letter-spacing:.03em;background:var(--chrome);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tips{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.3;overflow:hidden}
+.tips li::before{content:"▸ ";color:var(--pink)}
+.bcard{background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--edge);padding:8px 10px;display:flex;flex-direction:column;gap:4px;min-width:0;min-height:0;overflow:hidden}
+.bcard .big{font-size:clamp(20px,4.6vh,30px);white-space:normal}
+.bcard p{margin:0;font-size:12px;line-height:1.35;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+/* gym */
+.gym{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr) minmax(130px,190px);gap:14px;width:100%;height:100%;align-items:center;min-height:0}
+.gStats{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.gStats .big{font-size:clamp(22px,5vh,36px)}
+.gMapBox{display:flex;flex-direction:column;gap:4px;min-width:0;min-height:0;height:100%;justify-content:center}
+#gyMap{width:100%;height:auto;max-height:calc(100% - 18px);aspect-ratio:107/41;object-fit:contain;cursor:pointer}
+.legend{display:flex;gap:12px;font-family:var(--f-label);font-size:8px;letter-spacing:.06em;color:var(--muted)}
+.legend i{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:-1px}
+.gAct{display:flex;flex-direction:column;gap:6px}
+.gAct .chip{white-space:normal}
+@media (max-width:760px){.gym{grid-template-columns:1fr}}
+/* settings sheet */
+.sheetBox select{font:600 14px var(--f-talk);color:var(--ink);background:var(--paper);border:0;padding:6px 8px;margin:var(--px)}
+.setSec{display:flex;flex-direction:column;gap:6px;border-top:2px dashed var(--edge);padding-top:8px}
+.fl{font-size:12px;color:var(--muted)}
+.sheetBox textarea{font:600 14px var(--f-talk);color:var(--ink);background:var(--paper);border:0;padding:8px 10px;margin:var(--px);box-shadow:0 0 0 var(--px) var(--ink);resize:vertical}
+.sheetBox .msg{max-width:none}
+@media (max-width:760px){.brief{grid-template-columns:1fr 1fr}.bHello{grid-column:1/-1}.inbox{grid-template-columns:1fr}.inSum{flex-direction:row;flex-wrap:wrap;align-items:center}}
 /* header now-playing chip */
 .np{max-width:32ch}
 .np b{color:var(--pink)}
@@ -287,11 +338,14 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <button class="tab" role="tab" id="tab-fc" data-tab="fc" aria-selected="true" aria-controls="pane-fc" type="button"><span class="tic" aria-hidden="true">✸</span>FORECAST</button>
       <button class="tab" role="tab" id="tab-music" data-tab="music" aria-selected="false" aria-controls="pane-music" type="button"><span class="tic" aria-hidden="true">♪</span>MUSIC<span class="badge" id="badge-music" hidden></span></button>
       <button class="tab" role="tab" id="tab-iss" data-tab="iss" aria-selected="false" aria-controls="pane-iss" type="button"><span class="tic" aria-hidden="true">✦</span>ISS<span class="badge" id="badge-iss" hidden></span></button>
+      <button class="tab" role="tab" id="tab-inbox" data-tab="inbox" aria-selected="false" aria-controls="pane-inbox" type="button"><span class="tic" aria-hidden="true">@</span>INBOX<span class="badge" id="badge-inbox" hidden></span></button>
+      <button class="tab" role="tab" id="tab-gym" data-tab="gym" aria-selected="false" aria-controls="pane-gym" type="button"><span class="tic" aria-hidden="true">▲</span>GYM<span class="badge" id="badge-gym" hidden></span></button>
+      <button class="tab" role="tab" id="tab-brief" data-tab="brief" aria-selected="false" aria-controls="pane-brief" type="button"><span class="tic" aria-hidden="true">◆</span>BRIEF<span class="badge" id="badge-brief" hidden></span></button>
     </div>
     <div class="status">
       <button class="tag np" id="npChip" type="button" hidden><b>♪</b><span id="npTxt"></span></button>
       <button class="tag" id="placeBtn" type="button"><b>AT</b><span id="place">SET LOCATION</span></button>
-      <button class="tag" id="soundBtn" type="button" aria-pressed="false">SOUND OFF</button>
+      <button class="tag" id="setBtn" type="button" aria-haspopup="dialog">≡ SETTINGS</button>
       <span class="tag"><span class="dot" id="netDot"></span><span id="netTxt">ONLINE</span></span>
       <span class="tag" id="clock">--:--</span>
     </div>
@@ -387,6 +441,58 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
         </form>
       </div>
     </div>
+    <div class="pane" id="pane-inbox" role="tabpanel" aria-labelledby="tab-inbox" hidden>
+      <div class="inbox" id="inboxLive" hidden>
+        <div class="inSum">
+          <span class="lbl" id="inWho">GMAIL</span>
+          <div class="mini"><span class="lbl">Important</span><span class="big" id="inImp">--</span></div>
+          <div class="mini"><span class="lbl">Unread · 3 days</span><span class="big" id="inUnread">--</span></div>
+          <div class="filters">
+            <button class="fchip" type="button" data-f="imp" aria-pressed="true">IMPORTANT</button>
+            <button class="fchip" type="button" data-f="unread" aria-pressed="false">UNREAD</button>
+            <button class="fchip" type="button" data-f="all" aria-pressed="false">ALL</button>
+          </div>
+          <span class="note" id="inNote"></span>
+        </div>
+        <ul class="mlist" id="mlist" aria-label="Emails"></ul>
+      </div>
+      <div class="mConnect" id="inboxConnect">
+        <p class="msg" id="inMsg">Connect Gmail and Pip will flag the emails that matter: recruiters, bills, deadlines and anyone on your VIP list. Emails stay on this device.</p>
+        <div class="row"><button class="chip hot" id="gOpen" type="button">CONNECT GMAIL</button></div>
+      </div>
+    </div>
+    <div class="pane" id="pane-gym" role="tabpanel" aria-labelledby="tab-gym" hidden>
+      <div class="gym">
+        <div class="gStats">
+          <div class="mini tap" data-say="gymWeek"><span class="lbl">This week</span><span class="big" id="gyWeek">0/4</span></div>
+          <div class="mini tap" data-say="gymStreak"><span class="lbl">Week streak</span><span class="big" id="gyStreak">0</span></div>
+          <div class="mini tap" data-say="gymMonth"><span class="lbl">This month</span><span class="big" id="gyMonth">0</span></div>
+          <div class="mini tap" data-say="gymLast"><span class="lbl">Last visit</span><span class="big sm" id="gyLast">--</span></div>
+        </div>
+        <div class="gMapBox">
+          <canvas class="px" id="gyMap" width="107" height="41" role="img" aria-label="Gym days over the last 18 weeks"></canvas>
+          <div class="legend"><span><i style="background:#44f1ff"></i>FROM 24GO / EMAIL</span><span><i style="background:#ff4fb8"></i>TAPPED</span><span id="gySpan">LAST 18 WEEKS · MON TO SUN</span></div>
+        </div>
+        <div class="gAct">
+          <button class="chip hot" id="gyBtn" type="button">I WENT TODAY</button>
+          <span class="note" id="gyNote">TAP A DAY ON THE MAP TO PICK IT</span>
+        </div>
+      </div>
+    </div>
+    <div class="pane" id="pane-brief" role="tabpanel" aria-labelledby="tab-brief" hidden>
+      <div class="brief">
+        <div class="bHello">
+          <h3 id="bHi">Hi, Chance</h3>
+          <span class="lbl" id="bDate">--</span>
+          <ul class="tips" id="bTips"></ul>
+          <div class="row"><button class="chip hot" id="bRead" type="button">READ IT TO ME</button></div>
+        </div>
+        <div class="bcard tap" data-go="fc" role="button" tabindex="0"><span class="lbl">Weather</span><span class="big" id="bWx">--</span><p id="bWxT">Set a location.</p></div>
+        <div class="bcard tap" data-go="inbox" role="button" tabindex="0"><span class="lbl">Inbox</span><span class="big" id="bIn">--</span><p id="bInT">Connect Gmail.</p></div>
+        <div class="bcard tap" data-go="iss" role="button" tabindex="0"><span class="lbl">Sky</span><span class="big" id="bSky">--</span><p id="bSkyT">--</p></div>
+        <div class="bcard tap" data-go="music" role="button" tabindex="0"><span class="lbl">Music</span><span class="big" id="bMu">--</span><p id="bMuT">Connect Spotify.</p></div>
+      </div>
+    </div>
     <div class="pane" id="pane-iss" role="tabpanel" aria-labelledby="tab-iss" hidden>
       <div class="iss">
         <canvas class="px tap" id="map" width="128" height="64" data-say="map" aria-label="World map with the space station's position"></canvas>
@@ -417,6 +523,49 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
   </div>
 </div>
 
+<div class="sheet" id="settings" hidden>
+  <div class="sheetBox frame" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle">Settings</h2>
+    <section class="setSec">
+      <span class="lbl">Sound</span>
+      <div class="row"><button class="chip" id="soundBtn" type="button" aria-pressed="false">SOUND OFF</button></div>
+    </section>
+    <section class="setSec">
+      <span class="lbl">Gmail</span>
+      <p class="msg" id="gStatus">Not connected.</p>
+      <form class="row" id="gForm">
+        <input id="gId" type="text" placeholder="Google OAuth Client ID" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Google OAuth Client ID">
+        <button class="chip hot" type="submit" id="gGo">CONNECT</button>
+      </form>
+      <div class="row"><button class="linkbtn" id="gOut" type="button" hidden>DISCONNECT GMAIL</button></div>
+    </section>
+    <section class="setSec">
+      <span class="lbl">Inbox rules</span>
+      <label class="fl" for="vip">VIP senders: names, emails or domains, separated by commas</label>
+      <textarea id="vip" rows="2" placeholder="mom, @medtronic.com, recruiter@company.com"></textarea>
+      <label class="fl" for="kw">Extra important words</label>
+      <textarea id="kw" rows="2" placeholder="escrow, inspection, ADU permit"></textarea>
+      <div class="row"><button class="chip" id="rulesSave" type="button">SAVE RULES</button></div>
+    </section>
+    <section class="setSec">
+      <span class="lbl">Gym</span>
+      <label class="fl" for="gyGoal">Weekly goal</label>
+      <select id="gyGoal"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option></select>
+      <p class="msg" id="gyStatus">Pip finds your 24GO check-in reports and Shortcut check-in emails in Gmail.</p>
+    </section>
+    <section class="setSec">
+      <span class="lbl">Spotify</span>
+      <p class="msg" id="sStatus">Not connected.</p>
+    </section>
+    <section class="setSec">
+      <span class="lbl">App</span>
+      <p class="msg">Build <span id="ver">--</span></p>
+      <div class="row"><button class="chip" id="updBtn" type="button">CHECK FOR UPDATES</button></div>
+    </section>
+    <button class="chip" id="setClose" type="button">CLOSE</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
 <script>
 (()=>{
@@ -435,7 +584,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
-const BUILD='20261015-154446'; // stamped at publish; the page compares it with the live copy to update itself
+const BUILD='20261016-113558'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -596,7 +745,7 @@ async function loadWeather(){
   }
   S.loading=false;$('wxPanel').classList.remove('scanning');
   const first=S.wx&&!S.revealed;
-  renderWx();renderHours(first);drawArc();
+  renderWx();renderHours(first);drawArc();renderBrief();
   if(first){S.revealed=true;reveal($('wxLive'),0);reveal($('wxTrio'),140);reveal($('wxToday'),280);reveal($('wxNote'),420);
     sfx('data');faceBurst('star',10);kick(1.1)}
 }
@@ -714,11 +863,15 @@ function sweepArc(){ // replay the sun's path from the horizon to now
 }
 
 /* ---------- bottom deck tabs ---------- */
-const TABS=['fc','music','iss'];
+const TABS=['fc','music','iss','inbox','gym','brief'];
 let tab=TABS.includes(store.get('pp.tab'))?store.get('pp.tab'):'fc';
 function setTab(t,anim=true){
   if(!TABS.includes(t))return;const changed=t!==tab;tab=t;store.set('pp.tab',t);
   TABS.forEach(k=>{$('tab-'+k).setAttribute('aria-selected',String(k===t));$('pane-'+k).hidden=k!==t});
+  $('deck').classList.toggle('tall',t==='inbox'||t==='brief'||t==='gym');
+  if(t==='inbox')renderInbox();
+  if(t==='gym'){renderGym();if(Date.now()-GY.at>5*60e3)loadGym()}
+  if(t==='brief')renderBrief();
   const badge=$('badge-'+t);if(badge)badge.hidden=true;
   if(anim){restart($('pane-'+t),'reveal');sfx('tap');
     const r=$('deck').getBoundingClientRect();if(r.bottom>innerHeight||r.top<0)$('deck').scrollIntoView({behavior:reduce?'auto':'smooth',block:'end'})}
@@ -1064,6 +1217,359 @@ function drawMap(t){
   }
 }
 
+/* ---------- Gmail: what matters in your inbox ---------- */
+// Browser-only Google sign-in (OAuth token flow). Emails are read with gmail.readonly and kept in memory on this device only.
+const GOOGLE_CLIENT_ID='';   // public OAuth client ID (no secret); can also be pasted in Settings
+const G_SCOPE='https://www.googleapis.com/auth/gmail.readonly';
+const G={id:store.get('pp.gId')||GOOGLE_CLIENT_ID,tok:store.get('pp.gTok'),email:store.get('pp.gEmail'),on:!!store.get('pp.gOn'),needTap:!!store.get('pp.gNeedTap'),
+  list:null,at:0,err:'',timer:0,busy:false,seen:new Set(store.get('pp.gSeen')||[]),filter:store.get('pp.gFilter')||'imp',open:null,firstLoad:true};
+const JOB_DOMAINS=['greenhouse.io','lever.co','myworkday','workday.com','icims.com','smartrecruiters','jobvite','ashbyhq','linkedin.com','indeed.com',
+  'medtronic','abbott','bsci.com','bostonscientific','stryker','edwards.com','jnj.com','baxter','bd.com','zimmerbiomet','intusurg','intuitive.com','dexcom','insulet','masimo','resmed','accoes.com'];
+const RULES=[
+  {k:'JOBS',w:40,re:/\b(interview|recruit(er|ing)?|hiring|your application|job offer|offer letter|candidate|phone screen|onsite|design assurance|quality engineer)\b/i},
+  {k:'MONEY',w:35,re:/\b(bill|payment due|amount due|statement is ready|invoice|autopay|overdraft|refund|past due)\b/i},
+  {k:'DEADLINE',w:30,re:/\b(deadline|due (today|tomorrow|soon)|expir(es|ing|ation)|rsvp|action required|final notice|respond by)\b/i},
+  {k:'TRAVEL',w:15,re:/\b(flight|boarding pass|itinerary|reservation|check-in)\b/i},
+  {k:'DELIVERY',w:8,re:/\b(shipped|delivered|out for delivery|tracking number|your package)\b/i},
+  {k:'SECURITY',w:5,re:/\b(verification code|security alert|new sign-in|password reset|one-time (code|passcode))\b/i}
+];
+const splitList=s=>(s||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);
+const userRules=()=>({vip:splitList(store.get('pp.vip')),kw:splitList(store.get('pp.kw'))});
+function decodeEnt(s){const t=document.createElement('textarea');t.innerHTML=s||'';return t.value}
+function parseMsg(m){
+  const h={};((m.payload&&m.payload.headers)||[]).forEach(x=>{h[x.name.toLowerCase()]=x.value});
+  const from=h.from||'',mm=from.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>/);
+  const addr=((mm?mm[2]:from)||'').trim().toLowerCase(),name=((mm?mm[1]:'').trim()||addr.split('@')[0]||'Someone');
+  const L=m.labelIds||[];
+  return{id:m.id,thread:m.threadId||m.id,name,addr,subject:decodeEnt(h.subject||'(no subject)'),snippet:decodeEnt(m.snippet||''),t:+m.internalDate||Date.now(),
+    unread:L.includes('UNREAD'),important:L.includes('IMPORTANT'),starred:L.includes('STARRED'),primary:L.includes('CATEGORY_PERSONAL'),
+    promo:L.includes('CATEGORY_PROMOTIONS'),social:L.includes('CATEGORY_SOCIAL'),list:!!h['list-unsubscribe']};
+}
+function scoreMsg(e,ur){
+  let s=0;const tags=[],text=e.subject+' '+e.snippet,low=text.toLowerCase();
+  if(e.important)s+=30;if(e.primary)s+=15;if(e.starred)s+=25;if(e.unread)s+=10;
+  if(e.promo)s-=45;if(e.social)s-=20;if(e.list)s-=25;
+  if(ur.vip.some(v=>e.addr.includes(v)||e.name.toLowerCase().includes(v))){s+=55;tags.push('VIP')}
+  const jobDom=JOB_DOMAINS.some(d=>e.addr.includes(d));
+  RULES.forEach(r=>{if(r.re.test(text)||(r.k==='JOBS'&&jobDom)){s+=r.w;tags.push(r.k)}});
+  if(ur.kw.some(k=>low.includes(k))){s+=35;tags.push('KEYWORD')}
+  if(tags.includes('SECURITY')&&Date.now()-e.t>3600e3)s-=20;
+  e.score=s;e.tags=tags.slice(0,3);e.imp=s>=45;return e;
+}
+const byRank=(a,b)=>(b.imp-a.imp)||(b.score-a.score)||(b.t-a.t);
+const gSay=t=>{$('inMsg').textContent=t;$('gStatus').textContent=t};
+function gLogin(silent){
+  if(SANDBOX){gSay('Gmail sign-in only works on the live Safari link.');return}
+  const id=(($('gId').value||'').trim()||G.id||'').trim();
+  if(!/\.apps\.googleusercontent\.com$/.test(id)){openSettings();gSay('Paste your Google OAuth Client ID first. It ends in .apps.googleusercontent.com.');restart($('gId'),'glitch');return}
+  G.id=id;store.set('pp.gId',id);
+  const st=rnd(16);store.set('pp.gState',st);store.set('pp.gSilent',!!silent);
+  const q=new URLSearchParams({client_id:id,redirect_uri:REDIRECT,response_type:'token',scope:G_SCOPE,include_granted_scopes:'true',state:st});
+  if(silent)q.set('prompt','none');
+  if(G.email)q.set('login_hint',G.email);
+  if(!silent)sfx('open');gSay(silent?'Reconnecting to Gmail...':'Opening Google sign-in...');
+  setTimeout(()=>{location.href='https://accounts.google.com/o/oauth2/v2/auth?'+q},silent?50:250);
+}
+function gCallback(){
+  if(!location.hash)return;
+  const h=new URLSearchParams(location.hash.slice(1));if(!h.has('access_token')&&!h.has('error'))return;
+  history.replaceState(null,'',location.pathname+location.search);
+  const silent=!!store.get('pp.gSilent');store.set('pp.gSilent',false);
+  if(h.get('state')!==store.get('pp.gState')){gSay('That Google sign-in started in a different window. Tap Connect again.');return}
+  if(h.get('error')){
+    if(silent){G.needTap=true;store.set('pp.gNeedTap',true);gSay('Gmail needs one tap on Reconnect to sign in again.')}
+    else gSay(h.get('error')==='access_denied'?'Gmail connection was cancelled.':'Google said: '+h.get('error'));
+    return;
+  }
+  if(h.get('scope')&&!h.get('scope').includes('gmail.readonly')){gSay("Google didn't grant Gmail access. Tap Connect and tick the Gmail box.");return}
+  G.tok={access:h.get('access_token'),exp:Date.now()+(+h.get('expires_in')||3600)*1000};store.set('pp.gTok',G.tok);
+  G.on=true;G.needTap=false;store.set('pp.gOn',true);store.set('pp.gNeedTap',false);
+  if(!silent)setTab('inbox',false);
+}
+function gAuto(){ // token expired: bounce through Google silently, at most every 10 minutes
+  if(!G.on||SANDBOX)return;
+  if(G.needTap||Date.now()-(store.get('pp.gAutoAt')||0)<10*60e3){G.needTap=true;renderInbox();return}
+  store.set('pp.gAutoAt',Date.now());gLogin(true);
+}
+function gLogout(){G.on=false;G.tok=null;G.list=null;G.needTap=false;['pp.gOn','pp.gTok','pp.gNeedTap'].forEach(k=>store.set(k,null));clearTimeout(G.timer);renderInbox();renderBrief();sfx('close')}
+async function gApi(path){
+  const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/'+path,{headers:{Authorization:'Bearer '+G.tok.access}});
+  if(!r.ok){const e=new Error('HTTP '+r.status);e.status=r.status;throw e}
+  return r.json();
+}
+async function loadMail(){
+  clearTimeout(G.timer);
+  if(!G.on||G.needTap)return;
+  if(!G.tok||Date.now()>G.tok.exp-60e3){gAuto();return}
+  if(G.busy||document.hidden){G.timer=setTimeout(loadMail,30e3);return}
+  G.busy=true;let wait=120e3;
+  try{
+    if(!G.email){const p=await gApi('profile');G.email=p.emailAddress;store.set('pp.gEmail',G.email)}
+    const L=await gApi('messages?maxResults=30&q='+encodeURIComponent('in:inbox newer_than:3d'));
+    const hdr='&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=List-Unsubscribe';
+    const got=await Promise.all((L.messages||[]).map(m=>gApi(`messages/${m.id}?format=metadata${hdr}`).catch(()=>null)));
+    const ur=userRules();
+    G.list=got.filter(Boolean).map(parseMsg).filter(e=>!GYM_SUBJECT.test(e.subject)).map(e=>scoreMsg(e,ur)).sort(byRank);
+    G.at=Date.now();G.err='';
+    const fresh=G.list.filter(e=>e.imp&&e.unread&&!G.seen.has(e.id));
+    fresh.forEach(e=>G.seen.add(e.id));store.set('pp.gSeen',[...G.seen].slice(-400));
+    if(fresh.length&&!G.firstLoad)newMail(fresh);
+    G.firstLoad=false;
+  }catch(e){
+    if(e.status===401){G.tok=null;store.set('pp.gTok',null);G.busy=false;gAuto();return}
+    G.err=e.status===403?'GMAIL REFUSED ACCESS. CHECK THE GMAIL API IS ON AND YOU ARE A TEST USER.':navigator.onLine?"COULDN'T REACH GMAIL. RETRYING.":'OFFLINE.';
+    wait=60e3;
+  }
+  G.busy=false;renderInbox();renderBrief();
+  if(G.on)G.timer=setTimeout(loadMail,wait);
+  if(G.on&&!G.err&&Date.now()-GY.at>30*60e3)loadGym();
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.on&&Date.now()-G.at>60e3)loadMail()});
+function newMail(list){
+  const e=list[0];
+  S.mailLine=list.length>1?`${list.length} new important emails. Top one: "${e.subject}" from ${e.name}.`:`New email from ${e.name}: "${e.subject}".`;
+  S.mailUntil=performance.now()+4500;flagTab('inbox');flagTab('brief');faceBurst('star',6);
+}
+const relTime=t=>{const m=Math.round((Date.now()-t)/60e3);if(m<1)return'NOW';if(m<60)return m+'M';const h=Math.round(m/60);return h<24?h+'H':Math.round(h/24)+'D'};
+const agoWords=t=>{const m=Math.round((Date.now()-t)/60e3);if(m<2)return'just now';if(m<60)return`${m} minutes ago`;const h=Math.round(m/60);return h<24?`${h} hour${h>1?'s':''} ago`:`${Math.round(h/24)} days ago`};
+function renderInbox(){
+  const live=G.on&&!G.needTap;$('inboxLive').hidden=!live;$('inboxConnect').hidden=live;
+  $('gOpen').textContent=G.on&&G.needTap?'RECONNECT GMAIL':'CONNECT GMAIL';
+  if(!live){if(G.on&&G.needTap)$('inMsg').textContent='Gmail sign-in expired. Tap Reconnect and it picks right back up.';return}
+  const all=G.list||[],imp=all.filter(e=>e.imp),unread=all.filter(e=>e.unread);
+  $('inWho').textContent=G.email?G.email.toUpperCase():'GMAIL';
+  if(G.list){tween($('inImp'),imp.length);tween($('inUnread'),unread.length)}
+  $('inNote').textContent=G.err||(G.at?`CHECKED ${fmtTime(new Date(G.at)).toUpperCase()} · TAP AN EMAIL`:'LOADING YOUR INBOX...');
+  document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===G.filter)));
+  const rows=G.filter==='imp'?imp:G.filter==='unread'?unread:all,ul=$('mlist');ul.innerHTML='';
+  if(!rows.length){const li=document.createElement('li');li.className='empty';
+    li.textContent=!G.list?'LOADING YOUR INBOX...':G.filter==='imp'?'NOTHING IMPORTANT IN THE LAST 3 DAYS. NICE.':G.filter==='unread'?'NO UNREAD EMAIL. INBOX ZERO.':'NO EMAIL IN THE LAST 3 DAYS.';ul.appendChild(li);return}
+  rows.forEach(e=>{
+    const li=document.createElement('li');li.className='mrow tap'+(e.imp?' imp':'')+(G.open===e.id?' open':'');
+    li.dataset.say='mail';li.dataset.id=e.id;li.tabIndex=0;li.setAttribute('role','button');
+    li.innerHTML='<span class="mdot"></span><span class="mfrom"></span><span class="mtime"></span><span class="msub"></span>';
+    li.querySelector('.mdot').classList.toggle('read',!e.unread);
+    const f=li.querySelector('.mfrom');f.textContent=e.name;
+    if(e.tags.length){const tg=document.createElement('span');tg.className='mtags';e.tags.forEach(k=>{const s=document.createElement('span');s.className='mtag';s.dataset.k=k;s.textContent=k;tg.appendChild(s)});f.appendChild(tg)}
+    li.querySelector('.mtime').textContent=relTime(e.t);li.querySelector('.msub').textContent=e.subject;
+    if(G.open===e.id){const d=document.createElement('div');d.className='mmore';const p=document.createElement('span');p.textContent=e.snippet||'(no preview)';
+      const a=document.createElement('a');a.href=`https://mail.google.com/mail/u/0/#all/${e.thread}`;a.target='_blank';a.rel='noopener';a.textContent='OPEN IN GMAIL ›';d.append(p,a);li.appendChild(d)}
+    ul.appendChild(li);
+  });
+}
+document.querySelectorAll('.fchip').forEach(b=>b.addEventListener('click',()=>{G.filter=b.dataset.f;store.set('pp.gFilter',G.filter);sfx('tap');G.open=null;renderInbox();restart($('mlist'),'reveal')}));
+$('gOpen').onclick=()=>gLogin(false);
+
+/* ---------- Brief: Pip's overview of your day ---------- */
+function greet(){const h=new Date().getHours();return h<5?'Up late':h<12?'Good morning':h<17?'Good afternoon':h<22?'Good evening':'Night owl mode'}
+function briefTips(){
+  // things you can act on first (email), then things to plan around (weather, sky)
+  const t=[],c=S.wx&&S.wx.current,d=S.wx&&S.wx.daily,si=sunInfo();
+  const iu=(G.list||[]).filter(e=>e.imp&&e.unread);
+  const job=iu.find(e=>e.tags.includes('JOBS'));if(job)t.push(`Job email from ${job.name}: "${job.subject}". Worth a reply.`);
+  const vip=iu.find(e=>e.tags.includes('VIP')&&e!==job);if(vip)t.push(`${vip.name} wrote: "${vip.subject}".`);
+  const money=iu.find(e=>e.tags.includes('MONEY'));if(money)t.push(`Money: "${money.subject}" from ${money.name}.`);
+  const dl=iu.find(e=>e.tags.includes('DEADLINE')&&e!==money&&e!==job);if(dl)t.push(`Deadline: "${dl.subject}".`);
+  if(c){
+    const wet=nextHours().find(h=>h.p>=50);if(wet)t.push(`Rain likely around ${fmtHour(wet.t)}. Grab an umbrella.`);
+    const uv=d.uv_index_max[0]??0;if(uv>=6&&si&&si.day)t.push(`UV peaks at ${uv.toFixed(0)}. Sunscreen if you're outside.`);
+    if(c.temperature_2m>=90)t.push('Hot one today. Drink water.');else if(d.temperature_2m_min[0]<=48)t.push(`Low of ${n(d.temperature_2m_min[0])}° tonight. Bring a jacket.`);
+  }
+  const gt=gymTip();if(gt)t.push(gt);
+  const v=nextPasses().find(p=>p.visible&&p.start-Date.now()<24*3600e3);if(v)t.push(`ISS visible ${when(v.start).toLowerCase()}. Look ${dirW(v.azStart)}.`);
+  if(!t.length)t.push(S.wx||G.list?'Nothing urgent. Enjoy the day.':'Set your location and connect Gmail so I can plan your day.');
+  return t.slice(0,4);
+}
+function renderBrief(){
+  $('bHi').textContent=`${greet()}, Chance`;
+  $('bDate').textContent=new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
+  const tips=briefTips(),ul=$('bTips'),key=tips.join('|');
+  if(ul._k!==key){ul._k=key;ul.innerHTML='';tips.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});if(tab==='brief')restart(ul,'reveal')}
+  const c=S.wx&&S.wx.current,d=S.wx&&S.wx.daily;
+  $('bWx').textContent=c?`${n(c.temperature_2m)}°`:'--';
+  $('bWxT').textContent=c?`${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.`:SANDBOX?'Weather loads on the live link.':'Set a location.';
+  const imp=(G.list||[]).filter(e=>e.imp),iu=imp.filter(e=>e.unread);
+  $('bIn').textContent=G.on&&G.list?`${iu.length} new`:'--';
+  $('bInT').textContent=!G.on?'Connect Gmail to see what matters.':G.needTap?'Gmail needs a reconnect.':!G.list?'Checking your inbox...':iu.length?`Top: "${iu[0].subject}" from ${iu[0].name}.`:imp.length?'All important mail is read.':'Nothing important in 3 days.';
+  const si=sunInfo(),v=nextPasses().find(p=>p.visible),mo=moonInfo();
+  $('bSky').textContent=si?fmtTime(new Date(si.day?si.set:si.nextRise)):`${n(mo.illum*100)}%`;
+  $('bSkyT').textContent=(si?(si.day?'Sunset. ':'Sunrise. '):'Moon lit. ')+(v?`ISS visible ${when(v.start).toLowerCase()}.`:`${mo.name}, ${n(mo.illum*100)}% lit.`);
+  $('bMu').textContent=M.state&&M.state.playing?'Playing':M.tok?'Quiet':'--';
+  $('bMuT').textContent=M.state?`${M.state.title} · ${M.state.artist}`:M.tok?'Nothing playing right now.':'Connect Spotify in the Music tab.';
+}
+function speakLines(lines){ // Pip reads lines in the bubble, and out loud when the device allows it
+  let i=0;clearTimeout(S.readT);try{speechSynthesis.cancel()}catch(e){}
+  const next=()=>{if(i>=lines.length)return;const l=lines[i++];say(l);
+    try{const u=new SpeechSynthesisUtterance(l.replace(/°/g,' degrees'));u.rate=1.05;u.pitch=1.5;speechSynthesis.speak(u)}catch(e){}
+    S.readT=setTimeout(next,Math.max(2800,l.length*58))};
+  next();
+}
+$('bRead').onclick=()=>{
+  restart($('bRead'),'hit');kick(1);faceBurst('star',5);
+  const c=S.wx&&S.wx.current,lines=[`${greet()}, Chance. Here's your brief.`];
+  if(c)lines.push(`It's ${n(c.temperature_2m)}° and ${(WXNAME[c.weather_code]||'').toLowerCase()} in ${place()}.`);
+  const iu=(G.list||[]).filter(e=>e.imp&&e.unread);
+  if(G.on&&G.list)lines.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}.`:'No important emails waiting.');
+  lines.push(...briefTips());speakLines(lines);
+};
+document.addEventListener('click',e=>{const c=e.target.closest('[data-go]');if(c){sfx('tap');restart(c,'hit');setTab(c.dataset.go)}});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('[data-go]')){e.preventDefault();setTab(e.target.dataset.go)}});
+setInterval(()=>{if(tab==='brief')renderBrief()},30e3);
+
+/* ---------- Gym: the days you went ---------- */
+// Sources: 24GO "Check-In History" reports you email yourself, optional iPhone Shortcut emails titled
+// "Pixel Pilot gym check-in", and days you tap. Only dates are kept on the device, never email content.
+const GYM_SUBJECT=/pixel pilot gym/i;
+const GY={manual:new Set(store.get('pp.gymManual')||[]),off:new Set(store.get('pp.gymOff')||[]),email:store.get('pp.gymEmail')||{},
+  goal:+store.get('pp.gymGoal')||4,sel:null,at:0,busy:false,err:''};
+const pad2=x=>String(x).padStart(2,'0');
+const dayKey=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const parseKey=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const prettyDay=k=>parseKey(k).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+const weekStart=d=>{const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-(x.getDay()+6)%7);return dayKey(x)};
+function gymVisits(){const v=new Map();
+  Object.values(GY.email).forEach(arr=>(arr||[]).forEach(k=>v.set(k,'email')));
+  GY.manual.forEach(k=>{if(!v.has(k))v.set(k,'tap')});
+  GY.off.forEach(k=>v.delete(k));return v}
+function gymStats(){
+  const v=gymVisits(),keys=[...v.keys()].sort(),today=dayKey(new Date()),wk=weekStart(new Date());
+  const perWeek={};keys.forEach(k=>{const w=weekStart(parseKey(k));perWeek[w]=(perWeek[w]||0)+1});
+  const thisWeek=perWeek[wk]||0;
+  let streak=0;const d=parseKey(wk);if(thisWeek<GY.goal)d.setDate(d.getDate()-7);
+  while(streak<520&&(perWeek[dayKey(d)]||0)>=GY.goal){streak++;d.setDate(d.getDate()-7)}
+  const month=keys.filter(k=>k.slice(0,7)===today.slice(0,7)).length;
+  const last=keys[keys.length-1]||null,since=last?Math.round((parseKey(today)-parseKey(last))/864e5):null;
+  return{v,thisWeek,streak,month,last,since,today,total:keys.length};
+}
+// pull dates out of report text; the email's own day only counts on a line that talks about a check-in
+const MONTHS='jan feb mar apr may jun jul aug sep oct nov dec'.split(' ');
+function extractDates(text,emailT){
+  const out=new Set(),eDay=new Date(emailT);eDay.setHours(23,59,59,999);const oldest=emailT-420*864e5,eKey=dayKey(new Date(emailT));
+  const add=(y,m,d,line)=>{if(y<100)y+=2000;const dt=new Date(y,m,d);if(dt.getMonth()!==m||dt>eDay||dt<oldest)return;const k=dayKey(dt);
+    if(k===eKey&&!/check|visit|club/i.test(line))return;out.add(k)};
+  text.split(/\r?\n/).forEach(line=>{
+    for(const x of line.matchAll(/\b(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])\/(\d{4}|\d{2})\b/g))add(+x[3],+x[1]-1,+x[2],line);
+    for(const x of line.matchAll(/\b(20\d\d)-(\d\d)-(\d\d)\b/g))add(+x[1],+x[2]-1,+x[3],line);
+    for(const x of line.matchAll(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/gi)){
+      const m=MONTHS.indexOf(x[1].toLowerCase().slice(0,3)),d=+x[2],y=x[3]?+x[3]:new Date(emailT).getFullYear();
+      add(y,m,d,line)}   // no guessing last year for a yearless future date: promos love "Saturday, October 18th"
+    for(const x of line.matchAll(/\b(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{4})\b/gi))add(+x[3],MONTHS.indexOf(x[2].toLowerCase().slice(0,3)),+x[1],line);
+  });
+  return[...out].sort();
+}
+const b64u=s=>{const b=atob(s.replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u};
+const htmlText=h=>{const d=new DOMParser().parseFromString(h,'text/html');d.querySelectorAll('br,p,tr,div,li,h1,h2,h3,td').forEach(e=>e.append('\n'));return d.body?d.body.textContent:''};
+let pdfjsP=null;
+function pdfjs(){return pdfjsP||(pdfjsP=new Promise((res,rej)=>{const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res(window.pdfjsLib)};
+  s.onerror=()=>{pdfjsP=null;rej(new Error('pdf.js'))};document.head.appendChild(s)}))}
+async function pdfText(bytes){
+  const lib=await pdfjs(),doc=await lib.getDocument({data:bytes}).promise;let out='';
+  for(let i=1;i<=Math.min(doc.numPages,25);i++){const tc=await(await doc.getPage(i)).getTextContent();let lastY=null;
+    tc.items.forEach(it=>{const y=Math.round(it.transform[5]);if(lastY!==null&&Math.abs(y-lastY)>2)out+='\n';out+=it.str+' ';lastY=y});out+='\n'}
+  return out;
+}
+async function gymDatesFromMsg(id){
+  const m=await gApi(`messages/${id}?format=full`),hd={};((m.payload&&m.payload.headers)||[]).forEach(x=>{hd[x.name.toLowerCase()]=x.value});
+  const t=+m.internalDate||Date.now(),subj=hd.subject||'',L=m.labelIds||[];
+  if(GYM_SUBJECT.test(subj))return[dayKey(new Date(t))];
+  const reportSubj=/check[\s-]?in (history|report)|visit history|club visits/i.test(subj);
+  if(!reportSubj&&(L.includes('CATEGORY_PROMOTIONS')||L.includes('CATEGORY_SOCIAL')))return[];   // gym marketing never counts
+  let text=subj+'\n';
+  const walk=async p=>{if(!p)return;const mt=(p.mimeType||'').toLowerCase(),fn=(p.filename||'').toLowerCase();
+    let data=p.body&&p.body.data;
+    if(!data&&p.body&&p.body.attachmentId&&(mt.startsWith('text/')||mt==='application/pdf'||/\.(csv|txt|pdf)$/.test(fn))){
+      try{data=(await gApi(`messages/${id}/attachments/${p.body.attachmentId}`)).data}catch(e){}}
+    if(data){const bytes=b64u(data);
+      if(mt==='application/pdf'||fn.endsWith('.pdf')){try{text+=await pdfText(bytes)}catch(e){}}
+      else if(mt==='text/html')text+=htmlText(new TextDecoder().decode(bytes))+'\n';
+      else if(mt.startsWith('text/')||/\.(csv|txt)$/.test(fn))text+=new TextDecoder().decode(bytes)+'\n'}
+    for(const c of p.parts||[])await walk(c)};
+  await walk(m.payload);
+  if(!reportSubj&&!/check[\s-]?in history|visit history|checked in|check[\s-]?in report/i.test(text))return[];   // must read like a check-in report
+  return extractDates(text,t);
+}
+async function loadGym(){
+  if(!G.on||!G.tok||G.needTap||GY.busy||Date.now()>G.tok.exp-60e3)return;
+  GY.busy=true;
+  try{
+    const q='(subject:"pixel pilot gym" OR subject:"check-in history" OR subject:"visit history" OR ((from:24hourfitness.com OR from:24go.co) -category:promotions)) newer_than:400d';
+    const L=await gApi('messages?maxResults=80&q='+encodeURIComponent(q));
+    for(const m of L.messages||[]){if(GY.email[m.id])continue;try{GY.email[m.id]=await gymDatesFromMsg(m.id)}catch(e){}}
+    store.set('pp.gymEmail',GY.email);GY.at=Date.now();GY.err='';
+  }catch(e){GY.err="COULDN'T CHECK GMAIL FOR GYM DAYS"}
+  GY.busy=false;renderGym();renderBrief();
+}
+function gymToggle(k){
+  const v=gymVisits();
+  if(v.has(k)){GY.manual.delete(k);if(v.get(k)==='email')GY.off.add(k);sfx('close');say(`Unmarked ${prettyDay(k)}.`)}
+  else{GY.manual.add(k);GY.off.delete(k);
+    const st=gymStats();
+    if(k===st.today){S.gymLine=`Logged! ${st.thisWeek} of ${GY.goal} this week${st.streak?`, and a ${st.streak}-week streak`:''}. Gains.`;S.gymUntil=performance.now()+4000}
+    else{say(`Marked ${prettyDay(k)} as a gym day.`)}
+    sfx('data');faceBurst('star',8);kick(1.2)}
+  store.set('pp.gymManual',[...GY.manual]);store.set('pp.gymOff',[...GY.off]);
+  renderGym();renderBrief();
+}
+const GW=18,gyC=$('gyMap').getContext('2d');
+function gymGridStart(){const d=parseKey(weekStart(new Date()));d.setDate(d.getDate()-7*(GW-1));return d}
+function drawGym(){
+  const c=gyC,v=gymVisits(),today=dayKey(new Date()),start=gymGridStart();c.clearRect(0,0,107,41);
+  for(let w=0;w<GW;w++)for(let r=0;r<7;r++){const d=new Date(start);d.setDate(d.getDate()+w*7+r);const k=dayKey(d),x=w*6,y=r*6;
+    if(k>today){c.fillStyle='rgba(91,63,179,.25)';c.fillRect(x+2,y+2,1,1);continue}
+    const src=v.get(k);c.fillStyle=src==='email'?'#44f1ff':src==='tap'?'#ff4fb8':'#2a2458';c.fillRect(x,y,5,5);
+    if(src){c.fillStyle='rgba(255,255,255,.55)';c.fillRect(x,y,2,1)}
+    if(k===today||k===GY.sel){c.fillStyle=k===GY.sel?'#ffe34d':'#ffffff';c.fillRect(x,y,5,1);c.fillRect(x,y+4,5,1);c.fillRect(x,y,1,5);c.fillRect(x+4,y,1,5)}}
+}
+$('gyMap').addEventListener('click',e=>{
+  const r=$('gyMap').getBoundingClientRect(),w=Math.floor((e.clientX-r.left)/r.width*GW),row=Math.floor((e.clientY-r.top)/r.height*7);
+  if(w<0||w>=GW||row<0||row>6)return;const d=gymGridStart();d.setDate(d.getDate()+w*7+row);const k=dayKey(d);
+  if(k>dayKey(new Date()))return;GY.sel=k===dayKey(new Date())?null:k;sfx('tap');lookToward($('gyMap'));
+  const src=gymVisits().get(k);say(`${prettyDay(k)}: ${src==='email'?'you checked in (from 24GO).':src==='tap'?'you logged a gym day.':'no gym that day.'}`);renderGym();
+});
+$('gyBtn').onclick=()=>{restart($('gyBtn'),'hit');gymToggle(GY.sel||dayKey(new Date()))};
+function renderGym(){
+  const st=gymStats();
+  $('gyWeek').innerHTML=`${st.thisWeek}<small>/${GY.goal}</small>`;
+  tween($('gyStreak'),st.streak,{suffix:'<small>WK</small>'});tween($('gyMonth'),st.month);
+  $('gyLast').textContent=st.last?(st.since===0?'Today':st.since===1?'Yesterday':`${st.since} days ago`):'--';
+  const k=GY.sel||st.today,on=st.v.has(k);
+  $('gyBtn').textContent=GY.sel?(on?`UNMARK ${prettyDay(k).toUpperCase()}`:`MARK ${prettyDay(k).toUpperCase()}`):(on?'GYM DONE TODAY · UNDO':'I WENT TODAY');
+  $('gyNote').textContent=GY.busy?'CHECKING GMAIL FOR 24GO REPORTS...':GY.err||(G.on?`${st.total} GYM DAYS FOUND · TAP A DAY TO PICK IT`:'CONNECT GMAIL TO IMPORT 24GO HISTORY · TAP A DAY TO PICK IT');
+  drawGym();
+}
+function gymTip(){const st=gymStats();if(!st.total)return null;   // only nudge when it's actionable
+  if(st.since>=3)return`${st.since} days since the gym. ${st.thisWeek} of ${GY.goal} this week so far.`;
+  return null}
+
+/* ---------- settings sheet ---------- */
+const setEl=$('settings');
+function renderSettings(){
+  $('gStatus').textContent=G.on&&!G.needTap?`Connected${G.email?' as '+G.email:''}. Pip checks the last 3 days of your inbox every 2 minutes. Read-only.`:G.needTap?'Sign-in expired. Tap Connect.':'Not connected. Paste the Client ID from your Google Cloud project (steps in the README).';
+  if(!$('gId').value)$('gId').value=G.id||'';$('gOut').hidden=!G.on;$('gGo').textContent=G.on?'RECONNECT':'CONNECT';
+  $('sStatus').textContent=M.tok?`Connected${M.state&&M.state.device?' · playing on '+M.state.device:''}. Disconnect from the Music tab.`:'Not connected. Use the Music tab.';
+  $('vip').value=store.get('pp.vip')||'';$('kw').value=store.get('pp.kw')||'';
+  $('ver').textContent=BUILD.startsWith('__')?'dev':BUILD;
+  $('gyGoal').value=String(GY.goal);
+  const st=gymStats(),fromMail=[...st.v.values()].filter(s=>s==='email').length;
+  $('gyStatus').textContent=G.on?`${fromMail} gym day${fromMail===1?'':'s'} found in Gmail from 24GO reports and check-in emails, plus ${st.total-fromMail} you tapped.`:'Connect Gmail so Pip can import your 24GO check-in reports. Tapped days work without it.';
+}
+$('gyGoal').addEventListener('change',()=>{GY.goal=+$('gyGoal').value;store.set('pp.gymGoal',GY.goal);sfx('tap');renderGym();renderBrief();renderSettings()});
+function openSettings(){if(!setEl.hidden)return;setEl.classList.remove('out');setEl.hidden=false;sfx('open');renderSettings()}
+function closeSettings(){if(setEl.hidden)return;sfx('close');if(reduce){setEl.hidden=true;return}setEl.classList.add('out');setTimeout(()=>{setEl.hidden=true;setEl.classList.remove('out')},230)}
+$('setBtn').onclick=openSettings;$('setClose').onclick=closeSettings;
+setEl.addEventListener('click',e=>{if(e.target===setEl)closeSettings()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!setEl.hidden)closeSettings()});
+$('gForm').addEventListener('submit',e=>{e.preventDefault();gLogin(false)});
+$('gOut').onclick=()=>{gLogout();renderSettings()};
+$('rulesSave').onclick=()=>{
+  store.set('pp.vip',$('vip').value);store.set('pp.kw',$('kw').value);sfx('data');restart($('rulesSave'),'hit');
+  if(G.list){const ur=userRules();G.list.forEach(e=>scoreMsg(e,ur));G.list.sort(byRank);renderInbox();renderBrief()}
+  say("Rules saved. I'm re-sorting your inbox with them.");
+};
+$('updBtn').onclick=()=>{store.set('pp.updTried',null);checkUpdate(true)};
+
 /* ---------- device ---------- */
 $('scr').innerHTML=`${screen.width}×${screen.height} <small>@${devicePixelRatio}x</small>`;
 $('cores').textContent=navigator.hardwareConcurrency||'--';
@@ -1116,6 +1622,8 @@ function moodLine(m){
     case'sunny':return`${t}° and sunny in ${place()}. Shades on.`;
     case'cloudy':return`${t}° and ${cond} in ${place()}.`;
     case'dizzy':return"Whoa, whoa. Too many pokes. Everything's spinning...";
+    case'mail':return S.mailLine||"You've got mail!";
+    case'gym':return S.gymLine||'Gains!';
     case'music':return M.state?`Now playing: ${M.state.title} by ${M.state.artist}. Vibing.`:'Vibing.';
     case'iss':{const o=ISS.overhead;return o?`The ISS is right above you! Look ${dirW(o.az)}, about ${n(o.el)}° up. ${o.visible?'It should be a bright moving dot right now.':"It's too bright out to spot it, but it's up there."}`:'The ISS is overhead!'}
     case'poke':{const a=['Hehe, that tickles!','Boop!',"Hey! I'm working here.",`That's poke number ${S.pokes}.`,'Again! Again!'];return a[S.pokes%a.length]}
@@ -1155,6 +1663,14 @@ function about(key,el){
       if(!ps.length)return'No passes higher than 10° in the next day and a half.';
       const p=ps[0],v=ps.find(q=>q.visible);
       return`Next pass: ${when(p.start).toLowerCase()}, rising in the ${dirW(p.azStart)} and peaking ${n(p.max)}° up.${p.visible?" It'll be dark and the station will be lit, so look for a bright moving dot.":v?` Best viewing chance: ${when(v.start).toLowerCase()}.`:' None of the upcoming passes are in the dark, so it will be hard to see.'}`}
+    case'gymWeek':{const st=gymStats();const left=Math.max(0,GY.goal-st.thisWeek);return`${st.thisWeek} of ${GY.goal} gym days this week. ${left?`${left} to go.`:'Goal hit!'} Change the goal in Settings.`}
+    case'gymStreak':{const st=gymStats();return st.streak?`${st.streak} week${st.streak>1?'s':''} in a row hitting ${GY.goal} days. Keep it rolling.`:`No streak yet. Hit ${GY.goal} days in a week to start one.`}
+    case'gymMonth':{const st=gymStats();return`${st.month} gym day${st.month===1?'':'s'} so far this month, ${st.total} in total.`}
+    case'gymLast':{const st=gymStats();return st.last?`Last gym day: ${prettyDay(st.last)}.`:'No gym days yet. Tap I WENT TODAY, or connect Gmail to import your 24GO history.'}
+    case'mail':{const e=(G.list||[]).find(x=>x.id===el.dataset.id);if(!e)return'';
+      G.open=G.open===e.id?null:e.id;setTimeout(renderInbox,0);
+      const why=e.tags.length?` I flagged it: ${e.tags.join(', ').toLowerCase()}.`:e.important?' Gmail marked it important.':'';
+      return`${e.name}, ${agoWords(e.t)}: "${e.subject}".${why}`}
     case'hour':{const h=nextHours()[+el.dataset.i];if(!h)return NOWX;return`${+el.dataset.i===0?'This hour':'At '+fmtHour(h.t)}: ${n(h.temp)}°, ${(WXNAME[h.code]||'').toLowerCase()}, ${h.p}% chance of rain.`}
   }
   return'';
@@ -1169,7 +1685,9 @@ function facts(){
   }
   if(si)out.push(si.day?`Sunset at ${fmtTime(new Date(si.set))}. ${fmtDur(si.set-Date.now())} of daylight left.`:`Sunrise at ${fmtTime(new Date(si.nextRise))}, in ${fmtDur(si.nextRise-Date.now())}.`);
   out.push(about('moon'));
+  if(G.on&&G.list){const iu=G.list.filter(e=>e.imp&&e.unread);out.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email right now. Nice.')}
   if(M.state&&M.state.playing)out.push(about('track'));
+  {const st=gymStats();if(st.total)out.push(`Gym: ${st.thisWeek} of ${GY.goal} days this week${st.streak?`, ${st.streak}-week streak`:''}.`)}
   if(ISS.pos){out.push(about('issDist'));if(S.loc&&ISS.mode==='sgp4')out.push(about('issPass'))}
   if(S.fps)out.push(about('fps'));
   if(S.ping!=null)out.push(about('ping'));
@@ -1195,7 +1713,7 @@ function activate(el){
   if(key==='moon')restart($('moonCv'),'pop');
   const line=about(key,el);if(line)say(line);
 }
-document.addEventListener('click',e=>{const el=e.target.closest('[data-say]');if(el)activate(el)});
+document.addEventListener('click',e=>{if(e.target.closest('a'))return;const el=e.target.closest('[data-say]');if(el)activate(el)});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('[data-say]')){e.preventDefault();activate(e.target)}});
 document.addEventListener('pointerdown',e=>{
   S.taps++;S.ptr={x:e.clientX,y:e.clientY,t:performance.now()};ensureAudio();
@@ -1224,7 +1742,9 @@ const MOODS={
   poke:{label:'HEHE',s:'hype',b:'#ff8fd0',d:'#e0569f'},
   dizzy:{label:'DIZZY',s:'warn',b:'#c6ff7a',d:'#7ccf2a'},
   music:{label:'VIBING',s:'hype',b:'#ff8fd0',d:'#e0569f'},
-  iss:{label:'ISS OVERHEAD',s:'hype',b:'#dfe3f0',d:'#aeb2c6'}
+  iss:{label:'ISS OVERHEAD',s:'hype',b:'#dfe3f0',d:'#aeb2c6'},
+  mail:{label:'NEW MAIL',s:'hype',b:'#8ff3ff',d:'#3fb5d6'},
+  gym:{label:'GAINS',s:'hype',b:'#ff8fd0',d:'#e0569f'}
 };
 function weatherMood(){
   if(!navigator.onLine)return'offline';
@@ -1246,6 +1766,8 @@ function weatherMood(){
 function moodFor(now){
   if(now<S.dizzyUntil)return'dizzy';
   if(now<S.pokeUntil)return'poke';
+  if(now<(S.mailUntil||0))return'mail';
+  if(now<(S.gymUntil||0))return'gym';
   if(navigator.onLine&&ISS.overhead)return'iss';
   const w=weatherMood();
   if(M.state&&M.state.playing&&w!=='storm'&&w!=='offline'&&w!=='nodata')return'music';
@@ -1342,8 +1864,12 @@ const FACE={
   poke:{eye:'happy',mouth:'big',blush:1,per:110,squash:1,orb:160,fx:'sparkle'},
   dizzy:{eye:'spiral',mouth:'wave',per:200,orb:110,fx:'dizzy',wobble:1},
   music:{eye:'happy',mouth:'grin',blush:1,per:250,squash:1,orb:300,fx:'music'},
-  iss:{eye:'star',mouth:'o',blush:1,per:220,orb:150,fx:'sparkle'}
+  iss:{eye:'star',mouth:'o',blush:1,per:220,orb:150,fx:'sparkle'},
+  mail:{eye:'happy',mouth:'o',blush:1,per:180,squash:1,orb:200,fx:'mail'},
+  gym:{eye:'star',mouth:'grin',blush:1,per:140,squash:1,orb:180,fx:'gym'}
 };
+const DUMBBELL=["#L#...#L#","#S#LLL#S#","#L#...#L#"];
+const ENVELOPE=["###########","#W#WWWWW#W#","#WW#WWW#WW#","#WWW#p#WWW#","#WWWWWWWWW#","###########"];
 // face particles: hearts, stars and sparks that fly off Pip
 const FP=[];
 const HEART=["pp.pp","ppppp",".ppp.","..p.."];
@@ -1447,6 +1973,10 @@ function drawFace(t){
   else if(talking&&m!=='sleep'&&m!=='dizzy'&&Math.floor(t/110)%2)mk='o';
   const M=MOUTH[mk];spr(M,cx-Math.floor(M[0].length/2),cy+4);
   if(f.fx==='music')headphones(cx,cy,rx,ry,t);
+  if(f.fx==='gym'){const lift=reduce?0:(Math.floor(t/280)%2)*4;
+    fc.fillStyle='#ff4fb8';for(let x=cx-rx+3;x<=cx+rx-3;x++)fc.fillRect(x,cy-9,1,2);   // sweatband
+    spr(DUMBBELL,cx-rx-10,cy-2-lift);spr(DUMBBELL,cx+rx+1,cy-2-(4-lift))}
+  if(f.fx==='mail'){const bob=reduce?0:Math.round(Math.sin(t/160)*2);spr(ENVELOPE,cx-5,Math.max(0,cy-ry-8+bob))}
   drawOrbit(32,40,ot,true,orbPer);
   if(f.fx==='umbrella')umbrella(cx,Math.max(1,cy-23));
   if(f.fx==='sweat')spr([".c.","ccc","cwc",".c."],cx+12,cy-8+Math.floor(((reduce?0:t)/90)%8));
@@ -1581,11 +2111,12 @@ renderPlace();renderWx();renderHours(false);renderMusic();renderDevice();drawMoo
 if(S.loc)setTimeout(loadWeather,reduce?0:900);
 /* self-update: Home Screen apps on iOS hold on to old copies, so check the live page for a newer build */
 {const q=new URLSearchParams(location.search);if(q.has('v')&&!q.has('code'))history.replaceState(null,'',location.pathname)}
-async function checkUpdate(){
-  if(SANDBOX||BUILD.startsWith('__')||!navigator.onLine)return;
+async function checkUpdate(manual){
+  if(SANDBOX||BUILD.startsWith('__')||!navigator.onLine){if(manual)say("Updates only work on the live link.");return}
   try{
     const t=await(await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'})).text();
     const m=t.match(/const BUILD='([^']+)'/);
+    if(manual&&m&&m[1]===BUILD)say("You're on the latest build.");
     if(m&&m[1]!==BUILD&&store.get('pp.updTried')!==m[1]){
       store.set('pp.updTried',m[1]);say('Update found! Grabbing the new version...');kick(1.2);faceBurst('star',10);sfx('data');
       setTimeout(()=>location.replace(location.pathname+'?v='+encodeURIComponent(m[1])),1800);
@@ -1594,6 +2125,7 @@ async function checkUpdate(){
 }
 setTimeout(checkUpdate,(reduce?0:1250)+5000);setInterval(checkUpdate,30*60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
+gCallback();renderInbox();renderGym();renderBrief();if(G.on)setTimeout(loadMail,reduce?0:1500);
 spotCallback().then(()=>{renderMusic();pollSpotify()});
 if(!store.get('pp.seenTabs')&&!new URLSearchParams(location.search).has('code')){ // one-time tour of the new tabs
   setTimeout(()=>{store.set('pp.seenTabs',true);['music','iss'].forEach(flagTab);restart($('tab-music'),'hit');

@@ -36,7 +36,12 @@ const GYM = {
       { mimeType: 'text/csv', filename: 'checkins.csv', body: { attachmentId: 'a1' } }] } },
   g2: { id: 'g2', internalDate: String(dayOff(1).getTime()), payload: { mimeType: 'text/plain', headers: [{ name: 'From', value: 'Chance <chance@example.com>' }, { name: 'Subject', value: 'Pixel Pilot gym check-in' }], body: { data: b64('checked in') } } },
   g3: { id: 'g3', internalDate: String(Date.now()), payload: { mimeType: 'text/plain', headers: [{ name: 'From', value: '24 Hour Fitness <deals@24hourfitness.com>' }, { name: 'Subject', value: 'Fall deal: join for $0' }],
-    body: { data: b64(`Visit your club! Offer ends ${mdy(dayOff(-20))}.`) } } }
+    body: { data: b64(`Visit your club! Offer ends ${mdy(dayOff(-20))}.`) } } },
+  // modeled on Chance's real 24 Hour Fitness promos: "Check-In" in the subject, a yearless future date, labeled Promotions
+  g4: { id: 'g4', labelIds: ['CATEGORY_PROMOTIONS', 'INBOX'], internalDate: String(dayOff(10).getTime()), payload: { mimeType: 'text/html', headers: [{ name: 'From', value: '24 Hour Fitness <email@member.24hourfitness.com>' }, { name: 'Subject', value: 'Your Club Check-In Is Changing' }],
+    body: { data: b64(`<p>Check in with 24GO. Visit your club.</p><p>Special Rams ticket offer for ${dayOff(-5).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}th. Training Day ${dayOff(14).getMonth() + 1}/${dayOff(14).getDate()}.</p>`) } } },
+  g5: { id: 'g5', internalDate: String(dayOff(4).getTime()), payload: { mimeType: 'text/plain', headers: [{ name: 'From', value: '24 Hour Fitness <email@member.24hourfitness.com>' }, { name: 'Subject', value: 'Get Ready for Training Day' }],
+    body: { data: b64(`Visit us on ${dayOff(-3).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} for a free session.`) } } }
 };
 const GYM_CSV = `Date,Club\n${ymd(dayOff(12))},Northridge Super-Sport\n`;
 const topo = { type: 'Topology', transform: { scale: [1, 1], translate: [0, 0] }, objects: { land: { type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', arcs: [[[0]], [[1]]] }] } },
