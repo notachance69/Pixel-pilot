@@ -4,7 +4,7 @@ Pip is an animated pixel emoticon assistant that shows live local weather, the s
 
 **Live page:** https://notachance69.github.io/Pixel-pilot/
 
-**What's on it:** live weather and a 12-hour forecast, the sun and moon, device stats, Spotify now playing (with controls), and a live ISS tracker with pass predictions for your location.
+**What's on it:** a Brief of your day, a Gmail inbox that flags what matters, live weather and a 12-hour forecast, the sun and moon, device stats, Spotify now playing (with controls), and a live ISS tracker with pass predictions for your location.
 
 Open it in Safari on an iPad or phone, turn the device sideways, and tap **Use my location** (or search a city). Add it to your Home Screen to run it full-screen.
 
@@ -17,3 +17,22 @@ Open it in Safari on an iPad or phone, turn the device sideways, and tap **Use m
 - Moon phase, frame rate, screen size, CPU cores, ping and uptime are computed on the device
 
 Everything is one self-contained `index.html`. Your chosen location is saved only in your browser.
+
+## Connect Gmail (one-time, about 10 minutes)
+
+Pixel Pilot reads Gmail **read-only** in your browser. Nothing goes through a server, and emails are never stored in this repo.
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com), create a project called **Pixel Pilot**.
+2. **APIs & Services → Library →** search **Gmail API** → Enable.
+3. **Google Auth Platform → Branding / Audience:** app name *Pixel Pilot*, your email as support contact, audience **External**, then add your own Gmail address under **Test users**.
+4. **Data access → Add scopes:** `https://www.googleapis.com/auth/gmail.readonly`.
+5. **Clients → Create client → Web application.**
+   - Authorized JavaScript origins: `https://notachance69.github.io`
+   - Authorized redirect URIs: `https://notachance69.github.io/Pixel-pilot/` **and** `https://notachance69.github.io/Pixel-pilot/preview/`
+6. Copy the **Client ID** (ends in `.apps.googleusercontent.com`), open Pixel Pilot → **Settings** → paste it → **Connect**.
+   Google will warn that the app isn't verified. That's expected for your own test app: tap **Continue**.
+
+## How it gets built
+
+See [`loop/LOOP.md`](loop/LOOP.md). Every change goes through `src/app.html` → `preview/` → tests → and only reaches the live page when promoted.
+Preview: https://notachance69.github.io/Pixel-pilot/preview/

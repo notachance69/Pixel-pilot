@@ -1,0 +1,28 @@
+{
+  "note": "Prioritized feature list. Loop runs flip 'passes' and add 'notes'; they never delete items. Lower priority number = sooner.",
+  "features": [
+    {"id": "weather", "priority": 0, "title": "Live weather, 12-hour forecast, sun arc, moon", "passes": true},
+    {"id": "device", "priority": 0, "title": "Device stats (fps, ping, screen, cores, uptime, taps)", "passes": true},
+    {"id": "spotify", "priority": 0, "title": "Spotify now playing with controls, auto-reconnect", "passes": true},
+    {"id": "iss", "priority": 0, "title": "ISS tracker: map, day/night, passes, overhead alerts", "passes": true},
+    {"id": "self-update", "priority": 0, "title": "Home Screen app updates itself when a new build ships", "passes": true},
+    {"id": "inbox", "priority": 0, "title": "Gmail inbox with importance rules (Gmail flags + jobs/money/deadline/VIP)", "passes": true, "notes": "Needs Chance's Google OAuth Client ID to go live"},
+    {"id": "brief", "priority": 0, "title": "Brief tab: greeting, cards, Pip suggestions, read aloud", "passes": true},
+    {"id": "settings", "priority": 0, "title": "Settings sheet: sound, Gmail, inbox rules, version", "passes": true},
+
+    {"id": "calendar", "priority": 1, "title": "Google Calendar: next events in Brief, countdown to next meeting, Pip reminders 10 min before",
+     "acceptance": ["calendar.readonly added to the Google sign-in scope", "Brief shows next 3 events", "Pip mood 'heads up' 10 min before an event", "smoke test mocks the Calendar API"], "passes": false},
+    {"id": "job-tracker", "priority": 2, "title": "Job tracker: build a pipeline from JOBS emails (company, stage, last contact, days waiting)",
+     "acceptance": ["groups JOBS emails by company domain", "stage guessed from keywords (applied, screen, interview, offer, rejected)", "Pip nudges if a reply is waiting > 3 days", "covers 30 days of mail"], "passes": false},
+    {"id": "car-obd", "priority": 3, "title": "Car tab: live OBD-II over Web Bluetooth (BLE ELM327) on Android Chrome",
+     "acceptance": ["Connect button uses navigator.bluetooth.requestDevice for FFE0/FFF0 services", "reads speed, RPM, coolant, voltage, throttle, load", "MPG and range estimate with a 'filled up' reset", "Pip car moods (redline, hot coolant, low voltage)", "mocked BLE in the smoke test", "clear message on iOS (no Web Bluetooth)"], "passes": false},
+    {"id": "driving-mode", "priority": 4, "title": "Driving mode: big calm gauges and only critical alerts above 5 mph", "needs": ["car-obd"], "passes": false},
+    {"id": "air-quality", "priority": 5, "title": "Air quality (US AQI, PM2.5) from Open-Meteo; Pip wears a mask on smoky days", "passes": false},
+    {"id": "alerts", "priority": 6, "title": "National Weather Service alerts for your spot (red flag, heat, wind)", "passes": false},
+    {"id": "bills", "priority": 7, "title": "Bills: due dates pulled from MONEY emails, countdown in Brief", "passes": false},
+    {"id": "packages", "priority": 8, "title": "Packages: delivery status from DELIVERY emails", "passes": false},
+    {"id": "quakes", "priority": 9, "title": "Nearby earthquakes (USGS feed), Pip reacts to M3+ within 100 mi", "passes": false},
+    {"id": "focus", "priority": 10, "title": "Focus timer with Pip (25/5), tracks focus streak", "passes": false},
+    {"id": "night-dim", "priority": 11, "title": "Night dim mode: auto-dim colors and motion after sunset for car/bedside use", "passes": false}
+  ]
+}
