@@ -44,3 +44,6 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Added two tests modeled on the real promos. 25/25.
 - Promoted to live at Chance's request (he expected to see the new tabs on the live link).
 - Note: connecting Gmail to Claude is not the same as Pixel Pilot's own Google sign-in; the page still needs its OAuth Client ID.
+
+## 2026-10-16, round 6: Google Client ID built in
+- Chance created the Google Cloud project without billing (direct console links skip the free-trial card prompt) and sent the public OAuth Client ID. Built into src/app.html, 25/25, promoted to live.

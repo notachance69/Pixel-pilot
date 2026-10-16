@@ -584,7 +584,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
-const BUILD='20261016-113558'; // stamped at publish; the page compares it with the live copy to update itself
+const BUILD='20261016-142722'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -1219,7 +1219,7 @@ function drawMap(t){
 
 /* ---------- Gmail: what matters in your inbox ---------- */
 // Browser-only Google sign-in (OAuth token flow). Emails are read with gmail.readonly and kept in memory on this device only.
-const GOOGLE_CLIENT_ID='';   // public OAuth client ID (no secret); can also be pasted in Settings
+const GOOGLE_CLIENT_ID='738569842563-eh6jckhmn3uk2uriv8sg1klrd0mfgeho.apps.googleusercontent.com';   // public OAuth client ID (no secret)
 const G_SCOPE='https://www.googleapis.com/auth/gmail.readonly';
 const G={id:store.get('pp.gId')||GOOGLE_CLIENT_ID,tok:store.get('pp.gTok'),email:store.get('pp.gEmail'),on:!!store.get('pp.gOn'),needTap:!!store.get('pp.gNeedTap'),
   list:null,at:0,err:'',timer:0,busy:false,seen:new Set(store.get('pp.gSeen')||[]),filter:store.get('pp.gFilter')||'imp',open:null,firstLoad:true};

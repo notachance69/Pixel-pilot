@@ -1206,7 +1206,7 @@ function drawMap(t){
 
 /* ---------- Gmail: what matters in your inbox ---------- */
 // Browser-only Google sign-in (OAuth token flow). Emails are read with gmail.readonly and kept in memory on this device only.
-const GOOGLE_CLIENT_ID='';   // public OAuth client ID (no secret); can also be pasted in Settings
+const GOOGLE_CLIENT_ID='738569842563-eh6jckhmn3uk2uriv8sg1klrd0mfgeho.apps.googleusercontent.com';   // public OAuth client ID (no secret)
 const G_SCOPE='https://www.googleapis.com/auth/gmail.readonly';
 const G={id:store.get('pp.gId')||GOOGLE_CLIENT_ID,tok:store.get('pp.gTok'),email:store.get('pp.gEmail'),on:!!store.get('pp.gOn'),needTap:!!store.get('pp.gNeedTap'),
   list:null,at:0,err:'',timer:0,busy:false,seen:new Set(store.get('pp.gSeen')||[]),filter:store.get('pp.gFilter')||'imp',open:null,firstLoad:true};

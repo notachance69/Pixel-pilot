@@ -36,7 +36,7 @@
    "priority": 0,
    "title": "Gmail inbox with importance rules (Gmail flags + jobs/money/deadline/VIP)",
    "passes": true,
-   "notes": "Needs Chance's Google OAuth Client ID to go live"
+   "notes": "Client ID built in 2026-10-16; awaiting first real sign-in on the iPad"
   },
   {
    "id": "brief",
