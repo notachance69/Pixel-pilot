@@ -201,7 +201,19 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .bcard{background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--edge);padding:8px 10px;display:flex;flex-direction:column;gap:4px;min-width:0;min-height:0;overflow:hidden}
 .bcard .big{font-size:clamp(20px,4.6vh,30px);white-space:normal}
 .bcard p{margin:0;font-size:12px;line-height:1.35;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+/* gym */
+.gym{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr) minmax(130px,190px);gap:14px;width:100%;height:100%;align-items:center;min-height:0}
+.gStats{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.gStats .big{font-size:clamp(22px,5vh,36px)}
+.gMapBox{display:flex;flex-direction:column;gap:4px;min-width:0;min-height:0;height:100%;justify-content:center}
+#gyMap{width:100%;height:auto;max-height:calc(100% - 18px);aspect-ratio:107/41;object-fit:contain;cursor:pointer}
+.legend{display:flex;gap:12px;font-family:var(--f-label);font-size:8px;letter-spacing:.06em;color:var(--muted)}
+.legend i{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:-1px}
+.gAct{display:flex;flex-direction:column;gap:6px}
+.gAct .chip{white-space:normal}
+@media (max-width:760px){.gym{grid-template-columns:1fr}}
 /* settings sheet */
+.sheetBox select{font:600 14px var(--f-talk);color:var(--ink);background:var(--paper);border:0;padding:6px 8px;margin:var(--px)}
 .setSec{display:flex;flex-direction:column;gap:6px;border-top:2px dashed var(--edge);padding-top:8px}
 .fl{font-size:12px;color:var(--muted)}
 .sheetBox textarea{font:600 14px var(--f-talk);color:var(--ink);background:var(--paper);border:0;padding:8px 10px;margin:var(--px);box-shadow:0 0 0 var(--px) var(--ink);resize:vertical}
@@ -314,6 +326,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <button class="tab" role="tab" id="tab-music" data-tab="music" aria-selected="false" aria-controls="pane-music" type="button"><span class="tic" aria-hidden="true">♪</span>MUSIC<span class="badge" id="badge-music" hidden></span></button>
       <button class="tab" role="tab" id="tab-iss" data-tab="iss" aria-selected="false" aria-controls="pane-iss" type="button"><span class="tic" aria-hidden="true">✦</span>ISS<span class="badge" id="badge-iss" hidden></span></button>
       <button class="tab" role="tab" id="tab-inbox" data-tab="inbox" aria-selected="false" aria-controls="pane-inbox" type="button"><span class="tic" aria-hidden="true">@</span>INBOX<span class="badge" id="badge-inbox" hidden></span></button>
+      <button class="tab" role="tab" id="tab-gym" data-tab="gym" aria-selected="false" aria-controls="pane-gym" type="button"><span class="tic" aria-hidden="true">▲</span>GYM<span class="badge" id="badge-gym" hidden></span></button>
       <button class="tab" role="tab" id="tab-brief" data-tab="brief" aria-selected="false" aria-controls="pane-brief" type="button"><span class="tic" aria-hidden="true">◆</span>BRIEF<span class="badge" id="badge-brief" hidden></span></button>
     </div>
     <div class="status">
@@ -435,6 +448,24 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
         <div class="row"><button class="chip hot" id="gOpen" type="button">CONNECT GMAIL</button></div>
       </div>
     </div>
+    <div class="pane" id="pane-gym" role="tabpanel" aria-labelledby="tab-gym" hidden>
+      <div class="gym">
+        <div class="gStats">
+          <div class="mini tap" data-say="gymWeek"><span class="lbl">This week</span><span class="big" id="gyWeek">0/4</span></div>
+          <div class="mini tap" data-say="gymStreak"><span class="lbl">Week streak</span><span class="big" id="gyStreak">0</span></div>
+          <div class="mini tap" data-say="gymMonth"><span class="lbl">This month</span><span class="big" id="gyMonth">0</span></div>
+          <div class="mini tap" data-say="gymLast"><span class="lbl">Last visit</span><span class="big sm" id="gyLast">--</span></div>
+        </div>
+        <div class="gMapBox">
+          <canvas class="px" id="gyMap" width="107" height="41" role="img" aria-label="Gym days over the last 18 weeks"></canvas>
+          <div class="legend"><span><i style="background:#44f1ff"></i>FROM 24GO / EMAIL</span><span><i style="background:#ff4fb8"></i>TAPPED</span><span id="gySpan">LAST 18 WEEKS · MON TO SUN</span></div>
+        </div>
+        <div class="gAct">
+          <button class="chip hot" id="gyBtn" type="button">I WENT TODAY</button>
+          <span class="note" id="gyNote">TAP A DAY ON THE MAP TO PICK IT</span>
+        </div>
+      </div>
+    </div>
     <div class="pane" id="pane-brief" role="tabpanel" aria-labelledby="tab-brief" hidden>
       <div class="brief">
         <div class="bHello">
@@ -502,6 +533,12 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <label class="fl" for="kw">Extra important words</label>
       <textarea id="kw" rows="2" placeholder="escrow, inspection, ADU permit"></textarea>
       <div class="row"><button class="chip" id="rulesSave" type="button">SAVE RULES</button></div>
+    </section>
+    <section class="setSec">
+      <span class="lbl">Gym</span>
+      <label class="fl" for="gyGoal">Weekly goal</label>
+      <select id="gyGoal"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option></select>
+      <p class="msg" id="gyStatus">Pip finds your 24GO check-in reports and Shortcut check-in emails in Gmail.</p>
     </section>
     <section class="setSec">
       <span class="lbl">Spotify</span>
@@ -813,13 +850,14 @@ function sweepArc(){ // replay the sun's path from the horizon to now
 }
 
 /* ---------- bottom deck tabs ---------- */
-const TABS=['fc','music','iss','inbox','brief'];
+const TABS=['fc','music','iss','inbox','gym','brief'];
 let tab=TABS.includes(store.get('pp.tab'))?store.get('pp.tab'):'fc';
 function setTab(t,anim=true){
   if(!TABS.includes(t))return;const changed=t!==tab;tab=t;store.set('pp.tab',t);
   TABS.forEach(k=>{$('tab-'+k).setAttribute('aria-selected',String(k===t));$('pane-'+k).hidden=k!==t});
-  $('deck').classList.toggle('tall',t==='inbox'||t==='brief');
+  $('deck').classList.toggle('tall',t==='inbox'||t==='brief'||t==='gym');
   if(t==='inbox')renderInbox();
+  if(t==='gym'){renderGym();if(Date.now()-GY.at>5*60e3)loadGym()}
   if(t==='brief')renderBrief();
   const badge=$('badge-'+t);if(badge)badge.hidden=true;
   if(anim){restart($('pane-'+t),'reveal');sfx('tap');
@@ -1258,7 +1296,7 @@ async function loadMail(){
     const hdr='&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=List-Unsubscribe';
     const got=await Promise.all((L.messages||[]).map(m=>gApi(`messages/${m.id}?format=metadata${hdr}`).catch(()=>null)));
     const ur=userRules();
-    G.list=got.filter(Boolean).map(parseMsg).map(e=>scoreMsg(e,ur)).sort(byRank);
+    G.list=got.filter(Boolean).map(parseMsg).filter(e=>!GYM_SUBJECT.test(e.subject)).map(e=>scoreMsg(e,ur)).sort(byRank);
     G.at=Date.now();G.err='';
     const fresh=G.list.filter(e=>e.imp&&e.unread&&!G.seen.has(e.id));
     fresh.forEach(e=>G.seen.add(e.id));store.set('pp.gSeen',[...G.seen].slice(-400));
@@ -1271,6 +1309,7 @@ async function loadMail(){
   }
   G.busy=false;renderInbox();renderBrief();
   if(G.on)G.timer=setTimeout(loadMail,wait);
+  if(G.on&&!G.err&&Date.now()-GY.at>30*60e3)loadGym();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.on&&Date.now()-G.at>60e3)loadMail()});
 function newMail(list){
@@ -1323,6 +1362,7 @@ function briefTips(){
     const uv=d.uv_index_max[0]??0;if(uv>=6&&si&&si.day)t.push(`UV peaks at ${uv.toFixed(0)}. Sunscreen if you're outside.`);
     if(c.temperature_2m>=90)t.push('Hot one today. Drink water.');else if(d.temperature_2m_min[0]<=48)t.push(`Low of ${n(d.temperature_2m_min[0])}° tonight. Bring a jacket.`);
   }
+  const gt=gymTip();if(gt)t.push(gt);
   const v=nextPasses().find(p=>p.visible&&p.start-Date.now()<24*3600e3);if(v)t.push(`ISS visible ${when(v.start).toLowerCase()}. Look ${dirW(v.azStart)}.`);
   if(!t.length)t.push(S.wx||G.list?'Nothing urgent. Enjoy the day.':'Set your location and connect Gmail so I can plan your day.');
   return t.slice(0,4);
@@ -1363,6 +1403,131 @@ document.addEventListener('click',e=>{const c=e.target.closest('[data-go]');if(c
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('[data-go]')){e.preventDefault();setTab(e.target.dataset.go)}});
 setInterval(()=>{if(tab==='brief')renderBrief()},30e3);
 
+/* ---------- Gym: the days you went ---------- */
+// Sources: 24GO "Check-In History" reports you email yourself, optional iPhone Shortcut emails titled
+// "Pixel Pilot gym check-in", and days you tap. Only dates are kept on the device, never email content.
+const GYM_SUBJECT=/pixel pilot gym/i;
+const GY={manual:new Set(store.get('pp.gymManual')||[]),off:new Set(store.get('pp.gymOff')||[]),email:store.get('pp.gymEmail')||{},
+  goal:+store.get('pp.gymGoal')||4,sel:null,at:0,busy:false,err:''};
+const pad2=x=>String(x).padStart(2,'0');
+const dayKey=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const parseKey=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const prettyDay=k=>parseKey(k).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+const weekStart=d=>{const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-(x.getDay()+6)%7);return dayKey(x)};
+function gymVisits(){const v=new Map();
+  Object.values(GY.email).forEach(arr=>(arr||[]).forEach(k=>v.set(k,'email')));
+  GY.manual.forEach(k=>{if(!v.has(k))v.set(k,'tap')});
+  GY.off.forEach(k=>v.delete(k));return v}
+function gymStats(){
+  const v=gymVisits(),keys=[...v.keys()].sort(),today=dayKey(new Date()),wk=weekStart(new Date());
+  const perWeek={};keys.forEach(k=>{const w=weekStart(parseKey(k));perWeek[w]=(perWeek[w]||0)+1});
+  const thisWeek=perWeek[wk]||0;
+  let streak=0;const d=parseKey(wk);if(thisWeek<GY.goal)d.setDate(d.getDate()-7);
+  while(streak<520&&(perWeek[dayKey(d)]||0)>=GY.goal){streak++;d.setDate(d.getDate()-7)}
+  const month=keys.filter(k=>k.slice(0,7)===today.slice(0,7)).length;
+  const last=keys[keys.length-1]||null,since=last?Math.round((parseKey(today)-parseKey(last))/864e5):null;
+  return{v,thisWeek,streak,month,last,since,today,total:keys.length};
+}
+// pull dates out of report text; the email's own day only counts on a line that talks about a check-in
+const MONTHS='jan feb mar apr may jun jul aug sep oct nov dec'.split(' ');
+function extractDates(text,emailT){
+  const out=new Set(),eDay=new Date(emailT);eDay.setHours(23,59,59,999);const oldest=emailT-420*864e5,eKey=dayKey(new Date(emailT));
+  const add=(y,m,d,line)=>{if(y<100)y+=2000;const dt=new Date(y,m,d);if(dt.getMonth()!==m||dt>eDay||dt<oldest)return;const k=dayKey(dt);
+    if(k===eKey&&!/check|visit|club/i.test(line))return;out.add(k)};
+  text.split(/\r?\n/).forEach(line=>{
+    for(const x of line.matchAll(/\b(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])\/(\d{4}|\d{2})\b/g))add(+x[3],+x[1]-1,+x[2],line);
+    for(const x of line.matchAll(/\b(20\d\d)-(\d\d)-(\d\d)\b/g))add(+x[1],+x[2]-1,+x[3],line);
+    for(const x of line.matchAll(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/gi)){
+      const m=MONTHS.indexOf(x[1].toLowerCase().slice(0,3)),d=+x[2];let y=x[3]?+x[3]:new Date(emailT).getFullYear();
+      if(!x[3]&&new Date(y,m,d)>eDay)y--;add(y,m,d,line)}
+    for(const x of line.matchAll(/\b(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{4})\b/gi))add(+x[3],MONTHS.indexOf(x[2].toLowerCase().slice(0,3)),+x[1],line);
+  });
+  return[...out].sort();
+}
+const b64u=s=>{const b=atob(s.replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u};
+const htmlText=h=>{const d=new DOMParser().parseFromString(h,'text/html');d.querySelectorAll('br,p,tr,div,li,h1,h2,h3,td').forEach(e=>e.append('\n'));return d.body?d.body.textContent:''};
+let pdfjsP=null;
+function pdfjs(){return pdfjsP||(pdfjsP=new Promise((res,rej)=>{const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res(window.pdfjsLib)};
+  s.onerror=()=>{pdfjsP=null;rej(new Error('pdf.js'))};document.head.appendChild(s)}))}
+async function pdfText(bytes){
+  const lib=await pdfjs(),doc=await lib.getDocument({data:bytes}).promise;let out='';
+  for(let i=1;i<=Math.min(doc.numPages,25);i++){const tc=await(await doc.getPage(i)).getTextContent();let lastY=null;
+    tc.items.forEach(it=>{const y=Math.round(it.transform[5]);if(lastY!==null&&Math.abs(y-lastY)>2)out+='\n';out+=it.str+' ';lastY=y});out+='\n'}
+  return out;
+}
+async function gymDatesFromMsg(id){
+  const m=await gApi(`messages/${id}?format=full`),hd={};((m.payload&&m.payload.headers)||[]).forEach(x=>{hd[x.name.toLowerCase()]=x.value});
+  const t=+m.internalDate||Date.now(),subj=hd.subject||'';
+  if(GYM_SUBJECT.test(subj))return[dayKey(new Date(t))];
+  let text=subj+'\n';
+  const walk=async p=>{if(!p)return;const mt=(p.mimeType||'').toLowerCase(),fn=(p.filename||'').toLowerCase();
+    let data=p.body&&p.body.data;
+    if(!data&&p.body&&p.body.attachmentId&&(mt.startsWith('text/')||mt==='application/pdf'||/\.(csv|txt|pdf)$/.test(fn))){
+      try{data=(await gApi(`messages/${id}/attachments/${p.body.attachmentId}`)).data}catch(e){}}
+    if(data){const bytes=b64u(data);
+      if(mt==='application/pdf'||fn.endsWith('.pdf')){try{text+=await pdfText(bytes)}catch(e){}}
+      else if(mt==='text/html')text+=htmlText(new TextDecoder().decode(bytes))+'\n';
+      else if(mt.startsWith('text/')||/\.(csv|txt)$/.test(fn))text+=new TextDecoder().decode(bytes)+'\n'}
+    for(const c of p.parts||[])await walk(c)};
+  await walk(m.payload);
+  if(!/check[\s-]?in|visit/i.test(text))return[];   // marketing mail from the gym doesn't count
+  return extractDates(text,t);
+}
+async function loadGym(){
+  if(!G.on||!G.tok||G.needTap||GY.busy||Date.now()>G.tok.exp-60e3)return;
+  GY.busy=true;
+  try{
+    const q='(from:24hourfitness.com OR from:24go.co OR from:24hourfit.com OR subject:"pixel pilot gym") newer_than:400d';
+    const L=await gApi('messages?maxResults=80&q='+encodeURIComponent(q));
+    for(const m of L.messages||[]){if(GY.email[m.id])continue;try{GY.email[m.id]=await gymDatesFromMsg(m.id)}catch(e){}}
+    store.set('pp.gymEmail',GY.email);GY.at=Date.now();GY.err='';
+  }catch(e){GY.err="COULDN'T CHECK GMAIL FOR GYM DAYS"}
+  GY.busy=false;renderGym();renderBrief();
+}
+function gymToggle(k){
+  const v=gymVisits();
+  if(v.has(k)){GY.manual.delete(k);if(v.get(k)==='email')GY.off.add(k);sfx('close');say(`Unmarked ${prettyDay(k)}.`)}
+  else{GY.manual.add(k);GY.off.delete(k);
+    const st=gymStats();
+    if(k===st.today){S.gymLine=`Logged! ${st.thisWeek} of ${GY.goal} this week${st.streak?`, and a ${st.streak}-week streak`:''}. Gains.`;S.gymUntil=performance.now()+4000}
+    else{say(`Marked ${prettyDay(k)} as a gym day.`)}
+    sfx('data');faceBurst('star',8);kick(1.2)}
+  store.set('pp.gymManual',[...GY.manual]);store.set('pp.gymOff',[...GY.off]);
+  renderGym();renderBrief();
+}
+const GW=18,gyC=$('gyMap').getContext('2d');
+function gymGridStart(){const d=parseKey(weekStart(new Date()));d.setDate(d.getDate()-7*(GW-1));return d}
+function drawGym(){
+  const c=gyC,v=gymVisits(),today=dayKey(new Date()),start=gymGridStart();c.clearRect(0,0,107,41);
+  for(let w=0;w<GW;w++)for(let r=0;r<7;r++){const d=new Date(start);d.setDate(d.getDate()+w*7+r);const k=dayKey(d),x=w*6,y=r*6;
+    if(k>today){c.fillStyle='rgba(91,63,179,.25)';c.fillRect(x+2,y+2,1,1);continue}
+    const src=v.get(k);c.fillStyle=src==='email'?'#44f1ff':src==='tap'?'#ff4fb8':'#2a2458';c.fillRect(x,y,5,5);
+    if(src){c.fillStyle='rgba(255,255,255,.55)';c.fillRect(x,y,2,1)}
+    if(k===today||k===GY.sel){c.fillStyle=k===GY.sel?'#ffe34d':'#ffffff';c.fillRect(x,y,5,1);c.fillRect(x,y+4,5,1);c.fillRect(x,y,1,5);c.fillRect(x+4,y,1,5)}}
+}
+$('gyMap').addEventListener('click',e=>{
+  const r=$('gyMap').getBoundingClientRect(),w=Math.floor((e.clientX-r.left)/r.width*GW),row=Math.floor((e.clientY-r.top)/r.height*7);
+  if(w<0||w>=GW||row<0||row>6)return;const d=gymGridStart();d.setDate(d.getDate()+w*7+row);const k=dayKey(d);
+  if(k>dayKey(new Date()))return;GY.sel=k===dayKey(new Date())?null:k;sfx('tap');lookToward($('gyMap'));
+  const src=gymVisits().get(k);say(`${prettyDay(k)}: ${src==='email'?'you checked in (from 24GO).':src==='tap'?'you logged a gym day.':'no gym that day.'}`);renderGym();
+});
+$('gyBtn').onclick=()=>{restart($('gyBtn'),'hit');gymToggle(GY.sel||dayKey(new Date()))};
+function renderGym(){
+  const st=gymStats();
+  $('gyWeek').innerHTML=`${st.thisWeek}<small>/${GY.goal}</small>`;
+  tween($('gyStreak'),st.streak,{suffix:'<small>WK</small>'});tween($('gyMonth'),st.month);
+  $('gyLast').textContent=st.last?(st.since===0?'Today':st.since===1?'Yesterday':`${st.since} days ago`):'--';
+  const k=GY.sel||st.today,on=st.v.has(k);
+  $('gyBtn').textContent=GY.sel?(on?`UNMARK ${prettyDay(k).toUpperCase()}`:`MARK ${prettyDay(k).toUpperCase()}`):(on?'GYM DONE TODAY · UNDO':'I WENT TODAY');
+  $('gyNote').textContent=GY.busy?'CHECKING GMAIL FOR 24GO REPORTS...':GY.err||(G.on?`${st.total} GYM DAYS FOUND · TAP A DAY TO PICK IT`:'CONNECT GMAIL TO IMPORT 24GO HISTORY · TAP A DAY TO PICK IT');
+  drawGym();
+}
+function gymTip(){const st=gymStats();if(!st.total)return null;   // only nudge when it's actionable
+  if(st.since>=3)return`${st.since} days since the gym. ${st.thisWeek} of ${GY.goal} this week so far.`;
+  return null}
+
 /* ---------- settings sheet ---------- */
 const setEl=$('settings');
 function renderSettings(){
@@ -1371,7 +1536,11 @@ function renderSettings(){
   $('sStatus').textContent=M.tok?`Connected${M.state&&M.state.device?' · playing on '+M.state.device:''}. Disconnect from the Music tab.`:'Not connected. Use the Music tab.';
   $('vip').value=store.get('pp.vip')||'';$('kw').value=store.get('pp.kw')||'';
   $('ver').textContent=BUILD.startsWith('__')?'dev':BUILD;
+  $('gyGoal').value=String(GY.goal);
+  const st=gymStats(),fromMail=[...st.v.values()].filter(s=>s==='email').length;
+  $('gyStatus').textContent=G.on?`${fromMail} gym day${fromMail===1?'':'s'} found in Gmail from 24GO reports and check-in emails, plus ${st.total-fromMail} you tapped.`:'Connect Gmail so Pip can import your 24GO check-in reports. Tapped days work without it.';
 }
+$('gyGoal').addEventListener('change',()=>{GY.goal=+$('gyGoal').value;store.set('pp.gymGoal',GY.goal);sfx('tap');renderGym();renderBrief();renderSettings()});
 function openSettings(){if(!setEl.hidden)return;setEl.classList.remove('out');setEl.hidden=false;sfx('open');renderSettings()}
 function closeSettings(){if(setEl.hidden)return;sfx('close');if(reduce){setEl.hidden=true;return}setEl.classList.add('out');setTimeout(()=>{setEl.hidden=true;setEl.classList.remove('out')},230)}
 $('setBtn').onclick=openSettings;$('setClose').onclick=closeSettings;
@@ -1439,6 +1608,7 @@ function moodLine(m){
     case'cloudy':return`${t}° and ${cond} in ${place()}.`;
     case'dizzy':return"Whoa, whoa. Too many pokes. Everything's spinning...";
     case'mail':return S.mailLine||"You've got mail!";
+    case'gym':return S.gymLine||'Gains!';
     case'music':return M.state?`Now playing: ${M.state.title} by ${M.state.artist}. Vibing.`:'Vibing.';
     case'iss':{const o=ISS.overhead;return o?`The ISS is right above you! Look ${dirW(o.az)}, about ${n(o.el)}° up. ${o.visible?'It should be a bright moving dot right now.':"It's too bright out to spot it, but it's up there."}`:'The ISS is overhead!'}
     case'poke':{const a=['Hehe, that tickles!','Boop!',"Hey! I'm working here.",`That's poke number ${S.pokes}.`,'Again! Again!'];return a[S.pokes%a.length]}
@@ -1478,6 +1648,10 @@ function about(key,el){
       if(!ps.length)return'No passes higher than 10° in the next day and a half.';
       const p=ps[0],v=ps.find(q=>q.visible);
       return`Next pass: ${when(p.start).toLowerCase()}, rising in the ${dirW(p.azStart)} and peaking ${n(p.max)}° up.${p.visible?" It'll be dark and the station will be lit, so look for a bright moving dot.":v?` Best viewing chance: ${when(v.start).toLowerCase()}.`:' None of the upcoming passes are in the dark, so it will be hard to see.'}`}
+    case'gymWeek':{const st=gymStats();const left=Math.max(0,GY.goal-st.thisWeek);return`${st.thisWeek} of ${GY.goal} gym days this week. ${left?`${left} to go.`:'Goal hit!'} Change the goal in Settings.`}
+    case'gymStreak':{const st=gymStats();return st.streak?`${st.streak} week${st.streak>1?'s':''} in a row hitting ${GY.goal} days. Keep it rolling.`:`No streak yet. Hit ${GY.goal} days in a week to start one.`}
+    case'gymMonth':{const st=gymStats();return`${st.month} gym day${st.month===1?'':'s'} so far this month, ${st.total} in total.`}
+    case'gymLast':{const st=gymStats();return st.last?`Last gym day: ${prettyDay(st.last)}.`:'No gym days yet. Tap I WENT TODAY, or connect Gmail to import your 24GO history.'}
     case'mail':{const e=(G.list||[]).find(x=>x.id===el.dataset.id);if(!e)return'';
       G.open=G.open===e.id?null:e.id;setTimeout(renderInbox,0);
       const why=e.tags.length?` I flagged it: ${e.tags.join(', ').toLowerCase()}.`:e.important?' Gmail marked it important.':'';
@@ -1498,6 +1672,7 @@ function facts(){
   out.push(about('moon'));
   if(G.on&&G.list){const iu=G.list.filter(e=>e.imp&&e.unread);out.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email right now. Nice.')}
   if(M.state&&M.state.playing)out.push(about('track'));
+  {const st=gymStats();if(st.total)out.push(`Gym: ${st.thisWeek} of ${GY.goal} days this week${st.streak?`, ${st.streak}-week streak`:''}.`)}
   if(ISS.pos){out.push(about('issDist'));if(S.loc&&ISS.mode==='sgp4')out.push(about('issPass'))}
   if(S.fps)out.push(about('fps'));
   if(S.ping!=null)out.push(about('ping'));
@@ -1553,7 +1728,8 @@ const MOODS={
   dizzy:{label:'DIZZY',s:'warn',b:'#c6ff7a',d:'#7ccf2a'},
   music:{label:'VIBING',s:'hype',b:'#ff8fd0',d:'#e0569f'},
   iss:{label:'ISS OVERHEAD',s:'hype',b:'#dfe3f0',d:'#aeb2c6'},
-  mail:{label:'NEW MAIL',s:'hype',b:'#8ff3ff',d:'#3fb5d6'}
+  mail:{label:'NEW MAIL',s:'hype',b:'#8ff3ff',d:'#3fb5d6'},
+  gym:{label:'GAINS',s:'hype',b:'#ff8fd0',d:'#e0569f'}
 };
 function weatherMood(){
   if(!navigator.onLine)return'offline';
@@ -1576,6 +1752,7 @@ function moodFor(now){
   if(now<S.dizzyUntil)return'dizzy';
   if(now<S.pokeUntil)return'poke';
   if(now<(S.mailUntil||0))return'mail';
+  if(now<(S.gymUntil||0))return'gym';
   if(navigator.onLine&&ISS.overhead)return'iss';
   const w=weatherMood();
   if(M.state&&M.state.playing&&w!=='storm'&&w!=='offline'&&w!=='nodata')return'music';
@@ -1673,8 +1850,10 @@ const FACE={
   dizzy:{eye:'spiral',mouth:'wave',per:200,orb:110,fx:'dizzy',wobble:1},
   music:{eye:'happy',mouth:'grin',blush:1,per:250,squash:1,orb:300,fx:'music'},
   iss:{eye:'star',mouth:'o',blush:1,per:220,orb:150,fx:'sparkle'},
-  mail:{eye:'happy',mouth:'o',blush:1,per:180,squash:1,orb:200,fx:'mail'}
+  mail:{eye:'happy',mouth:'o',blush:1,per:180,squash:1,orb:200,fx:'mail'},
+  gym:{eye:'star',mouth:'grin',blush:1,per:140,squash:1,orb:180,fx:'gym'}
 };
+const DUMBBELL=["#L#...#L#","#S#LLL#S#","#L#...#L#"];
 const ENVELOPE=["###########","#W#WWWWW#W#","#WW#WWW#WW#","#WWW#p#WWW#","#WWWWWWWWW#","###########"];
 // face particles: hearts, stars and sparks that fly off Pip
 const FP=[];
@@ -1779,6 +1958,9 @@ function drawFace(t){
   else if(talking&&m!=='sleep'&&m!=='dizzy'&&Math.floor(t/110)%2)mk='o';
   const M=MOUTH[mk];spr(M,cx-Math.floor(M[0].length/2),cy+4);
   if(f.fx==='music')headphones(cx,cy,rx,ry,t);
+  if(f.fx==='gym'){const lift=reduce?0:(Math.floor(t/280)%2)*4;
+    fc.fillStyle='#ff4fb8';for(let x=cx-rx+3;x<=cx+rx-3;x++)fc.fillRect(x,cy-9,1,2);   // sweatband
+    spr(DUMBBELL,cx-rx-10,cy-2-lift);spr(DUMBBELL,cx+rx+1,cy-2-(4-lift))}
   if(f.fx==='mail'){const bob=reduce?0:Math.round(Math.sin(t/160)*2);spr(ENVELOPE,cx-5,Math.max(0,cy-ry-8+bob))}
   drawOrbit(32,40,ot,true,orbPer);
   if(f.fx==='umbrella')umbrella(cx,Math.max(1,cy-23));
@@ -1928,7 +2110,7 @@ async function checkUpdate(manual){
 }
 setTimeout(checkUpdate,(reduce?0:1250)+5000);setInterval(checkUpdate,30*60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
-gCallback();renderInbox();renderBrief();if(G.on)setTimeout(loadMail,reduce?0:1500);
+gCallback();renderInbox();renderGym();renderBrief();if(G.on)setTimeout(loadMail,reduce?0:1500);
 spotCallback().then(()=>{renderMusic();pollSpotify()});
 if(!store.get('pp.seenTabs')&&!new URLSearchParams(location.search).has('code')){ // one-time tour of the new tabs
   setTimeout(()=>{store.set('pp.seenTabs',true);['music','iss'].forEach(flagTab);restart($('tab-music'),'hit');

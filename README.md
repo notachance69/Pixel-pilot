@@ -32,6 +32,19 @@ Pixel Pilot reads Gmail **read-only** in your browser. Nothing goes through a se
 6. Copy the **Client ID** (ends in `.apps.googleusercontent.com`), open Pixel Pilot → **Settings** → paste it → **Connect**.
    Google will warn that the app isn't verified. That's expected for your own test app: tap **Continue**.
 
+## Gym days from 24 Hour Fitness
+
+Pixel Pilot has no direct line to 24 Hour Fitness, so it reads your gym days from Gmail (connect Gmail first).
+
+**Your history:** in the 24GO app, open **Check-In History** and choose **email yourself a report**. Pip finds it in Gmail and fills in the heatmap.
+
+**Automatic from now on (optional, iPhone):**
+1. Open **Shortcuts → Automation → + → App**, choose **24GO**, tick **Is Opened**, and pick **Run Immediately**.
+2. Add the action **Send Email**: To = your Gmail, Subject = `Pixel Pilot gym check-in`. Expand the action and turn **Show Compose Sheet** off.
+3. Optional Gmail filter: subject `Pixel Pilot gym check-in` → Skip the Inbox. Pip still finds them.
+
+Every time you open 24GO to scan in, the day is logged. You can also tap **I WENT TODAY**, or tap any day on the map to mark or unmark it.
+
 ## How it gets built
 
 See [`loop/LOOP.md`](loop/LOOP.md). Every change goes through `src/app.html` → `preview/` → tests → and only reaches the live page when promoted.

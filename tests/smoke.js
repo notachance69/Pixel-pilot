@@ -25,6 +25,20 @@ const MAIL = [
 ];
 const gmsg = m => ({ id: m.id, threadId: 't' + m.id, labelIds: m.labels, snippet: m.snippet, internalDate: String(Date.now() - 3600e3),
   payload: { headers: [{ name: 'From', value: m.from }, { name: 'Subject', value: m.subject }].concat(m.list ? [{ name: 'List-Unsubscribe', value: '<mailto:x>' }] : []) } });
+// gym: a 24GO check-in report (dates in the body + a CSV attachment), a Shortcut check-in email, and gym marketing that must not count
+const dayOff = n => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
+const mdy = d => `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const b64 = s => Buffer.from(s).toString('base64url');
+const GYM = {
+  g1: { id: 'g1', internalDate: String(Date.now()), payload: { mimeType: 'multipart/mixed', headers: [{ name: 'From', value: '24 Hour Fitness <noreply@24hourfitness.com>' }, { name: 'Subject', value: 'Your 24GO Check-In History' }],
+    parts: [{ mimeType: 'text/plain', body: { data: b64(`Check-In History\nReport generated ${mdy(dayOff(0))}\n${mdy(dayOff(2))}  Northridge Super-Sport  6:12 AM\n${mdy(dayOff(3))}  Northridge Super-Sport  6:30 AM\n${mdy(dayOff(5))}  Northridge Super-Sport  5:58 AM\n${mdy(dayOff(9))}  Northridge Super-Sport  6:05 AM\n`) } },
+      { mimeType: 'text/csv', filename: 'checkins.csv', body: { attachmentId: 'a1' } }] } },
+  g2: { id: 'g2', internalDate: String(dayOff(1).getTime()), payload: { mimeType: 'text/plain', headers: [{ name: 'From', value: 'Chance <chance@example.com>' }, { name: 'Subject', value: 'Pixel Pilot gym check-in' }], body: { data: b64('checked in') } } },
+  g3: { id: 'g3', internalDate: String(Date.now()), payload: { mimeType: 'text/plain', headers: [{ name: 'From', value: '24 Hour Fitness <deals@24hourfitness.com>' }, { name: 'Subject', value: 'Fall deal: join for $0' }],
+    body: { data: b64(`Visit your club! Offer ends ${mdy(dayOff(-20))}.`) } } }
+};
+const GYM_CSV = `Date,Club\n${ymd(dayOff(12))},Northridge Super-Sport\n`;
 const topo = { type: 'Topology', transform: { scale: [1, 1], translate: [0, 0] }, objects: { land: { type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', arcs: [[[0]], [[1]]] }] } },
   arcs: [[[-125, 50], [55, 0], [0, -25], [-45, 0], [-10, -10]], [[-80, 10], [45, 0], [0, -55], [-35, 0], [-10, 55]]] };
 
@@ -43,8 +57,13 @@ async function mock(page) {
     if (u.includes('i.scdn.co')) return r.fulfill({ body: fs.readFileSync(path.join(__dirname, 'art.png')), contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' } });
     if (u.includes('gmail.googleapis.com')) {
       if (u.includes('/profile')) return r.fulfill({ json: { emailAddress: 'chance@example.com' } });
+      if (u.includes('/attachments/a1')) return r.fulfill({ json: { data: b64(GYM_CSV) } });
+      const g = u.match(/messages\/(g\d)/); if (g) return r.fulfill({ json: GYM[g[1]] });
       const m = u.match(/messages\/(m\d)/); if (m) return r.fulfill({ json: gmsg(MAIL.find(x => x.id === m[1])) });
-      if (u.includes('/messages?')) return r.fulfill({ json: { messages: MAIL.map(x => ({ id: x.id, threadId: 't' + x.id })) } });
+      if (u.includes('/messages?')) {
+        if (decodeURIComponent(u).includes('24hourfitness')) return r.fulfill({ json: { messages: Object.keys(GYM).map(id => ({ id })) } });
+        return r.fulfill({ json: { messages: MAIL.map(x => ({ id: x.id, threadId: 't' + x.id })) } });
+      }
     }
     return r.abort();
   });
@@ -85,6 +104,16 @@ async function mock(page) {
   check('tapping an email makes Pip explain it', /Interview availability/.test(await t('#say')), (await t('#say')).slice(0, 80));
   check('email expands with Gmail link', await page.$('#mlist .mmore a[href*="mail.google.com"]') !== null);
   await page.screenshot({ path: path.join(OUT, '2-inbox.png') });
+
+  await page.click('#tab-gym'); await page.waitForTimeout(1500);
+  const gnote = await t('#gyNote');
+  check('gym imports 24GO report (body + CSV) and Shortcut email, ignores gym marketing', /^6 GYM DAYS FOUND/.test(gnote), gnote);
+  check('gym last visit is yesterday', (await t('#gyLast')).trim() === 'Yesterday', await t('#gyLast'));
+  await page.click('#gyBtn'); await page.waitForTimeout(700);
+  check('I WENT TODAY makes Pip celebrate', (await t('#mood')).trim() === 'GAINS', await t('#mood'));
+  check('logging today counts it', /^7 GYM DAYS FOUND/.test(await t('#gyNote')) && (await t('#gyLast')).trim() === 'Today', await t('#gyNote'));
+  check('gym day does not show in the inbox list', !(await page.$$eval('#mlist .mrow', rs => rs.map(r => r.textContent).join('|'))).includes('Pixel Pilot gym'));
+  await page.screenshot({ path: path.join(OUT, '2b-gym.png') });
 
   await page.click('#tab-brief'); await page.waitForTimeout(900);
   const tips = await t('#bTips');

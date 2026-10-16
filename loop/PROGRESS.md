@@ -28,3 +28,12 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Fixed: smaller balanced heading, wider greeting column, `flex:none` on the bubble, and email tips ordered before weather.
 - 20/20. Clarity 4 → 5.
 - Next: `calendar` (reuses the Google sign-in), then `job-tracker`.
+
+## 2026-10-16, round 4: Gym tab (Chance asked for 24 Hour Fitness days)
+- 24 Hour Fitness has no public API, but 24GO's Check-In History can "email yourself a report". Pip searches Gmail for those reports and reads dates from the body, HTML, CSV/TXT and PDF attachments (pdf.js, loaded only when needed).
+- Going forward: an optional iOS Shortcut emails "Pixel Pilot gym check-in" when 24GO opens. Those emails are hidden from the Inbox tab.
+- Gym marketing emails are ignored: they need check-in/visit wording, and only past dates count. The report's own date counts only on a line about a check-in.
+- Gym tab: 18-week heatmap (cyan = from email, pink = tapped), this week vs goal, week streak, month count, last visit, tap a day to mark or unmark it. Pip "GAINS" mood with a sweatband and dumbbells. Brief nudges after 3+ days off. Goal in Settings.
+- Tests: 25 checks. The first run failed one: the gym note pushed the rain warning out of the Brief. Fixed by only nudging when actionable and ranking it after weather.
+- Scores: Works 5, Useful 5, Delight 5, Clarity 4, Resilience 4, Privacy 5 (only dates stored), Performance 5.
+- Next: confirm the real 24GO report format with Chance; then `calendar`.
