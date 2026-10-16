@@ -47,3 +47,9 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 
 ## 2026-10-16, round 6: Google Client ID built in
 - Chance created the Google Cloud project without billing (direct console links skip the free-trial card prompt) and sent the public OAuth Client ID. Built into src/app.html, 25/25, promoted to live.
+
+## 2026-10-16, round 7: Ask Pip (Chance asked to adjust features by talking to Pip)
+- Command bar under Pip with a mic button where the browser supports speech (iOS keyboard dictation works everywhere). Pattern-based: hide/show email types (jobs, bills, deadlines, travel, deliveries, security, promos, newsletters, social), mute/unmute senders, hide emails about a topic, VIP senders, flag words, only show unread/important/all, gym goal, sound, open a tab, list/reset rules, plus quick answers (weather, rain, inbox, ISS, song, gym, sun, moon).
+- Rules apply to Inbox, Brief, read-aloud, Pip's facts and new-mail alerts. Inbox shows "N hidden by your rules". Settings lists rules as chips; tap to remove.
+- Tests 34/34 (9 new). Screenshot caught the one-time intro talking over a question; intro now waits and skips if you're typing.
+- Shipped live at Chance's request.

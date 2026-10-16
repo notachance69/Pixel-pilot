@@ -32,6 +32,20 @@ Pixel Pilot reads Gmail **read-only** in your browser. Nothing goes through a se
 6. Copy the **Client ID** (ends in `.apps.googleusercontent.com`), open Pixel Pilot → **Settings** → paste it → **Connect**.
    Google will warn that the app isn't verified. That's expected for your own test app: tap **Continue**.
 
+## Talk to Pip
+
+Type (or tap the keyboard mic and speak) in the box under Pip:
+
+- "hide job emails" / "show job emails". Works for bills, deadlines, travel, deliveries, security codes, promos, newsletters and social.
+- "mute emails from linkedin" / "unmute emails from linkedin"
+- "hide emails about crypto"
+- "make mom a VIP", "flag emails about escrow"
+- "only show unread", "set my gym goal to 3", "sound on", "open gym"
+- "what are my rules", "reset my rules", "help"
+- Questions: "will it rain?", "any new emails?", "when's the ISS?", "what song is this?"
+
+Rules live on your device. See or remove them in Settings → Rules you told Pip.
+
 ## Gym days from 24 Hour Fitness
 
 Pixel Pilot has no direct line to 24 Hour Fitness, so it reads your gym days from Gmail (connect Gmail first).

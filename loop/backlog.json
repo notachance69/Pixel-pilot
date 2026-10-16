@@ -58,6 +58,13 @@
    "notes": "24GO report format is unconfirmed; parser reads body text, HTML, CSV/TXT and PDF attachments. Refine once a real report arrives."
   },
   {
+   "id": "ask-pip",
+   "priority": 0,
+   "title": "Ask Pip: typed/voice commands to change rules (hide/show email types, mute senders/topics, VIP, gym goal, sound, tabs) and answer quick questions",
+   "passes": true,
+   "notes": "Pattern-based, no AI. Ideas: undo last command, Claude-powered free-form commands behind a relay."
+  },
+  {
    "id": "calendar",
    "priority": 1,
    "title": "Google Calendar: next events in Brief, countdown to next meeting, Pip reminders 10 min before",

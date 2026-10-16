@@ -40,6 +40,9 @@ Budget: one feature per run. If a feature is too big, split it in the backlog an
 
 ## Promote (only when Chance asks)
 
+User-requested features built in a live conversation with Chance may go straight to live once tests pass. Scheduled runs always stop at preview.
+
+
 `python3 tools/build.py --promote`, then commit and push. The live app's self-updater picks it up on the iPad within minutes.
 
 ## Rubric (score 1–5 each, log the scores)

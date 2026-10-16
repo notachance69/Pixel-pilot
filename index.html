@@ -211,6 +211,15 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .bcard{background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--edge);padding:8px 10px;display:flex;flex-direction:column;gap:4px;min-width:0;min-height:0;overflow:hidden}
 .bcard .big{font-size:clamp(20px,4.6vh,30px);white-space:normal}
 .bcard p{margin:0;font-size:12px;line-height:1.35;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+/* ask pip */
+.ask{display:flex;gap:4px;width:100%;max-width:440px;flex:none}
+.ask input{flex:1;min-width:0;font:600 16px var(--f-talk);color:var(--ink);background:var(--paper);border:0;padding:7px 10px;margin:var(--px);box-shadow:0 0 0 var(--px) var(--ink),0 0 0 6px var(--cyan)}
+.ask input::placeholder{color:#7a6aa8}
+.ask .chip{padding:7px 10px}
+#askMic[aria-pressed="true"]{background:var(--pink);animation:blink .8s steps(1) infinite}
+.rchips{display:flex;flex-wrap:wrap;gap:4px}
+.rchip{font-family:var(--f-label);font-size:9px;letter-spacing:.06em;padding:5px 8px;border:0;background:var(--panel);color:var(--text);box-shadow:0 0 0 1px var(--c-3);cursor:pointer}
+.rchip:hover{color:var(--sun)}
 /* gym */
 .gym{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr) minmax(130px,190px);gap:14px;width:100%;height:100%;align-items:center;min-height:0}
 .gStats{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
@@ -387,7 +396,11 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <div class="bubble" id="bubble" aria-live="polite"><span class="spark pin" style="--s:18px;top:-15px;right:-15px;--d:1.1s" aria-hidden="true"></span><span id="say"></span><span class="caret" aria-hidden="true"></span></div>
       <canvas class="px" id="face" width="64" height="52" role="button" tabindex="0" aria-label="Pip. Tap to poke."></canvas>
       <span class="mood" id="mood" data-s="ok">HI!</span>
-      <span class="hint">TAP PIP · TAP ANY STAT</span>
+      <form class="ask" id="askForm" autocomplete="off">
+        <input id="askIn" type="text" enterkeyhint="send" placeholder="Ask Pip: hide job emails" aria-label="Ask Pip">
+        <button class="chip" id="askMic" type="button" aria-pressed="false" aria-label="Speak to Pip" hidden>MIC</button>
+        <button class="chip hot" type="submit">ASK</button>
+      </form>
     </section>
 
     <section class="panel frame spread" aria-label="Sky and device" data-boot style="--bd:.65s">
@@ -548,6 +561,11 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <div class="row"><button class="chip" id="rulesSave" type="button">SAVE RULES</button></div>
     </section>
     <section class="setSec">
+      <span class="lbl">Rules you told Pip</span>
+      <div class="rchips" id="ruleChips"></div>
+      <p class="fl">Tap a rule to remove it. Add more by asking Pip, like "hide job emails" or "mute emails from LinkedIn".</p>
+    </section>
+    <section class="setSec">
       <span class="lbl">Gym</span>
       <label class="fl" for="gyGoal">Weekly goal</label>
       <select id="gyGoal"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option></select>
@@ -584,7 +602,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
-const BUILD='20261016-142722'; // stamped at publish; the page compares it with the live copy to update itself
+const BUILD='20261016-144014'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -1254,8 +1272,19 @@ function scoreMsg(e,ur){
   RULES.forEach(r=>{if(r.re.test(text)||(r.k==='JOBS'&&jobDom)){s+=r.w;tags.push(r.k)}});
   if(ur.kw.some(k=>low.includes(k))){s+=35;tags.push('KEYWORD')}
   if(tags.includes('SECURITY')&&Date.now()-e.t>3600e3)s-=20;
-  e.score=s;e.tags=tags.slice(0,3);e.imp=s>=45;return e;
+  e.score=s;e.allTags=tags;e.tags=tags.slice(0,3);e.imp=s>=45;return e;
 }
+// rules Chance gives Pip ("hide job emails", "mute emails from linkedin"); kept on this device
+const RL=Object.assign({hideTags:[],hideFrom:[],hideWords:[]},store.get('pp.rules')||{});
+const saveRules=()=>store.set('pp.rules',RL);
+function hiddenBy(e){
+  const low=(e.subject+' '+e.snippet).toLowerCase(),who=(e.name+' '+e.addr).toLowerCase();
+  for(const t of RL.hideTags){if(t==='PROMO'?e.promo:t==='LIST'?e.list:t==='SOCIAL'?e.social:(e.allTags||e.tags).includes(t))return t}
+  for(const f of RL.hideFrom)if(who.includes(f))return'from '+f;
+  for(const w of RL.hideWords)if(low.includes(w))return'about '+w;
+  return null;
+}
+const shown=()=>(G.list||[]).filter(e=>!hiddenBy(e));
 const byRank=(a,b)=>(b.imp-a.imp)||(b.score-a.score)||(b.t-a.t);
 const gSay=t=>{$('inMsg').textContent=t;$('gStatus').textContent=t};
 function gLogin(silent){
@@ -1311,7 +1340,7 @@ async function loadMail(){
     const ur=userRules();
     G.list=got.filter(Boolean).map(parseMsg).filter(e=>!GYM_SUBJECT.test(e.subject)).map(e=>scoreMsg(e,ur)).sort(byRank);
     G.at=Date.now();G.err='';
-    const fresh=G.list.filter(e=>e.imp&&e.unread&&!G.seen.has(e.id));
+    const fresh=G.list.filter(e=>e.imp&&e.unread&&!G.seen.has(e.id)&&!hiddenBy(e));
     fresh.forEach(e=>G.seen.add(e.id));store.set('pp.gSeen',[...G.seen].slice(-400));
     if(fresh.length&&!G.firstLoad)newMail(fresh);
     G.firstLoad=false;
@@ -1336,10 +1365,10 @@ function renderInbox(){
   const live=G.on&&!G.needTap;$('inboxLive').hidden=!live;$('inboxConnect').hidden=live;
   $('gOpen').textContent=G.on&&G.needTap?'RECONNECT GMAIL':'CONNECT GMAIL';
   if(!live){if(G.on&&G.needTap)$('inMsg').textContent='Gmail sign-in expired. Tap Reconnect and it picks right back up.';return}
-  const all=G.list||[],imp=all.filter(e=>e.imp),unread=all.filter(e=>e.unread);
+  const all=shown(),imp=all.filter(e=>e.imp),unread=all.filter(e=>e.unread),nHid=(G.list||[]).length-all.length;
   $('inWho').textContent=G.email?G.email.toUpperCase():'GMAIL';
   if(G.list){tween($('inImp'),imp.length);tween($('inUnread'),unread.length)}
-  $('inNote').textContent=G.err||(G.at?`CHECKED ${fmtTime(new Date(G.at)).toUpperCase()} · TAP AN EMAIL`:'LOADING YOUR INBOX...');
+  $('inNote').textContent=G.err||(G.at?`CHECKED ${fmtTime(new Date(G.at)).toUpperCase()}${nHid?` · ${nHid} HIDDEN BY YOUR RULES`:' · TAP AN EMAIL'}`:'LOADING YOUR INBOX...');
   document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===G.filter)));
   const rows=G.filter==='imp'?imp:G.filter==='unread'?unread:all,ul=$('mlist');ul.innerHTML='';
   if(!rows.length){const li=document.createElement('li');li.className='empty';
@@ -1365,7 +1394,7 @@ function greet(){const h=new Date().getHours();return h<5?'Up late':h<12?'Good m
 function briefTips(){
   // things you can act on first (email), then things to plan around (weather, sky)
   const t=[],c=S.wx&&S.wx.current,d=S.wx&&S.wx.daily,si=sunInfo();
-  const iu=(G.list||[]).filter(e=>e.imp&&e.unread);
+  const iu=shown().filter(e=>e.imp&&e.unread);
   const job=iu.find(e=>e.tags.includes('JOBS'));if(job)t.push(`Job email from ${job.name}: "${job.subject}". Worth a reply.`);
   const vip=iu.find(e=>e.tags.includes('VIP')&&e!==job);if(vip)t.push(`${vip.name} wrote: "${vip.subject}".`);
   const money=iu.find(e=>e.tags.includes('MONEY'));if(money)t.push(`Money: "${money.subject}" from ${money.name}.`);
@@ -1388,7 +1417,7 @@ function renderBrief(){
   const c=S.wx&&S.wx.current,d=S.wx&&S.wx.daily;
   $('bWx').textContent=c?`${n(c.temperature_2m)}°`:'--';
   $('bWxT').textContent=c?`${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.`:SANDBOX?'Weather loads on the live link.':'Set a location.';
-  const imp=(G.list||[]).filter(e=>e.imp),iu=imp.filter(e=>e.unread);
+  const imp=shown().filter(e=>e.imp),iu=imp.filter(e=>e.unread);
   $('bIn').textContent=G.on&&G.list?`${iu.length} new`:'--';
   $('bInT').textContent=!G.on?'Connect Gmail to see what matters.':G.needTap?'Gmail needs a reconnect.':!G.list?'Checking your inbox...':iu.length?`Top: "${iu[0].subject}" from ${iu[0].name}.`:imp.length?'All important mail is read.':'Nothing important in 3 days.';
   const si=sunInfo(),v=nextPasses().find(p=>p.visible),mo=moonInfo();
@@ -1408,7 +1437,7 @@ $('bRead').onclick=()=>{
   restart($('bRead'),'hit');kick(1);faceBurst('star',5);
   const c=S.wx&&S.wx.current,lines=[`${greet()}, Chance. Here's your brief.`];
   if(c)lines.push(`It's ${n(c.temperature_2m)}° and ${(WXNAME[c.weather_code]||'').toLowerCase()} in ${place()}.`);
-  const iu=(G.list||[]).filter(e=>e.imp&&e.unread);
+  const iu=shown().filter(e=>e.imp&&e.unread);
   if(G.on&&G.list)lines.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}.`:'No important emails waiting.');
   lines.push(...briefTips());speakLines(lines);
 };
@@ -1543,6 +1572,121 @@ function gymTip(){const st=gymStats();if(!st.total)return null;   // only nudge 
   if(st.since>=3)return`${st.since} days since the gym. ${st.thisWeek} of ${GY.goal} this week so far.`;
   return null}
 
+/* ---------- Ask Pip: plain-language commands ---------- */
+const CATS=[
+  [/\b(jobs?|recruit\w*|career\w*|hiring|interviews?|applications?)\b/,'JOBS','job'],
+  [/\b(bills?|money|payments?|finance\w*|invoices?|banking)\b/,'MONEY','bill and money'],
+  [/\b(deadlines?|due dates?)\b/,'DEADLINE','deadline'],
+  [/\b(travel|flights?|trips?|reservations?)\b/,'TRAVEL','travel'],
+  [/\b(deliver\w*|packages?|shipping|shipments?|orders?)\b/,'DELIVERY','delivery'],
+  [/\b(security|verification|codes?|sign-?ins?|password\w*)\b/,'SECURITY','security'],
+  [/\b(promo\w*|sales?|deals?|marketing|ads?)\b/,'PROMO','promo'],
+  [/\b(newsletters?|lists?|digests?|subscriptions?)\b/,'LIST','newsletter'],
+  [/\b(social)\b/,'SOCIAL','social']
+];
+const TABWORDS=[[/forecast|weather/,'fc'],[/music|spotify|song/,'music'],[/\biss\b|space station|satellite/,'iss'],[/inbox|e-?mails?|mail\b/,'inbox'],[/\bgym\b|workout|fitness/,'gym'],[/brief|summary|my day/,'brief']];
+const catOf=s=>CATS.find(([re])=>re.test(s));
+const clean=s=>s.replace(/^(the|my|any|all)\s+/,'').replace(/\s+(emails?|mail|messages?)$/,'').replace(/[."!?]+$/,'').trim();
+const addTo=(k,v)=>{const cur=splitList(store.get(k));if(!cur.includes(v))cur.push(v);store.set(k,cur.join(', '))};
+const dropFrom=(k,v)=>store.set(k,splitList(store.get(k)).filter(x=>x!==v).join(', '));
+function rulesChanged(){
+  if(G.list){const ur=userRules();G.list.forEach(e=>scoreMsg(e,ur));G.list.sort(byRank)}
+  saveRules();renderInbox();renderBrief();renderRuleChips();if(tab==='inbox')restart($('mlist'),'reveal');
+}
+function askPip(raw){
+  const s0=raw.toLowerCase().replace(/[’']/g,"'").replace(/\s+/g,' ').trim();
+  const s=s0.replace(/^(hey |ok |okay )?pip,?\s*/,'').replace(/^(please|can you|could you|would you|i want you to|i'd like you to)\s+/,'').replace(/\s*please$/,'');
+  if(!s)return'Type or say something, like "hide job emails".';
+  const hideV=/^(hide|don't show|do not show|dont show|stop showing|remove|filter out|mute|ignore|block|exclude|get rid of|no more|i don't want to see|i dont want to see|i do not want to see|i don't need|i don't care about)\b/;
+  const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
+  let m;
+  if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
+    return 'Try: "hide job emails", "show job emails", "mute emails from LinkedIn", "hide emails about crypto", "make mom a VIP", "gym goal 3", "only show unread", "open gym", "sound on", "what are my rules", or "reset my rules".';
+  if(/^(what|list|show)( are)?( my)? rules\b|^my rules$/.test(s)){const r=ruleList();return r.length?`Your rules: ${r.map(x=>x.label.toLowerCase()).join('; ')}.`:'No rules yet. Try "hide job emails".'}
+  if(/^(reset|clear|delete|remove) (all |my )*(the )?rules\b/.test(s)){RL.hideTags=[];RL.hideFrom=[];RL.hideWords=[];store.set('pp.vip','');store.set('pp.kw','');rulesChanged();return'All rules cleared. Your inbox is back to normal.'}
+  if((m=s.match(/goal (?:to |is |of |=\s*)?(\d)\b/))&&/gym|goal|workout/.test(s)){
+    const g=clamp(+m[1],1,7);GY.goal=g;store.set('pp.gymGoal',g);renderGym();renderBrief();return`Gym goal set to ${g} day${g>1?'s':''} a week.`}
+  if(/\bsound\b/.test(s)&&/\b(on|off|mute|unmute|enable|disable)\b/.test(s)){const on=/\b(on|unmute|enable)\b/.test(s);if(on!==soundOn)$('soundBtn').click();return on?'Sound on. Beep boop.':'Sound off.'}
+  if((m=s.match(/^(?:show (?:me )?)?only (?:show (?:me )?)?(unread|important|all)\b|^show (?:me )?(unread|important|all) (?:emails?|mail)/))){
+    const f=m[1]||m[2];G.filter={unread:'unread',important:'imp',all:'all'}[f];store.set('pp.gFilter',G.filter);setTab('inbox');renderInbox();return`Showing ${f} email.`}
+  // VIP / important words
+  if((m=s.match(/^(?:make |add |set )?(.+?) (?:a |as )?(?:vip|very important)$/))||(m=s.match(/^(?:vip|always show|prioritize|always flag|pin) (?:emails? |mail )?(?:from )?(.+)$/))){
+    const who=clean(m[1]);if(!who||who.length<2)return'Who should be a VIP?';addTo('pp.vip',who);RL.hideFrom=RL.hideFrom.filter(x=>x!==who);rulesChanged();return`Got it. Emails from ${who} always go to the top.`}
+  if((m=s.match(/^(?:flag|watch for|look out for|highlight) (?:emails? |mail )?(?:about |with |mentioning |containing )?(.+)$/))){
+    const w=clean(m[1]);addTo('pp.kw',w);rulesChanged();return`I'll flag anything mentioning "${w}".`}
+  const verb=hideV.test(s)?'hide':showV.test(s)?'show':null;
+  if(verb){
+    const rest=s.replace(hideV,'').replace(showV,'').replace(/^\s*(me|any|all|the)\s+/,'').trim();
+    if((m=rest.match(/^(?:any |all |the )?(?:emails?|mail|messages?|stuff)?\s*from (.+)$/))){
+      const who=clean(m[1]);if(!who)return'From who?';
+      if(verb==='hide'){if(!RL.hideFrom.includes(who))RL.hideFrom.push(who);dropFrom('pp.vip',who)}else RL.hideFrom=RL.hideFrom.filter(x=>x!==who);
+      rulesChanged();return verb==='hide'?`Muted emails from ${who}.`:`Showing emails from ${who} again.`}
+    if((m=rest.match(/^(?:any |all |the )?(?:emails?|mail|messages?|stuff) (?:about|with|mentioning|containing|that say|saying) (.+)$/))){
+      const w=clean(m[1]);
+      if(verb==='hide'){if(!RL.hideWords.includes(w))RL.hideWords.push(w)}else RL.hideWords=RL.hideWords.filter(x=>x!==w);
+      rulesChanged();return verb==='hide'?`Hiding emails about "${w}".`:`Showing emails about "${w}" again.`}
+    const cat=catOf(rest);
+    if(cat){
+      const[,tag,name]=cat;
+      if(verb==='hide'){if(!RL.hideTags.includes(tag))RL.hideTags.push(tag)}else RL.hideTags=RL.hideTags.filter(x=>x!==tag);
+      rulesChanged();
+      const n=(G.list||[]).filter(e=>hiddenBy(e)).length;
+      return verb==='hide'?`Done. I'm hiding ${name} emails${G.list?` (${n} hidden right now)`:''}. Say "show ${name} emails" to undo.`:`${name[0].toUpperCase()+name.slice(1)} emails are back.`}
+    if(verb==='show'){const tw=TABWORDS.find(([re])=>re.test(rest));if(tw){setTab(tw[1]);return`Here's ${tw[1]==='fc'?'the forecast':'your '+$('tab-'+tw[1]).textContent.replace(/[^A-Z]/g,'').toLowerCase()}.`}}
+    return`I can hide or show email types (jobs, bills, deliveries, promos), emails from someone, or emails about a topic. Try "${verb} job emails".`;
+  }
+  {const tw=TABWORDS.find(([re])=>re.test(s));if(/^(open|go to|switch to|take me to|show me)\b/.test(s)&&tw){setTab(tw[1]);return'On it.'}}
+  // questions Pip can answer from what's on screen
+  if(/weather|temperature|how (hot|cold)|outside/.test(s))return about('temp')+' '+about('feels');
+  if(/rain|umbrella/.test(s))return about('rain');
+  if(/how many|unread|any (new )?e-?mails?|inbox/.test(s)){const iu=shown().filter(e=>e.imp&&e.unread);return G.on&&G.list?(iu.length?`${iu.length} important unread. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email.'):'Gmail isn\'t connected yet. Tap Inbox to connect.'}
+  if(/\biss\b|space station/.test(s))return about('issPass');
+  if(/song|playing|music/.test(s))return about('track');
+  if(/gym|workout|streak/.test(s))return about('gymWeek')+' '+about('gymStreak');
+  if(/sun(set|rise)|daylight/.test(s))return about('sun');
+  if(/moon/.test(s))return about('moon');
+  if(/^(hi|hello|hey|yo|sup)\b/.test(s))return`Hey Chance! ${nextFact()}`;
+  if(/thank/.test(s))return'Anytime!';
+  return`I didn't get that one. Try "hide job emails", "mute emails from LinkedIn", or say "help".`;
+}
+function ruleList(){
+  const out=[];
+  RL.hideTags.forEach(t=>{const c=CATS.find(x=>x[1]===t);out.push({label:`HIDE ${(c?c[2]:t).toUpperCase()}`,rm:()=>{RL.hideTags=RL.hideTags.filter(x=>x!==t)}})});
+  RL.hideFrom.forEach(f=>out.push({label:`MUTE ${f.toUpperCase()}`,rm:()=>{RL.hideFrom=RL.hideFrom.filter(x=>x!==f)}}));
+  RL.hideWords.forEach(w=>out.push({label:`HIDE "${w.toUpperCase()}"`,rm:()=>{RL.hideWords=RL.hideWords.filter(x=>x!==w)}}));
+  splitList(store.get('pp.vip')).forEach(v=>out.push({label:`VIP ${v.toUpperCase()}`,rm:()=>dropFrom('pp.vip',v)}));
+  splitList(store.get('pp.kw')).forEach(k=>out.push({label:`FLAG "${k.toUpperCase()}"`,rm:()=>dropFrom('pp.kw',k)}));
+  return out;
+}
+function renderRuleChips(){
+  const box=$('ruleChips');box.innerHTML='';const r=ruleList();
+  if(!r.length){const p=document.createElement('span');p.className='fl';p.textContent='None yet.';box.appendChild(p)}
+  r.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='rchip';b.textContent=x.label+' ×';b.setAttribute('aria-label','Remove rule '+x.label);
+    b.onclick=()=>{x.rm();rulesChanged();renderSettings();sfx('close');say(`Removed: ${x.label.toLowerCase()}.`)};box.appendChild(b)});
+}
+let askVoice=false;
+$('askForm').addEventListener('submit',e=>{
+  e.preventDefault();const inp=$('askIn'),q=inp.value.trim();if(!q)return;
+  inp.value='';inp.blur();const reply=askPip(q);
+  sfx('data');kick(1);faceBurst('star',5);lookToward($('askForm'));S.pokeE=Math.max(S.pokeE,.5);
+  say(reply);
+  if(askVoice){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(reply.replace(/°/g,' degrees'));u.rate=1.05;u.pitch=1.5;speechSynthesis.speak(u)}catch(err){}}
+  askVoice=false;
+});
+{ // voice input where the browser supports it (iOS keyboard dictation works everywhere)
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(SR&&!SANDBOX){const mic=$('askMic');mic.hidden=false;let rec=null;
+    mic.onclick=()=>{
+      if(rec){rec.stop();return}
+      try{rec=new SR();rec.lang='en-US';rec.interimResults=true;rec.maxAlternatives=1}catch(e){mic.hidden=true;return}
+      mic.setAttribute('aria-pressed','true');sfx('open');say('Listening...');
+      rec.onresult=ev=>{const r=ev.results[ev.results.length-1];$('askIn').value=r[0].transcript;if(r.isFinal){askVoice=true;$('askForm').requestSubmit()}};
+      rec.onerror=ev=>{say(ev.error==='not-allowed'?'Microphone access is off for this page. You can still use the keyboard mic.':"Didn't catch that. Try again.")};
+      rec.onend=()=>{mic.setAttribute('aria-pressed','false');rec=null};
+      try{rec.start()}catch(e){mic.setAttribute('aria-pressed','false');rec=null}
+    }}
+}
+
 /* ---------- settings sheet ---------- */
 const setEl=$('settings');
 function renderSettings(){
@@ -1551,7 +1695,7 @@ function renderSettings(){
   $('sStatus').textContent=M.tok?`Connected${M.state&&M.state.device?' · playing on '+M.state.device:''}. Disconnect from the Music tab.`:'Not connected. Use the Music tab.';
   $('vip').value=store.get('pp.vip')||'';$('kw').value=store.get('pp.kw')||'';
   $('ver').textContent=BUILD.startsWith('__')?'dev':BUILD;
-  $('gyGoal').value=String(GY.goal);
+  $('gyGoal').value=String(GY.goal);renderRuleChips();
   const st=gymStats(),fromMail=[...st.v.values()].filter(s=>s==='email').length;
   $('gyStatus').textContent=G.on?`${fromMail} gym day${fromMail===1?'':'s'} found in Gmail from 24GO reports and check-in emails, plus ${st.total-fromMail} you tapped.`:'Connect Gmail so Pip can import your 24GO check-in reports. Tapped days work without it.';
 }
@@ -1564,7 +1708,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&!setEl.hidden)closeSettings(
 $('gForm').addEventListener('submit',e=>{e.preventDefault();gLogin(false)});
 $('gOut').onclick=()=>{gLogout();renderSettings()};
 $('rulesSave').onclick=()=>{
-  store.set('pp.vip',$('vip').value);store.set('pp.kw',$('kw').value);sfx('data');restart($('rulesSave'),'hit');
+  store.set('pp.vip',$('vip').value);store.set('pp.kw',$('kw').value);sfx('data');restart($('rulesSave'),'hit');renderRuleChips();
   if(G.list){const ur=userRules();G.list.forEach(e=>scoreMsg(e,ur));G.list.sort(byRank);renderInbox();renderBrief()}
   say("Rules saved. I'm re-sorting your inbox with them.");
 };
@@ -1685,7 +1829,7 @@ function facts(){
   }
   if(si)out.push(si.day?`Sunset at ${fmtTime(new Date(si.set))}. ${fmtDur(si.set-Date.now())} of daylight left.`:`Sunrise at ${fmtTime(new Date(si.nextRise))}, in ${fmtDur(si.nextRise-Date.now())}.`);
   out.push(about('moon'));
-  if(G.on&&G.list){const iu=G.list.filter(e=>e.imp&&e.unread);out.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email right now. Nice.')}
+  if(G.on&&G.list){const iu=shown().filter(e=>e.imp&&e.unread);out.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email right now. Nice.')}
   if(M.state&&M.state.playing)out.push(about('track'));
   {const st=gymStats();if(st.total)out.push(`Gym: ${st.thisWeek} of ${GY.goal} days this week${st.streak?`, ${st.streak}-week streak`:''}.`)}
   if(ISS.pos){out.push(about('issDist'));if(S.loc&&ISS.mode==='sgp4')out.push(about('issPass'))}
@@ -2127,9 +2271,9 @@ setTimeout(checkUpdate,(reduce?0:1250)+5000);setInterval(checkUpdate,30*60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
 gCallback();renderInbox();renderGym();renderBrief();if(G.on)setTimeout(loadMail,reduce?0:1500);
 spotCallback().then(()=>{renderMusic();pollSpotify()});
-if(!store.get('pp.seenTabs')&&!new URLSearchParams(location.search).has('code')){ // one-time tour of the new tabs
-  setTimeout(()=>{store.set('pp.seenTabs',true);['music','iss'].forEach(flagTab);restart($('tab-music'),'hit');
-    say('New! Tap MUSIC up top to connect Spotify, or ISS to track the space station.');kick(1)},(reduce?0:BOOT-performance.now())+3500)}
+if(!store.get('pp.seenAsk')&&!new URLSearchParams(location.search).has('code')){ // one-time intro to Ask Pip
+  setTimeout(()=>{if(document.activeElement===$('askIn')||$('askIn').value)return;store.set('pp.seenAsk',true);store.set('pp.seenTabs',true);
+    restart($('askForm'),'hit');say('New! Talk to me down here. Try "hide job emails" or "set my gym goal to 3".');kick(1)},(reduce?0:BOOT-performance.now())+6000)}
 loadTLE();loadLand();
 requestAnimationFrame(frame);
 })();

@@ -81,7 +81,7 @@ async function mock(page) {
   await ctx.addInitScript(() => {
     if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
     const set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-    set('pp.loc', { lat: 34.24, lon: -118.53, name: 'Northridge' }); set('pp.seenTabs', true); set('pp.tab', 'fc');
+    set('pp.loc', { lat: 34.24, lon: -118.53, name: 'Northridge' }); set('pp.seenTabs', true); set('pp.seenAsk', true); set('pp.tab', 'fc');
     set('pp.spotTok', { access: 'AT', refresh: 'RT', exp: Date.now() + 3600e3 }); set('pp.spotId', '0123456789abcdef0123456789abcdef');
     set('pp.gOn', true); set('pp.gId', 'x.apps.googleusercontent.com'); set('pp.gTok', { access: 'GT', exp: Date.now() + 3600e3 }); set('pp.vip', 'mom');
   });
@@ -109,6 +109,29 @@ async function mock(page) {
   check('tapping an email makes Pip explain it', /Interview availability/.test(await t('#say')), (await t('#say')).slice(0, 80));
   check('email expands with Gmail link', await page.$('#mlist .mmore a[href*="mail.google.com"]') !== null);
   await page.screenshot({ path: path.join(OUT, '2-inbox.png') });
+
+  // Ask Pip: plain-language rules
+  const ask = async q => { await page.fill('#askIn', q); await page.press('#askIn', 'Enter'); await page.waitForTimeout(2200); return t('#say'); };
+  let reply = await ask("i don't want to see any of the job related emails");
+  const rowsAfterHide = await page.$$eval('#mlist .mrow', rs => rs.map(r => r.textContent).join('|'));
+  check('Ask Pip hides job emails', !rowsAfterHide.includes('Dana Lee') && /hiding job emails/i.test(reply), reply.slice(0, 90));
+  check('inbox shows hidden-by-rules count', /1 HIDDEN BY YOUR RULES/.test(await t('#inNote')), await t('#inNote'));
+  reply = await ask('show job emails');
+  check('Ask Pip brings job emails back', (await page.$$eval('#mlist .mrow', rs => rs.map(r => r.textContent).join('|'))).includes('Dana Lee'), reply.slice(0, 60));
+  reply = await ask('mute emails from mom');
+  check('Ask Pip mutes a sender (even a VIP)', !(await page.$$eval('#mlist .mrow', rs => rs.map(r => r.textContent).join('|'))).includes('Mom') && /Muted emails from mom/.test(reply), reply.slice(0, 60));
+  reply = await ask('set my gym goal to 3');
+  check('Ask Pip sets gym goal', /Gym goal set to 3/.test(reply), reply.slice(0, 60));
+  reply = await ask('what are my rules');
+  check('Ask Pip lists rules', /mute mom/i.test(reply), reply.slice(0, 90));
+  reply = await ask('flibber jabber');
+  check('Ask Pip handles nonsense politely', /didn't get that/i.test(reply), reply.slice(0, 60));
+  await page.click('#setBtn'); await page.waitForTimeout(500);
+  check('Settings lists rule chips', (await t('#ruleChips')).includes('MUTE MOM'), await t('#ruleChips'));
+  await page.click('#ruleChips .rchip >> text=MUTE MOM'); await page.waitForTimeout(400);
+  check('tapping a rule chip removes it', !(await t('#ruleChips')).includes('MUTE MOM'));
+  await page.click('#setClose'); await page.waitForTimeout(400);
+  await page.click('#tab-inbox'); await page.waitForTimeout(500);
 
   await page.click('#tab-gym'); await page.waitForTimeout(1500);
   const gnote = await t('#gyNote');
