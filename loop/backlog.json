@@ -74,7 +74,8 @@
     "Pip mood 'heads up' 10 min before an event",
     "smoke test mocks the Calendar API"
    ],
-   "passes": false
+   "passes": true,
+   "notes": "Built 2026-10-17 (preview). Needs Google Calendar API enabled in the Cloud project and one tap on ALLOW CALENDAR. Silent renewals only ask for already-granted scopes so Gmail never breaks. Ideas: tap an event to open it, travel-time heads-up using location."
   },
   {
    "id": "job-tracker",

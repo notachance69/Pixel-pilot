@@ -23,14 +23,15 @@ Everything is one self-contained `index.html`. Your chosen location is saved onl
 Pixel Pilot reads Gmail **read-only** in your browser. Nothing goes through a server, and emails are never stored in this repo.
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com), create a project called **Pixel Pilot**.
-2. **APIs & Services → Library →** search **Gmail API** → Enable.
+2. **APIs & Services → Library →** search **Gmail API** → Enable. Then search **Google Calendar API** → Enable.
 3. **Google Auth Platform → Branding / Audience:** app name *Pixel Pilot*, your email as support contact, audience **External**, then add your own Gmail address under **Test users**.
-4. **Data access → Add scopes:** `https://www.googleapis.com/auth/gmail.readonly`.
+4. **Data access → Add scopes:** `https://www.googleapis.com/auth/gmail.readonly` and `https://www.googleapis.com/auth/calendar.readonly`.
 5. **Clients → Create client → Web application.**
    - Authorized JavaScript origins: `https://notachance69.github.io`
    - Authorized redirect URIs: `https://notachance69.github.io/Pixel-pilot/` **and** `https://notachance69.github.io/Pixel-pilot/preview/`
 6. Copy the **Client ID** (ends in `.apps.googleusercontent.com`), open Pixel Pilot → **Settings** → paste it → **Connect**.
    Google will warn that the app isn't verified. That's expected for your own test app: tap **Continue**.
+7. **Calendar (added later):** if you connected Gmail before the calendar existed, do step 2's Calendar part, then tap **ALLOW CALENDAR** on the Brief tab once and tick the calendar box. Pip only reads it.
 
 ## Talk to Pip
 

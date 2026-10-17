@@ -43,6 +43,17 @@ const GYM = {
   g5: { id: 'g5', internalDate: String(dayOff(4).getTime()), payload: { mimeType: 'text/plain', headers: [{ name: 'From', value: '24 Hour Fitness <email@member.24hourfitness.com>' }, { name: 'Subject', value: 'Get Ready for Training Day' }],
     body: { data: b64(`Visit us on ${dayOff(-3).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} for a free session.`) } } }
 };
+// calendar: next meeting in 25 min, a declined one (hidden), an all-day event, and later ones
+const iso = ms => new Date(ms).toISOString(), M_ = 60e3, t0 = Date.now();
+const CAL = { items: [
+  { id: 'c0', summary: "Mom's birthday", start: { date: ymd(dayOff(0)) }, end: { date: ymd(dayOff(-1)) } },
+  { id: 'c1', summary: 'Phone screen with Dana', location: 'Zoom, https://zoom.us/j/1', start: { dateTime: iso(t0 + 25 * M_) }, end: { dateTime: iso(t0 + 55 * M_) } },
+  { id: 'c2', summary: 'Team lunch', start: { dateTime: iso(t0 + 60 * M_) }, end: { dateTime: iso(t0 + 120 * M_) }, attendees: [{ email: 'chance@example.com', self: true, responseStatus: 'declined' }] },
+  { id: 'c3', summary: 'Dentist', start: { dateTime: iso(t0 + 180 * M_) }, end: { dateTime: iso(t0 + 240 * M_) } },
+  { id: 'c4', summary: 'Spin class', start: { dateTime: iso(t0 + 26 * 60 * M_) }, end: { dateTime: iso(t0 + 27 * 60 * M_) } },
+  { id: 'c5', summary: 'Cancelled thing', status: 'cancelled', start: { dateTime: iso(t0 + 30 * M_) }, end: { dateTime: iso(t0 + 40 * M_) } }
+] };
+let calHits = 0;
 const GYM_CSV = `Date,Club\n${ymd(dayOff(12))},Northridge Super-Sport\n`;
 const topo = { type: 'Topology', transform: { scale: [1, 1], translate: [0, 0] }, objects: { land: { type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', arcs: [[[0]], [[1]]] }] } },
   arcs: [[[-125, 50], [55, 0], [0, -25], [-45, 0], [-10, -10]], [[-80, 10], [45, 0], [0, -55], [-35, 0], [-10, 55]]] };
@@ -60,6 +71,7 @@ async function mock(page) {
     if (u.includes('api.spotify.com/v1/me/player')) return r.request().method() !== 'GET' ? r.fulfill({ status: 204, body: '' }) :
       r.fulfill({ json: { is_playing: true, progress_ms: 60000, device: { name: 'iPad' }, item: { type: 'track', id: 't1', name: 'Midnight Pixel Drive', duration_ms: 214000, artists: [{ name: 'Neon Synth' }], album: { name: 'Chrome Stars', images: [{ url: 'https://i.scdn.co/a' }, { url: 'https://i.scdn.co/b' }] } } } });
     if (u.includes('i.scdn.co')) return r.fulfill({ body: fs.readFileSync(path.join(__dirname, 'art.png')), contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' } });
+    if (u.includes('www.googleapis.com/calendar/v3/calendars/primary/events')) { calHits++; return r.fulfill({ json: CAL }); }
     if (u.includes('gmail.googleapis.com')) {
       if (u.includes('/profile')) return r.fulfill({ json: { emailAddress: 'chance@example.com' } });
       if (u.includes('/attachments/a1')) return r.fulfill({ json: { data: b64(GYM_CSV) } });
@@ -83,7 +95,7 @@ async function mock(page) {
     const set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
     set('pp.loc', { lat: 34.24, lon: -118.53, name: 'Northridge' }); set('pp.seenTabs', true); set('pp.seenAsk', true); set('pp.tab', 'fc');
     set('pp.spotTok', { access: 'AT', refresh: 'RT', exp: Date.now() + 3600e3 }); set('pp.spotId', '0123456789abcdef0123456789abcdef');
-    set('pp.gOn', true); set('pp.gId', 'x.apps.googleusercontent.com'); set('pp.gTok', { access: 'GT', exp: Date.now() + 3600e3 }); set('pp.vip', 'mom');
+    set('pp.gOn', true); set('pp.gId', 'x.apps.googleusercontent.com'); set('pp.gTok', { access: 'GT', exp: Date.now() + 3600e3 }); set('pp.vip', 'mom'); set('pp.gCal', true);
   });
   const page = await ctx.newPage(); const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -150,6 +162,29 @@ async function mock(page) {
   check('brief inbox card', /new/.test(await t('#bIn')), await t('#bIn'));
   await page.screenshot({ path: path.join(OUT, '3-brief.png') });
 
+  // calendar
+  check('calendar fetched with the Google token', calHits > 0, 'hits=' + calHits);
+  check('calendar card counts down to the next meeting', /^IN 2\dM$/.test((await t('#bCal')).trim()), await t('#bCal'));
+  const calRows = await page.$$eval('#bCalL li', ls => ls.map(l => l.textContent));
+  check('calendar shows next 3 events, skips declined and cancelled', calRows.length === 3 && /Phone screen/.test(calRows.join('|')) && /Dentist/.test(calRows.join('|')) && !/Team lunch|Cancelled/.test(calRows.join('|')), calRows.join(' | '));
+  check('brief leads with the upcoming meeting', /^"Phone screen with Dana" at .* in 2\d minutes\. Zoom\./.test(await t('#bTips li')), await t('#bTips li'));
+  await page.waitForTimeout(3000);   // let the gym celebration finish so its mood change doesn't talk over the tap
+  await page.click('#pane-brief .bCal'); await page.waitForTimeout(2600);
+  check('tapping the calendar card makes Pip explain it', /Next up: "Phone screen with Dana"/.test(await t('#say')), (await t('#say')).slice(0, 90));
+  reply = await ask("what's next");
+  check('Ask Pip answers what\'s next', /Next up: "Phone screen with Dana"/.test(reply) && /more this week/.test(reply), reply.slice(0, 120));
+  await page.evaluate(() => { const { CAL } = window.__pipCal; CAL.list.find(e => e.id === 'c1').start = Date.now() + 8 * 60e3; });
+  await page.waitForTimeout(2600);
+  check('Pip says heads up 10 minutes before a meeting', (await t('#mood')).trim() === 'HEADS UP' && /Heads up: "Phone screen with Dana" starts in 8 minutes/.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
+  await page.screenshot({ path: path.join(OUT, '3b-heads-up.png') });
+  await page.evaluate(() => { const { CAL } = window.__pipCal; CAL.list.find(e => e.id === 'c1').start = Date.now() + 25 * 60e3; });
+  await page.waitForTimeout(400);
+  check('heads up ends when the meeting is not close', (await t('#mood')).trim() !== 'HEADS UP', await t('#mood'));
+  await page.evaluate(() => { const { CAL, renderBrief } = window.__pipCal; CAL.ok = false; renderBrief(); });
+  check('ALLOW CALENDAR shows when calendar access is missing', await page.isVisible('#calAllow'));
+  await page.evaluate(() => { const { CAL, renderBrief } = window.__pipCal; CAL.ok = true; renderBrief(); });
+  check('ALLOW CALENDAR hides once granted', !(await page.isVisible('#calAllow')));
+
   await page.click('#tab-music'); await page.waitForTimeout(900);
   check('spotify now playing', (await t('#mTitle')).includes('Midnight Pixel Drive'));
   await page.screenshot({ path: path.join(OUT, '4-music.png') });
@@ -174,6 +209,10 @@ async function mock(page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
   check('no horizontal overflow on phone landscape', !overflow);
   await page.screenshot({ path: path.join(OUT, '7-phone.png') });
+  await page.click('#tab-brief'); await page.waitForTimeout(700);
+  const calClip = await page.$eval('#pane-brief .bCal', e => e.getBoundingClientRect().height > 30 && e.scrollWidth <= e.clientWidth + 1);
+  check('calendar card fits on phone landscape', calClip);
+  await page.screenshot({ path: path.join(OUT, '7b-phone-brief.png') });
 
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

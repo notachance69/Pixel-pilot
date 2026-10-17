@@ -54,3 +54,5 @@ Promote an idea by adding it to `backlog.json` with acceptance criteria.
 - **Night dim.** Auto-dim after sunset for the car or the nightstand. *(in backlog)*
 - **Pip outfits.** Seasonal or holiday costumes, unlocked by streaks.
 - **Swappable sprites.** Drop in PixelLab or Retro Diffusion sprite sheets for Pip's moods.
+
+- Calendar: tap an event row to open it in Google Calendar; "leave now" heads-up using travel time to the event's location; show tomorrow's first event at night.

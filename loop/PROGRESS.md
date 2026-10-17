@@ -53,3 +53,14 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Rules apply to Inbox, Brief, read-aloud, Pip's facts and new-mail alerts. Inbox shows "N hidden by your rules". Settings lists rules as chips; tap to remove.
 - Tests 34/34 (9 new). Screenshot caught the one-time intro talking over a question; intro now waits and skips if you're typing.
 - Shipped live at Chance's request.
+
+## 2026-10-17, round 8: Google Calendar (scheduled run)
+- Task: `calendar` (top unbuilt backlog item). Baseline 34/34 green first.
+- calendar.readonly rides on the existing Google sign-in. Interactive Connect asks for Gmail + Calendar; silent renewals only ask for scopes already granted, so an older Gmail-only sign-in never gets bounced. If Calendar isn't granted, the Brief shows ALLOW CALENDAR. A 403 tells you to enable the Calendar API.
+- Brief: new tall "Next up · Calendar" card with a countdown (IN 25M / NOW / FREE) and the next 3 events (skips declined and cancelled; all-day events tagged). The other four cards are now a 2×2 grid. A meeting within 3 hours leads the tips and the read-aloud.
+- Pip: HEADS UP mood 10 minutes before a timed event: yellow Pip, ringing alarm clock above his head, alarm chirp, Brief badge, "Heads up: X starts in 8 minutes, at Zoom." Tap the card or ask "what's next" / "am I free" for a spoken summary.
+- Polls every 5 minutes alongside Gmail, only while visible. Event data stays in memory.
+- Tests 45/45 (11 new, Calendar API mocked). The first run caught a syntax slip in Pip's help text and a test-timing race with the gym celebration. Screenshots checked at iPad and phone landscape; tightened the list on short screens so 3 events fit.
+- Scores: Works 5, Useful 5, Delight 5, Clarity 4 (phone Brief is dense), Resilience 4, Privacy 5, Performance 5.
+- Chance's one-time step: enable Google Calendar API in the Pixel Pilot Cloud project (and add the calendar.readonly scope under Data access), then tap ALLOW CALENDAR on the Brief tab.
+- Next: `job-tracker`.
