@@ -64,3 +64,10 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Scores: Works 5, Useful 5, Delight 5, Clarity 4 (phone Brief is dense), Resilience 4, Privacy 5, Performance 5.
 - Chance's one-time step: enable Google Calendar API in the Pixel Pilot Cloud project (and add the calendar.readonly scope under Data access), then tap ALLOW CALENDAR on the Brief tab.
 - Next: `job-tracker`.
+
+## 2026-10-17, round 8b: Calendar promoted (Chance asked to turn it on)
+- Enabled the Google Calendar API in the Pixel Pilot Cloud project from Chance's Chrome. Calendar now works once he taps ALLOW CALENDAR on the Brief tab.
+- A live session built a second calendar version in parallel; kept the scheduled run's (safer scope handling on silent renew, more tests) and discarded the other.
+- Ported two fixes from it: mood changes no longer talk over a fresh Ask Pip answer (7 s hold, alerts still speak), and the Brief shows at most two email tips so the weather tip isn't pushed out by a meeting tip.
+- Tests 45/45. Promoted to live.
+- Found in the Cloud console: the only test user is chance.c.castle@gmail.com. chancecastle100@gmail.com needs adding (or Publish app) before it can sign in.

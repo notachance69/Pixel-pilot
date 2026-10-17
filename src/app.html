@@ -1477,10 +1477,13 @@ function briefTips(){
   const t=[],c=S.wx&&S.wx.current,d=S.wx&&S.wx.daily,si=sunInfo();
   const iu=shown().filter(e=>e.imp&&e.unread);
   const nx=calNext();if(nx&&nx.start-Date.now()<3*3600e3)t.push(`"${nx.title}" at ${fmtTime(new Date(nx.start))}, in ${inWords(nx.start-Date.now())}.${nx.where?` ${nx.where}.`:''}`);
-  const job=iu.find(e=>e.tags.includes('JOBS'));if(job)t.push(`Job email from ${job.name}: "${job.subject}". Worth a reply.`);
-  const vip=iu.find(e=>e.tags.includes('VIP')&&e!==job);if(vip)t.push(`${vip.name} wrote: "${vip.subject}".`);
-  const money=iu.find(e=>e.tags.includes('MONEY'));if(money)t.push(`Money: "${money.subject}" from ${money.name}.`);
-  const dl=iu.find(e=>e.tags.includes('DEADLINE')&&e!==money&&e!==job);if(dl)t.push(`Deadline: "${dl.subject}".`);
+  // at most two email tips so weather and the rest still fit
+  const et=[];
+  const job=iu.find(e=>e.tags.includes('JOBS'));if(job)et.push(`Job email from ${job.name}: "${job.subject}". Worth a reply.`);
+  const vip=iu.find(e=>e.tags.includes('VIP')&&e!==job);if(vip)et.push(`${vip.name} wrote: "${vip.subject}".`);
+  const money=iu.find(e=>e.tags.includes('MONEY'));if(money)et.push(`Money: "${money.subject}" from ${money.name}.`);
+  const dl=iu.find(e=>e.tags.includes('DEADLINE')&&e!==money&&e!==job);if(dl)et.push(`Deadline: "${dl.subject}".`);
+  t.push(...et.slice(0,2));
   if(c){
     const wet=nextHours().find(h=>h.p>=50);if(wet)t.push(`Rain likely around ${fmtHour(wet.t)}. Grab an umbrella.`);
     const uv=d.uv_index_max[0]??0;if(uv>=6&&si&&si.day)t.push(`UV peaks at ${uv.toFixed(0)}. Sunscreen if you're outside.`);
@@ -1753,7 +1756,7 @@ $('askForm').addEventListener('submit',e=>{
   e.preventDefault();const inp=$('askIn'),q=inp.value.trim();if(!q)return;
   inp.value='';inp.blur();const reply=askPip(q);
   sfx('data');kick(1);faceBurst('star',5);lookToward($('askForm'));S.pokeE=Math.max(S.pokeE,.5);
-  say(reply);
+  say(reply);S.askHold=performance.now()+7000;
   if(askVoice){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(reply.replace(/°/g,' degrees'));u.rate=1.05;u.pitch=1.5;speechSynthesis.speak(u)}catch(err){}}
   askVoice=false;
 });
@@ -2014,6 +2017,8 @@ function setMood(m,now){
   if(prev&&!reduce)S.trans={from:prev,t0:now,quick,burst:false};
   if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(m==='heads'?'alarm':'mood')}
   if(m==='heads'&&prev!=='poke'&&prev!=='dizzy'){flagTab('brief');faceBurst('star',4);renderBrief()}
+  // don't talk over a fresh Ask Pip answer unless this mood is an alert
+  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss)$/.test(m))return;
   say((prev==='poke'||prev==='dizzy')&&m!=='dizzy'&&m!=='poke'?nextFact():moodLine(m));
 }
 function poke(e){
