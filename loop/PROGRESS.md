@@ -71,3 +71,13 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Ported two fixes from it: mood changes no longer talk over a fresh Ask Pip answer (7 s hold, alerts still speak), and the Brief shows at most two email tips so the weather tip isn't pushed out by a meeting tip.
 - Tests 45/45. Promoted to live.
 - Found in the Cloud console: the only test user is chance.c.castle@gmail.com. chancecastle100@gmail.com needs adding (or Publish app) before it can sign in.
+
+## 2026-10-18, round 9: Job tracker (scheduled run)
+- Task: `job-tracker` (top unbuilt backlog item). Baseline 45/45 green first.
+- Inbox gets a JOBS chip. It reads the last 30 days of job mail (skips Promotions, Social and job-alert digests) plus your sent mail, and groups by company: the sender's domain, or for Greenhouse/Lever/Workday-style senders the company named in the subject ("Thank you for applying to Abbott").
+- Each company shows a stage tag (APPLIED, SCREEN, INTERVIEW, OFFER, CLOSED), days since last contact, and either YOUR REPLY · 5D (a person wrote and you haven't answered in 3+ days) or "You replied. Waiting on them." Tap a company for its last 3 emails and an Open in Gmail link; Pip explains where it stands.
+- Pip: new green JOB NEWS mood with a briefcase. YOUR MOVE nudge once a day per company that's waiting on you; OFFER! with a big star burst; "moved you to interviews" when a stage advances. The Brief leads email tips with who is waiting on you. Ask Pip: "how's my job search" / "pipeline" / "any offers".
+- Polls with Gmail every 30 minutes, only fetches messages it hasn't seen, nothing persisted but company stages and nudge dates.
+- Tests 58/58 (13 new: Medtronic waiting, Edwards replied, Stryker rejected, Abbott via ATS, LinkedIn alert ignored, phone fit). First run caught a mock bug (the jobs query contains "-in:sent") and a wrong expectation in my own test.
+- Scores: Works 5, Useful 5, Delight 5, Clarity 4 (phone shows 3 companies before scrolling), Resilience 4, Privacy 5, Performance 5.
+- Next: `car-obd` (or `air-quality` as a quicker win). Check the pipeline against Chance's real job mail and tune company names.

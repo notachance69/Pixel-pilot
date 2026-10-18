@@ -56,3 +56,5 @@ Promote an idea by adding it to `backlog.json` with acceptance criteria.
 - **Swappable sprites.** Drop in PixelLab or Retro Diffusion sprite sheets for Pip's moods.
 
 - Calendar: tap an event row to open it in Google Calendar; "leave now" heads-up using travel time to the event's location; show tomorrow's first event at night.
+
+- Job tracker: recruiters on an ATS with no company in the subject group under their own name (e.g. "Dana Lee"). Could read the signature or the job title from the body (needs format=full, heavier). Also: "mark as not a job" per company, and a weekly "applications sent" count.

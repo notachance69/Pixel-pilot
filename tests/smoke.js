@@ -25,6 +25,26 @@ const MAIL = [
 ];
 const gmsg = m => ({ id: m.id, threadId: 't' + m.id, labelIds: m.labels, snippet: m.snippet, internalDate: String(Date.now() - 3600e3),
   payload: { headers: [{ name: 'From', value: m.from }, { name: 'Subject', value: m.subject }].concat(m.list ? [{ name: 'List-Unsubscribe', value: '<mailto:x>' }] : []) } });
+// jobs: 30 days of job mail + sent replies. Medtronic is waiting on Chance (5 days), Edwards got a reply, Stryker said no,
+// Abbott came through an ATS (company read from the subject), and a LinkedIn job alert must not count.
+const dAgo = n => String(Date.now() - n * 864e5);
+const JOBS = {
+  j1: { id: 'j1', threadId: 'tj1', labelIds: ['INBOX', 'CATEGORY_PERSONAL'], internalDate: dAgo(5), snippet: 'Could you share your availability for an onsite interview next week?',
+    payload: { headers: [{ name: 'From', value: 'Sarah Kim <sarah.kim@medtronic.com>' }, { name: 'Subject', value: 'Next steps: onsite interview' }] } },
+  j2: { id: 'j2', threadId: 'tj2', labelIds: ['INBOX', 'CATEGORY_UPDATES'], internalDate: dAgo(20), snippet: 'We received your application for Quality Engineer II.',
+    payload: { headers: [{ name: 'From', value: 'Medtronic Careers <no-reply@medtronic.com>' }, { name: 'Subject', value: 'Thank you for applying to Medtronic' }] } },
+  j3: { id: 'j3', threadId: 'tj3', labelIds: ['INBOX', 'CATEGORY_UPDATES'], internalDate: dAgo(12), snippet: 'Our team will review your application.',
+    payload: { headers: [{ name: 'From', value: 'Hiring Team <no-reply@greenhouse.io>' }, { name: 'Subject', value: 'Thank you for applying to Abbott' }] } },
+  j4: { id: 'j4', threadId: 'tj4', labelIds: ['INBOX', 'CATEGORY_UPDATES'], internalDate: dAgo(3), snippet: 'Unfortunately, we have decided to move forward with other candidates.',
+    payload: { headers: [{ name: 'From', value: 'Stryker Careers <careers@stryker.com>' }, { name: 'Subject', value: 'Update on your application' }] } },
+  j5: { id: 'j5', threadId: 'tj5', labelIds: ['INBOX', 'CATEGORY_UPDATES'], internalDate: dAgo(1), snippet: 'Quality Engineer at Acme and 29 more',
+    payload: { headers: [{ name: 'From', value: 'LinkedIn Job Alerts <jobalerts-noreply@linkedin.com>' }, { name: 'Subject', value: '30 new jobs for you: quality engineer' }, { name: 'List-Unsubscribe', value: '<mailto:x>' }] } },
+  j6: { id: 'j6', threadId: 'tj6', labelIds: ['INBOX', 'CATEGORY_PERSONAL'], internalDate: dAgo(6), snippet: "Great talking today! I'll share feedback with the hiring manager soon.",
+    payload: { headers: [{ name: 'From', value: 'Erin Park <erin.park@edwards.com>' }, { name: 'Subject', value: 'Phone screen recap' }] } },
+  s1: { id: 's1', threadId: 'tj6', labelIds: ['SENT'], internalDate: dAgo(5), snippet: 'Thanks Erin', payload: { headers: [{ name: 'To', value: 'Erin Park <erin.park@edwards.com>' }, { name: 'Subject', value: 'Re: Phone screen recap' }] } },
+  s2: { id: 's2', threadId: 'ts2', labelIds: ['SENT'], internalDate: dAgo(2), snippet: 'See you Sunday', payload: { headers: [{ name: 'To', value: 'Mom <mom@example.com>' }, { name: 'Subject', value: 'Re: Dinner Sunday?' }] } }
+};
+let jobQ = '';
 // gym: a 24GO check-in report (dates in the body + a CSV attachment), a Shortcut check-in email, and gym marketing that must not count
 const dayOff = n => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
 const mdy = d => `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
@@ -75,9 +95,13 @@ async function mock(page) {
     if (u.includes('gmail.googleapis.com')) {
       if (u.includes('/profile')) return r.fulfill({ json: { emailAddress: 'chance@example.com' } });
       if (u.includes('/attachments/a1')) return r.fulfill({ json: { data: b64(GYM_CSV) } });
+      const j = u.match(/messages\/([js]\d)/); if (j) return r.fulfill({ json: JOBS[j[1]] });
       const g = u.match(/messages\/(g\d)/); if (g) return r.fulfill({ json: GYM[g[1]] });
       const m = u.match(/messages\/(m\d)/); if (m) return r.fulfill({ json: gmsg(MAIL.find(x => x.id === m[1])) });
       if (u.includes('/messages?')) {
+        const dq = decodeURIComponent(u);
+        if (dq.includes('q=in:sent')) return r.fulfill({ json: { messages: [{ id: 's1' }, { id: 's2' }] } });
+        if (dq.includes('newer_than:30d')) { jobQ = dq; return r.fulfill({ json: { messages: ['m1', 'j1', 'j2', 'j3', 'j4', 'j5', 'j6'].map(id => ({ id })) } }); }
         if (decodeURIComponent(u).includes('24hourfitness')) return r.fulfill({ json: { messages: Object.keys(GYM).map(id => ({ id })) } });
         return r.fulfill({ json: { messages: MAIL.map(x => ({ id: x.id, threadId: 't' + x.id })) } });
       }
@@ -101,8 +125,14 @@ async function mock(page) {
   page.on('pageerror', e => errors.push(e.message));
   await mock(page);
   await page.goto('file://' + PAGE);
-  await page.waitForTimeout(5500);
   const t = async sel => (await page.textContent(sel).catch(() => '')) || '';
+  // job nudge on load: Pip says Medtronic is waiting on a reply, then goes back to the weather
+  const nudged = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'YOUR MOVE', null, { timeout: 7000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(1600);
+  check('Pip nudges when a recruiter has waited 3+ days', nudged && /Medtronic wrote 5 days ago and is waiting on your reply/.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
+  await page.screenshot({ path: path.join(OUT, '0-job-nudge.png') });
+  await page.waitForFunction(() => !/YOUR MOVE/.test(document.querySelector('#mood').textContent), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(1500);
 
   check('weather loads', (await t('#temp')).trim() === '72', await t('#temp'));
   check('mood set', (await t('#mood')).trim().length > 0, await t('#mood'));
@@ -145,10 +175,29 @@ async function mock(page) {
   await page.click('#setClose'); await page.waitForTimeout(400);
   await page.click('#tab-inbox'); await page.waitForTimeout(500);
 
+  // job tracker
+  check('job search covers 30 days and skips promos', /newer_than:30d/.test(jobQ) && /-category:promotions/.test(jobQ), jobQ.slice(0, 80));
+  await page.click('.fchip[data-f="jobs"]'); await page.waitForTimeout(900);
+  const jrows = await page.$$eval('#mlist .jrow', rs => rs.map(r => r.textContent));
+  check('JOBS shows one row per company, waiting-on-you first', jrows.length === 5 && /^Medtronic\s*INTERVIEW/.test(jrows[0]) && /YOUR REPLY · 5D/.test(jrows[0]), jrows.join(' | ').slice(0, 200));
+  check('ATS email grouped under the company from its subject', jrows.some(r => /^Abbott\s*APPLIED/.test(r)), jrows.join(' | ').slice(0, 200));
+  check('rejection marks the company closed', jrows.some(r => /^Stryker\s*CLOSED/.test(r)));
+  check('job alerts are not companies', !jrows.some(r => /LinkedIn|new jobs/i.test(r)));
+  check('sent reply means waiting on them, not you', jrows.some(r => /^Edwards\s*SCREEN/.test(r) && /Waiting on them/.test(r) && !/YOUR REPLY/.test(r)), jrows.find(r => /Edwards/.test(r)));
+  check('jobs summary counts active and your move', (await t('#inImp')).trim() === '4' && (await t('#inUnread')).trim() === '1' && /Your move/i.test(await t('#inUnreadL')), (await t('#inImp')) + '/' + (await t('#inUnread')));
+  await page.click('#mlist .jrow'); await page.waitForTimeout(2600);
+  check('tapping a company makes Pip explain it', /Medtronic: interviewing\. 2 emails/.test(await t('#say')) && await page.$('#mlist .jrow.open .jhist') !== null, (await t('#say')).slice(0, 90));
+  await page.screenshot({ path: path.join(OUT, '2a-jobs.png') });
+  reply = await ask("how's my job search");
+  check('Ask Pip sums up the job search', /4 active companies in 30 days: 1 interview, 2 in screening, 1 applied\. Medtronic is waiting/.test(reply), reply.slice(0, 120));
+  await page.click('.fchip[data-f="imp"]'); await page.waitForTimeout(400);
+  check('switching back to IMPORTANT restores the inbox', /Important/i.test(await t('#inImpL')) && /^\d+$/.test((await t('#inImp')).trim()) && /CHECKED/.test(await t('#inNote')) && (await page.$$('#mlist .jrow')).length === 0, await t('#inImp'));
+
   await page.click('#tab-gym'); await page.waitForTimeout(1500);
   const gnote = await t('#gyNote');
   check('gym imports 24GO report (body + CSV) and Shortcut email, ignores gym marketing', /^6 GYM DAYS FOUND/.test(gnote), gnote);
   check('gym last visit is yesterday', (await t('#gyLast')).trim() === 'Yesterday', await t('#gyLast'));
+  await page.waitForTimeout(10);
   await page.click('#gyBtn'); await page.waitForTimeout(700);
   check('I WENT TODAY makes Pip celebrate', (await t('#mood')).trim() === 'GAINS', await t('#mood'));
   check('logging today counts it', /^7 GYM DAYS FOUND/.test(await t('#gyNote')) && (await t('#gyLast')).trim() === 'Today', await t('#gyNote'));
@@ -158,6 +207,7 @@ async function mock(page) {
   await page.click('#tab-brief'); await page.waitForTimeout(900);
   const tips = await t('#bTips');
   check('brief has a job tip', /Job email from Dana Lee/.test(tips), tips.slice(0, 120));
+  check('brief tip names who is waiting on a reply', /Medtronic is waiting on your reply \(5 days\)/.test(tips), tips.slice(0, 160));
   check('brief has a rain tip', /Rain likely/.test(tips));
   check('brief inbox card', /new/.test(await t('#bIn')), await t('#bIn'));
   await page.screenshot({ path: path.join(OUT, '3-brief.png') });
@@ -213,6 +263,10 @@ async function mock(page) {
   const calClip = await page.$eval('#pane-brief .bCal', e => e.getBoundingClientRect().height > 30 && e.scrollWidth <= e.clientWidth + 1);
   check('calendar card fits on phone landscape', calClip);
   await page.screenshot({ path: path.join(OUT, '7b-phone-brief.png') });
+  await page.click('#tab-inbox'); await page.click('.fchip[data-f="jobs"]'); await page.waitForTimeout(700);
+  const jFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && [...document.querySelectorAll('#mlist .jrow .mfrom')].every(e => e.getBoundingClientRect().width > 40));
+  check('jobs pipeline fits on phone landscape', jFit);
+  await page.screenshot({ path: path.join(OUT, '7c-phone-jobs.png') });
 
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

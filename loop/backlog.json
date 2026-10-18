@@ -87,7 +87,8 @@
     "Pip nudges if a reply is waiting > 3 days",
     "covers 30 days of mail"
    ],
-   "passes": false
+   "passes": true,
+   "notes": "Built 2026-10-18 (preview). JOBS chip in the Inbox: one row per company from 30 days of job mail + sent replies; stage from keywords (newest yes/no wins, else furthest step); YOUR REPLY nudge when a person wrote >3 days ago and you haven't answered. Company comes from the sender domain, or from the subject/display name for ATS and personal addresses. Kept in memory; only company->stage and nudge dates stored on device."
   },
   {
    "id": "car-obd",

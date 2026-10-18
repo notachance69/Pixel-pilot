@@ -190,6 +190,10 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .mtag{font-family:var(--f-label);font-size:8px;letter-spacing:.06em;padding:1px 5px;background:var(--pink);color:var(--ink);font-weight:400}
 .mtag[data-k="MONEY"]{background:var(--lime)}.mtag[data-k="DEADLINE"]{background:var(--sun)}.mtag[data-k="TRAVEL"]{background:var(--cyan)}
 .mtag[data-k="VIP"]{background:var(--chrome-btn)}.mtag[data-k="DELIVERY"]{background:#c7a6ff}.mtag[data-k="SECURITY"]{background:var(--c-2)}
+.mtag[data-k="APPLIED"]{background:var(--cyan)}.mtag[data-k="SCREEN"]{background:var(--sun)}.mtag[data-k="INTERVIEW"]{background:var(--pink)}
+.mtag[data-k="OFFER"]{background:var(--lime)}.mtag[data-k="CLOSED"]{background:var(--c-2)}
+.jrow.owe{border-left-color:var(--sun)}.jrow.closed{opacity:.55}.jrow .msub b{color:var(--sun);font-weight:600}
+.jhist{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
 .mmore{grid-column:2/4;font-size:13px;line-height:1.45;color:var(--text);white-space:normal;padding-top:4px;display:flex;flex-direction:column;gap:6px}
 .mmore a{font-family:var(--f-label);font-size:10px;letter-spacing:.06em;color:var(--cyan)}
 /* brief */
@@ -457,12 +461,13 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <div class="inbox" id="inboxLive" hidden>
         <div class="inSum">
           <span class="lbl" id="inWho">GMAIL</span>
-          <div class="mini"><span class="lbl">Important</span><span class="big" id="inImp">--</span></div>
-          <div class="mini"><span class="lbl">Unread · 3 days</span><span class="big" id="inUnread">--</span></div>
+          <div class="mini"><span class="lbl" id="inImpL">Important</span><span class="big" id="inImp">--</span></div>
+          <div class="mini"><span class="lbl" id="inUnreadL">Unread · 3 days</span><span class="big" id="inUnread">--</span></div>
           <div class="filters">
             <button class="fchip" type="button" data-f="imp" aria-pressed="true">IMPORTANT</button>
             <button class="fchip" type="button" data-f="unread" aria-pressed="false">UNREAD</button>
             <button class="fchip" type="button" data-f="all" aria-pressed="false">ALL</button>
+            <button class="fchip" type="button" data-f="jobs" aria-pressed="false">JOBS</button>
           </div>
           <span class="note" id="inNote"></span>
         </div>
@@ -1358,6 +1363,7 @@ async function loadMail(){
   if(G.on)G.timer=setTimeout(loadMail,wait);
   if(G.on&&!G.err&&Date.now()-GY.at>30*60e3)loadGym();
   if(G.on&&!G.err&&CAL.ok&&Date.now()-CAL.at>5*60e3)loadCal();
+  if(G.on&&!G.err&&Date.now()-JB.at>30*60e3)loadJobs();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.on&&Date.now()-G.at>60e3)loadMail()});
 function newMail(list){
@@ -1373,6 +1379,9 @@ function renderInbox(){
   if(!live){if(G.on&&G.needTap)$('inMsg').textContent='Gmail sign-in expired. Tap Reconnect and it picks right back up.';return}
   const all=shown(),imp=all.filter(e=>e.imp),unread=all.filter(e=>e.unread),nHid=(G.list||[]).length-all.length;
   $('inWho').textContent=G.email?G.email.toUpperCase():'GMAIL';
+  document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===G.filter)));
+  if(G.filter==='jobs'){renderJobs();return}
+  $('inImpL').textContent='Important';$('inUnreadL').textContent='Unread · 3 days';
   if(G.list){tween($('inImp'),imp.length);tween($('inUnread'),unread.length)}
   $('inNote').textContent=G.err||(G.at?`CHECKED ${fmtTime(new Date(G.at)).toUpperCase()}${nHid?` · ${nHid} HIDDEN BY YOUR RULES`:' · TAP AN EMAIL'}`:'LOADING YOUR INBOX...');
   document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===G.filter)));
@@ -1392,8 +1401,127 @@ function renderInbox(){
     ul.appendChild(li);
   });
 }
-document.querySelectorAll('.fchip').forEach(b=>b.addEventListener('click',()=>{G.filter=b.dataset.f;store.set('pp.gFilter',G.filter);sfx('tap');G.open=null;renderInbox();restart($('mlist'),'reveal')}));
+document.querySelectorAll('.fchip').forEach(b=>b.addEventListener('click',()=>{G.filter=b.dataset.f;store.set('pp.gFilter',G.filter);sfx('tap');G.open=null;JB.open=null;renderInbox();restart($('mlist'),'reveal')}));
 $('gOpen').onclick=()=>gLogin(false);
+
+/* ---------- Job tracker: a pipeline built from job emails ---------- */
+// The last 30 days of job mail plus your sent replies, grouped by company. Kept in memory on this device only.
+const ATS=['greenhouse','lever.co','myworkday','workday','icims','smartrecruiters','jobvite','ashbyhq','linkedin.com','indeed.com','taleo','successfactors','brassring','paylocity','bamboohr','workable','recruitee','breezy','jazzhr','dice.com','ziprecruiter','glassdoor'];
+const FREEMAIL=/(^|\.)(gmail|googlemail|yahoo|outlook|hotmail|live|icloud|me|aol|proton|protonmail)\.(com|me)$/;
+const CO_NAMES={bsci:'Boston Scientific',bostonscientific:'Boston Scientific',jnj:'Johnson & Johnson',bd:'BD',intusurg:'Intuitive',zimmerbiomet:'Zimmer Biomet',edwards:'Edwards',resmed:'ResMed'};
+const STAGES=[ // first match wins for one email; "unfortunately, after your interview" is a no
+  ['CLOSED',/\b(unfortunately|not (to )?(be )?mov(e|ing) forward|other candidates|position (has been|was|is) (filled|closed)|no longer (under consideration|being considered)|not been selected|(decided|chosen) to (pursue|proceed|move forward) with)\b/i],
+  ['OFFER',/\b(offer letter|job offer|pleased to (offer|extend)|extend (you )?an offer|offer of employment|verbal offer)\b/i],
+  ['SCREEN',/\b(phone screen|screening call|recruiter (call|screen)|intro(ductory)? call)\b/i],
+  ['INTERVIEW',/\b(interview\w*|onsite|on-site|panel|meet (with )?the (team|hiring manager))\b/i],
+  ['SCREEN',/\b(screening|quick call|a call|chat about|assessment|your availability|schedule a time)\b/i],
+  ['APPLIED',/\b(applied|application|applying|thank(s| you) for your interest|resume)\b/i]
+];
+const STAGE_RANK={CLOSED:0,APPLIED:1,SCREEN:2,INTERVIEW:3,OFFER:4};
+const STAGE_WORDS={APPLIED:'applied',SCREEN:'in the screening stage',INTERVIEW:'interviewing',OFFER:'an offer is on the table',CLOSED:'closed out'};
+const JOB_NOISE=/\b(job alerts?|jobs? (for you|you may|near you)|recommended jobs?|new jobs?|is hiring|are hiring|top job picks|apply now|people also viewed|webinar|newsletter|career fair)\b/i;
+const NOREPLY=/^(no-?reply|donotreply|do-not-reply|notifications?|jobs-noreply|careers?|talent|recruiting|hr)[@.+-]/;
+const JB={list:null,at:0,busy:false,err:'',cache:new Map(),sent:new Map(),open:null,seen:store.get('pp.jobSeen')||{},nudged:store.get('pp.jobNudged')||{}};
+const capWord=w=>w?w[0].toUpperCase()+w.slice(1):w;
+function companyOf(e){
+  const dom=(e.addr.split('@')[1]||'').toLowerCase(),text=e.subject+' . '+e.snippet;
+  if(dom&&!ATS.some(a=>dom.includes(a))&&!FREEMAIL.test(dom)){
+    const pt=dom.split('.'),base=pt.length>2&&/^(co|com|org)$/.test(pt[pt.length-2])?pt[pt.length-3]:pt[pt.length-2];
+    const w=e.name.split(/\s+/).find(x=>x.toLowerCase()===base);
+    return{key:base,name:CO_NAMES[base]||w||capWord(base)}}
+  const m=text.match(/\b(?:applying (?:to|at|with)|application (?:to|at|with)|interest in(?: joining)?|was sent to|update from|message from|position at|role at|opportunity at|interview(?:ing)? (?:at|with))\s+([A-Z][\w&'.-]*(?:\s+[A-Z][\w&'.-]*){0,3})/);
+  let name=m?m[1]:'';
+  if(!name)name=e.name.replace(/\b(recruit\w*|talent( acquisition)?|careers?|hiring( team)?|jobs?|team|hr|notifications?|no-?reply|via \w+|workday|greenhouse|lever|icims)\b/ig,'').replace(/[|·:,@-]+/g,' ').replace(/\s+/g,' ').trim();
+  name=(name||e.name||'Unknown').replace(/[.,!]+$/,'').trim();
+  return{key:name.toLowerCase().replace(/\b(inc|llc|corp|corporation|ltd)\b\.?/g,'').replace(/[^a-z0-9]/g,'')||'unknown',name};
+}
+const stageOf=e=>{const t=e.subject+' . '+e.snippet;const s=STAGES.find(([,re])=>re.test(t));return s?s[0]:null};
+function buildJobs(msgs,sent){
+  const by=new Map(),now=Date.now();
+  msgs.forEach(e=>{const c=companyOf(e);if(!by.has(c.key))by.set(c.key,{key:c.key,name:c.name,msgs:[],addrs:new Set(),threads:new Set()});
+    const g=by.get(c.key);g.msgs.push(e);if(!NOREPLY.test(e.addr))g.addrs.add(e.addr);g.threads.add(e.thread)});
+  return[...by.values()].map(g=>{
+    g.msgs.sort((a,b)=>b.t-a.t);const last=g.msgs[0],sig=g.msgs.map(stageOf).filter(Boolean);
+    // the newest news decides a yes or a no; otherwise the furthest step you've reached
+    g.stage=!sig.length?'APPLIED':/CLOSED|OFFER/.test(sig[0])?sig[0]:sig.reduce((a,b)=>STAGE_RANK[b]>STAGE_RANK[a]?b:a);
+    g.last=last;g.lastIn=last.t;
+    g.lastOut=Math.max(0,...sent.filter(s=>g.threads.has(s.thread)||[...g.addrs].some(a=>s.to.includes(a))).map(s=>s.t));
+    g.lastContact=Math.max(g.lastIn,g.lastOut);
+    const human=g.msgs.find(e=>!NOREPLY.test(e.addr));
+    g.wait=g.stage!=='CLOSED'&&human&&human.t>g.lastOut&&STAGE_RANK[g.stage]>=2?Math.floor((now-human.t)/864e5):0;
+    g.owe=g.wait>3;g.theirs=Math.floor((now-g.lastContact)/864e5);
+    return g;
+  }).sort((a,b)=>(b.owe-a.owe)||((a.stage==='CLOSED')-(b.stage==='CLOSED'))||(STAGE_RANK[b.stage]-STAGE_RANK[a.stage])||(b.lastContact-a.lastContact));
+}
+const JOB_Q='newer_than:30d -in:sent -in:chats -category:promotions -category:social (interview OR recruiter OR recruiting OR "your application" OR "applying to" OR "thank you for applying" OR "phone screen" OR "offer letter" OR candidate OR from:('+JOB_DOMAINS.filter(d=>d.includes('.')).join(' OR ')+'))';
+async function loadJobs(){
+  if(!G.on||!G.tok||G.needTap||JB.busy||Date.now()>G.tok.exp-60e3)return;
+  JB.busy=true;JB.at=Date.now();
+  try{
+    const hdr='&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=List-Unsubscribe';
+    const[L,SL]=await Promise.all([gApi('messages?maxResults=60&q='+encodeURIComponent(JOB_Q)),gApi('messages?maxResults=60&q='+encodeURIComponent('in:sent newer_than:30d'))]);
+    const fetchNew=(list,map,fn)=>Promise.all((list.messages||[]).filter(m=>!map.has(m.id)).map(m=>gApi(`messages/${m.id}?format=metadata${hdr}`).then(x=>map.set(m.id,fn(x))).catch(()=>null)));
+    await Promise.all([fetchNew(L,JB.cache,parseMsg),fetchNew(SL,JB.sent,x=>{const h=((x.payload&&x.payload.headers)||[]).find(y=>y.name.toLowerCase()==='to');return{t:+x.internalDate||0,thread:x.threadId||x.id,to:((h&&h.value)||'').toLowerCase()}})]);
+    const ur=userRules(),ids=new Set((L.messages||[]).map(m=>m.id)),sids=new Set((SL.messages||[]).map(m=>m.id));
+    const msgs=[...JB.cache].filter(([id])=>ids.has(id)).map(([,e])=>scoreMsg(Object.assign({},e),ur))
+      .filter(e=>e.allTags.includes('JOBS')&&!e.promo&&!e.social&&!JOB_NOISE.test(e.subject)&&!GYM_SUBJECT.test(e.subject)&&!hiddenBy(e));
+    JB.list=buildJobs(msgs,[...JB.sent].filter(([id])=>sids.has(id)).map(([,x])=>x));JB.err='';
+    jobNews();
+  }catch(e){JB.err=e.status===401?'RENEWING YOUR GOOGLE SIGN-IN...':navigator.onLine?"COULDN'T CHECK JOB EMAIL. RETRYING SOON.":'OFFLINE.';JB.at=Date.now()-25*60e3}
+  JB.busy=false;renderInbox();renderBrief();
+}
+function jobNews(){ // Pip speaks up when a company moves you forward, or someone has waited on you for 3+ days
+  const first=!Object.keys(JB.seen).length,today=dayKey(new Date());let line='',label='';
+  for(const g of JB.list){const prev=JB.seen[g.key];
+    if(g.stage==='OFFER'&&prev!=='OFFER'){line=`An offer from ${g.name}! That's huge, Chance.`;label='OFFER!';break}
+    if(!first&&prev&&STAGE_RANK[g.stage]>STAGE_RANK[prev]&&g.stage==='INTERVIEW'&&!line){line=`${g.name} moved you to interviews. Nice.`;label='JOB NEWS'}}
+  if(!line){const o=JB.list.find(g=>g.owe&&JB.nudged[g.key]!==today);
+    if(o){line=`${o.name} wrote ${o.wait} days ago and is waiting on your reply.`;label='YOUR MOVE';JB.nudged[o.key]=today;store.set('pp.jobNudged',JB.nudged)}}
+  JB.seen={};JB.list.forEach(g=>{JB.seen[g.key]=g.stage});store.set('pp.jobSeen',JB.seen);
+  if(line){MOODS.job.label=label;S.jobLine=line;S.jobUntil=performance.now()+4800;flagTab('inbox');flagTab('brief');faceBurst('star',label==='OFFER!'?12:5)}
+}
+function renderJobs(){
+  const L=JB.list,act=L?L.filter(g=>g.stage!=='CLOSED'):[],owe=act.filter(g=>g.owe);
+  $('inImpL').textContent='Active · 30 days';$('inUnreadL').textContent='Your move';
+  if(L){tween($('inImp'),act.length);tween($('inUnread'),owe.length)}else{$('inImp').textContent='--';$('inUnread').textContent='--'}
+  $('inNote').textContent=JB.err||(L?`${L.length} COMPANIES · TAP ONE`:'READING 30 DAYS OF JOB EMAIL...');
+  if(!L&&!JB.busy)loadJobs();
+  const ul=$('mlist');ul.innerHTML='';
+  if(!L||!L.length){const li=document.createElement('li');li.className='empty';li.textContent=!L?'BUILDING YOUR PIPELINE...':'NO JOB EMAILS IN THE LAST 30 DAYS.';ul.appendChild(li);return}
+  L.forEach(g=>{
+    const li=document.createElement('li');li.className='mrow tap jrow'+(g.owe?' owe':'')+(g.stage==='CLOSED'?' closed':'')+(JB.open===g.key?' open':'');
+    li.dataset.say='job';li.dataset.k=g.key;li.tabIndex=0;li.setAttribute('role','button');
+    li.innerHTML='<span class="mdot"></span><span class="mfrom"></span><span class="mtime"></span><span class="msub"></span>';
+    li.querySelector('.mdot').classList.toggle('read',!g.owe);
+    const f=li.querySelector('.mfrom');f.textContent=g.name;const tg=document.createElement('span');tg.className='mtags';
+    const s=document.createElement('span');s.className='mtag';s.dataset.k=g.stage;s.textContent=g.stage;tg.appendChild(s);f.appendChild(tg);
+    li.querySelector('.mtime').textContent=relTime(g.lastContact);
+    const sub=li.querySelector('.msub');
+    if(g.owe){const b=document.createElement('b');b.textContent=`YOUR REPLY · ${g.wait}D · `;sub.append(b,g.last.subject)}
+    else sub.textContent=g.stage==='CLOSED'?g.last.subject:g.lastOut>g.lastIn?`You replied ${agoWords(g.lastOut)}. Waiting on them.`:`${g.theirs?g.theirs+'D since last contact · ':''}${g.last.subject}`;
+    if(JB.open===g.key){const d=document.createElement('div');d.className='mmore';const h=document.createElement('div');h.className='jhist';
+      g.msgs.slice(0,3).forEach(e=>{const r=document.createElement('span');r.textContent=`${new Date(e.t).toLocaleDateString([],{month:'short',day:'numeric'}).toUpperCase()} · ${e.subject}`;h.appendChild(r)});
+      const a=document.createElement('a');a.href=`https://mail.google.com/mail/u/0/#all/${g.last.thread}`;a.target='_blank';a.rel='noopener';a.textContent='OPEN LATEST IN GMAIL ›';d.append(h,a);li.appendChild(d)}
+    ul.appendChild(li);
+  });
+}
+function jobAbout(g){
+  const n=g.msgs.length,base=`${g.name}: ${STAGE_WORDS[g.stage]}. ${n} email${n>1?'s':''} in 30 days, last contact ${agoWords(g.lastContact)}.`;
+  if(g.owe)return`${base} They wrote ${g.wait} days ago and are waiting on your reply.`;
+  if(g.stage!=='CLOSED'&&g.lastOut>g.lastIn)return`${base} You replied, so the ball's in their court.`;
+  return base;
+}
+function jobLine(){
+  if(!G.on)return'Connect Gmail and I\'ll build your job pipeline from your email.';
+  if(!JB.list){if(!JB.busy)loadJobs();return'Reading your last 30 days of job email. Ask me again in a sec.'}
+  const act=JB.list.filter(g=>g.stage!=='CLOSED');if(!JB.list.length)return'No job emails in the last 30 days.';
+  const cnt={};act.forEach(g=>{cnt[g.stage]=(cnt[g.stage]||0)+1});
+  const parts=['OFFER','INTERVIEW','SCREEN','APPLIED'].filter(k=>cnt[k]).map(k=>`${cnt[k]} ${k==='SCREEN'?'in screening':k==='APPLIED'?'applied':k.toLowerCase()+(cnt[k]>1?'s':'')}`);
+  const o=act.find(g=>g.owe);
+  return`${act.length} active compan${act.length===1?'y':'ies'} in 30 days${parts.length?': '+parts.join(', '):''}.${o?` ${o.name} is waiting on your reply (${o.wait} days).`:' Nobody is waiting on you.'}`;
+}
+function jobTip(){const o=JB.list&&JB.list.find(g=>g.owe);return o?`${o.name} is waiting on your reply (${o.wait} days): "${o.last.subject}".`:null}
+window.__pipJobs={JB,companyOf,buildJobs};   // test hook
 
 /* ---------- Calendar: what's next ---------- */
 // Read-only primary calendar, today through the next 7 days, kept in memory on this device only.
@@ -1478,7 +1606,7 @@ function briefTips(){
   const iu=shown().filter(e=>e.imp&&e.unread);
   const nx=calNext();if(nx&&nx.start-Date.now()<3*3600e3)t.push(`"${nx.title}" at ${fmtTime(new Date(nx.start))}, in ${inWords(nx.start-Date.now())}.${nx.where?` ${nx.where}.`:''}`);
   // at most two email tips so weather and the rest still fit
-  const et=[];
+  const et=[],jt=jobTip();if(jt)et.push(jt);
   const job=iu.find(e=>e.tags.includes('JOBS'));if(job)et.push(`Job email from ${job.name}: "${job.subject}". Worth a reply.`);
   const vip=iu.find(e=>e.tags.includes('VIP')&&e!==job);if(vip)et.push(`${vip.name} wrote: "${vip.subject}".`);
   const money=iu.find(e=>e.tags.includes('MONEY'));if(money)et.push(`Money: "${money.subject}" from ${money.name}.`);
@@ -1687,7 +1815,7 @@ function askPip(raw){
   const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
   let m;
   if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
-    return 'Try: "hide job emails", "show job emails", "mute emails from LinkedIn", "hide emails about crypto", "make mom a VIP", "gym goal 3", "only show unread", "open gym", "what\'s next", "sound on", "what are my rules", or "reset my rules".';
+    return 'Try: "hide job emails", "show job emails", "mute emails from LinkedIn", "hide emails about crypto", "make mom a VIP", "gym goal 3", "only show unread", "open gym", "what\'s next", "how\'s my job search", "sound on", "what are my rules", or "reset my rules".';
   if(/^(what|list|show)( are)?( my)? rules\b|^my rules$/.test(s)){const r=ruleList();return r.length?`Your rules: ${r.map(x=>x.label.toLowerCase()).join('; ')}.`:'No rules yet. Try "hide job emails".'}
   if(/^(reset|clear|delete|remove) (all |my )*(the )?rules\b/.test(s)){RL.hideTags=[];RL.hideFrom=[];RL.hideWords=[];store.set('pp.vip','');store.set('pp.kw','');rulesChanged();return'All rules cleared. Your inbox is back to normal.'}
   if((m=s.match(/goal (?:to |is |of |=\s*)?(\d)\b/))&&/gym|goal|workout/.test(s)){
@@ -1700,6 +1828,8 @@ function askPip(raw){
     const who=clean(m[1]);if(!who||who.length<2)return'Who should be a VIP?';addTo('pp.vip',who);RL.hideFrom=RL.hideFrom.filter(x=>x!==who);rulesChanged();return`Got it. Emails from ${who} always go to the top.`}
   if((m=s.match(/^(?:flag|watch for|look out for|highlight) (?:emails? |mail )?(?:about |with |mentioning |containing )?(.+)$/))){
     const w=clean(m[1]);addTo('pp.kw',w);rulesChanged();return`I'll flag anything mentioning "${w}".`}
+  if(/\b(pipeline|job (search|hunt|status|tracker|apps?)|my (job )?applications|any offers?|who('s| is) waiting on me|where do i stand)\b/.test(s)){
+    if(G.on){G.filter='jobs';store.set('pp.gFilter','jobs');setTab('inbox',false);renderInbox()}return jobLine()}
   const verb=hideV.test(s)?'hide':showV.test(s)?'show':null;
   if(verb){
     const rest=s.replace(hideV,'').replace(showV,'').replace(/^\s*(me|any|all|the)\s+/,'').trim();
@@ -1855,6 +1985,7 @@ function moodLine(m){
     case'dizzy':return"Whoa, whoa. Too many pokes. Everything's spinning...";
     case'mail':return S.mailLine||"You've got mail!";
     case'gym':return S.gymLine||'Gains!';
+    case'job':return S.jobLine||'Job news!';
     case'heads':{const e=calHeads();return e?`Heads up: "${e.title}" starts in ${inWords(e.start-Date.now())}${e.where?`, at ${e.where}`:''}.`:'Heads up!'}
     case'music':return M.state?`Now playing: ${M.state.title} by ${M.state.artist}. Vibing.`:'Vibing.';
     case'iss':{const o=ISS.overhead;return o?`The ISS is right above you! Look ${dirW(o.az)}, about ${n(o.el)}° up. ${o.visible?'It should be a bright moving dot right now.':"It's too bright out to spot it, but it's up there."}`:'The ISS is overhead!'}
@@ -1904,6 +2035,7 @@ function about(key,el){
       const why=e.tags.length?` I flagged it: ${e.tags.join(', ').toLowerCase()}.`:e.important?' Gmail marked it important.':'';
       return`${e.name}, ${agoWords(e.t)}: "${e.subject}".${why}`}
     case'cal':return calLine();
+    case'job':{const g=(JB.list||[]).find(x=>x.key===el.dataset.k);if(!g)return'';JB.open=JB.open===g.key?null:g.key;setTimeout(renderInbox,0);return jobAbout(g)}
     case'hour':{const h=nextHours()[+el.dataset.i];if(!h)return NOWX;return`${+el.dataset.i===0?'This hour':'At '+fmtHour(h.t)}: ${n(h.temp)}°, ${(WXNAME[h.code]||'').toLowerCase()}, ${h.p}% chance of rain.`}
   }
   return'';
@@ -1979,7 +2111,8 @@ const MOODS={
   iss:{label:'ISS OVERHEAD',s:'hype',b:'#dfe3f0',d:'#aeb2c6'},
   mail:{label:'NEW MAIL',s:'hype',b:'#8ff3ff',d:'#3fb5d6'},
   gym:{label:'GAINS',s:'hype',b:'#ff8fd0',d:'#e0569f'},
-  heads:{label:'HEADS UP',s:'warn',b:'#ffe34d',d:'#e0a623'}
+  heads:{label:'HEADS UP',s:'warn',b:'#ffe34d',d:'#e0a623'},
+  job:{label:'JOB NEWS',s:'hype',b:'#c6ff7a',d:'#7ccf2a'}
 };
 function weatherMood(){
   if(!navigator.onLine)return'offline';
@@ -2003,6 +2136,7 @@ function moodFor(now){
   if(now<S.pokeUntil)return'poke';
   if(now<(S.mailUntil||0))return'mail';
   if(now<(S.gymUntil||0))return'gym';
+  if(now<(S.jobUntil||0))return'job';
   if(calHeads())return'heads';
   if(navigator.onLine&&ISS.overhead)return'iss';
   const w=weatherMood();
@@ -2018,7 +2152,7 @@ function setMood(m,now){
   if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(m==='heads'?'alarm':'mood')}
   if(m==='heads'&&prev!=='poke'&&prev!=='dizzy'){flagTab('brief');faceBurst('star',4);renderBrief()}
   // don't talk over a fresh Ask Pip answer unless this mood is an alert
-  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss)$/.test(m))return;
+  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss|job)$/.test(m))return;
   say((prev==='poke'||prev==='dizzy')&&m!=='dizzy'&&m!=='poke'?nextFact():moodLine(m));
 }
 function poke(e){
@@ -2106,8 +2240,10 @@ const FACE={
   iss:{eye:'star',mouth:'o',blush:1,per:220,orb:150,fx:'sparkle'},
   mail:{eye:'happy',mouth:'o',blush:1,per:180,squash:1,orb:200,fx:'mail'},
   gym:{eye:'star',mouth:'grin',blush:1,per:140,squash:1,orb:180,fx:'gym'},
-  heads:{eye:'open',mouth:'o',per:220,orb:260,fx:'clock'}
+  heads:{eye:'open',mouth:'o',per:220,orb:260,fx:'clock'},
+  job:{eye:'star',mouth:'o',blush:1,per:200,squash:1,orb:220,fx:'case'}
 };
+const BRIEFCASE=["...#####...","...#...#...","###########","#ooooooooo#","#####y#####","#ooooooooo#","#ooooooooo#","###########"];
 const CLOCK=["yy.....yy","y.#####.y",".#WWWWW#.","#WWW#WWW#","#WWW#WWW#","#WWW##WW#","#WWWWWWW#",".#WWWWW#.","..#####..",".#.....#."];
 const DUMBBELL=["#L#...#L#","#S#LLL#S#","#L#...#L#"];
 const ENVELOPE=["###########","#W#WWWWW#W#","#WW#WWW#WW#","#WWW#p#WWW#","#WWWWWWWWW#","###########"];
@@ -2219,6 +2355,7 @@ function drawFace(t){
     spr(DUMBBELL,cx-rx-10,cy-2-lift);spr(DUMBBELL,cx+rx+1,cy-2-(4-lift))}
   if(f.fx==='clock'){const ring=!reduce&&t%1200<450,jx=ring?(Math.floor(t/50)%2?1:-1):0;spr(CLOCK,cx-4+jx,Math.max(0,cy-ry-11));
     if(ring&&Math.floor(t/100)%2){fc.fillStyle=C.sun;fc.fillRect(cx-8,cy-ry-9,2,1);fc.fillRect(cx+7,cy-ry-9,2,1)}}
+  if(f.fx==='case'){const bob=reduce?0:Math.round(Math.sin(t/140)*2);spr(BRIEFCASE,cx-5,Math.max(0,cy-ry-9+bob))}
   if(f.fx==='mail'){const bob=reduce?0:Math.round(Math.sin(t/160)*2);spr(ENVELOPE,cx-5,Math.max(0,cy-ry-8+bob))}
   drawOrbit(32,40,ot,true,orbPer);
   if(f.fx==='umbrella')umbrella(cx,Math.max(1,cy-23));
