@@ -91,3 +91,8 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Tests 77/77 (19 new, with a fake BLE ELM327 that answers in 20-byte chunks, spaced hex, SEARCHING..., engine-off and a dropped link). First run caught a stale-coolant false alarm after engine off and an Ask Pip hold hiding the cruise line in the test.
 - Scores: Works 5, Useful 3 (needs Android Chrome + a BLE adapter; untested on a real car), Delight 5, Clarity 4, Resilience 4, Privacy 5, Performance 4.
 - Next: try it with a real adapter if Chance has one; then `car-mpg` or `air-quality` as a quick win for the iPad.
+
+## 2026-10-19, rule change (Chance)
+- New rule: features must track automatically from data Chance already produces; manual input only for one-time setup or corrections. Added to LOOP.md (Goal, rubric "Automatic", hard rules).
+- Backlog re-ranked: bills, packages, air quality, weather alerts, quakes, night dim first (automatic and work on the iPad today), then car MPG (fill-ups now auto-detected from the fuel-level sensor) and driving mode. Focus timer parked.
+- IDEAS.md rewritten so each idea names its automatic source; manual ideas moved to "Parked: manual".

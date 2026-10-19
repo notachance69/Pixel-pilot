@@ -1,5 +1,5 @@
 {
- "note": "Prioritized feature list. Loop runs flip 'passes' and add 'notes'; they never delete items. Lower priority number = sooner.",
+ "note": "Prioritized feature list. Loop runs flip 'passes' and add 'notes'; they never delete items. Lower priority number = sooner. Rule (2026-10-19): features must track automatically; no routine manual input.",
  "features": [
   {
    "id": "weather",
@@ -107,16 +107,17 @@
   },
   {
    "id": "car-mpg",
-   "priority": 3,
-   "title": "Car MPG and range: instant/trip MPG from MAF (PID 10) and speed, range estimate, 'filled up' reset",
+   "priority": 7,
+   "title": "Car MPG and range: instant/trip MPG from MAF (PID 10) and speed, range from the fuel-level sensor, fill-ups detected automatically",
    "needs": [
     "car-obd"
    ],
    "acceptance": [
     "reads MAF (0110) with speed",
     "instant and trip MPG",
-    "tank size setting and 'filled up' reset",
-    "range estimate",
+    "fuel level (012F) drives the range estimate; a jump of 15%+ with the engine off is logged as a fill-up automatically",
+    "tank size defaults to the 2011 Fit (10.6 gal), editable once in Settings",
+    "falls back to distance driven if the car does not report fuel level",
     "Pip comments on a good or bad trip",
     "mocked in the smoke test"
    ],
@@ -124,7 +125,7 @@
   },
   {
    "id": "driving-mode",
-   "priority": 4,
+   "priority": 8,
    "title": "Driving mode: big calm gauges and only critical alerts above 5 mph",
    "needs": [
     "car-obd"
@@ -133,43 +134,57 @@
   },
   {
    "id": "air-quality",
-   "priority": 5,
+   "priority": 3,
    "title": "Air quality (US AQI, PM2.5) from Open-Meteo; Pip wears a mask on smoky days",
    "passes": false
   },
   {
    "id": "alerts",
-   "priority": 6,
+   "priority": 4,
    "title": "National Weather Service alerts for your spot (red flag, heat, wind)",
    "passes": false
   },
   {
    "id": "bills",
-   "priority": 7,
+   "priority": 1,
    "title": "Bills: due dates pulled from MONEY emails, countdown in Brief",
-   "passes": false
+   "passes": false,
+   "acceptance": [
+    "due dates and amounts parsed from MONEY emails (utilities, cards, subscriptions)",
+    "marks a bill paid when a payment-confirmation email arrives",
+    "Brief countdown and Pip stern face when 3 days or less",
+    "nothing typed by Chance",
+    "mocked in the smoke test"
+   ]
   },
   {
    "id": "packages",
-   "priority": 8,
+   "priority": 2,
    "title": "Packages: delivery status from DELIVERY emails",
-   "passes": false
+   "passes": false,
+   "acceptance": [
+    "carrier and status parsed from shipping emails (Amazon, UPS, USPS, FedEx)",
+    "status advances automatically as new emails arrive",
+    "Pip carries a box on delivery day",
+    "mocked in the smoke test"
+   ]
   },
   {
    "id": "quakes",
-   "priority": 9,
+   "priority": 5,
    "title": "Nearby earthquakes (USGS feed), Pip reacts to M3+ within 100 mi",
    "passes": false
   },
   {
    "id": "focus",
-   "priority": 10,
+   "priority": 99,
    "title": "Focus timer with Pip (25/5), tracks focus streak",
-   "passes": false
+   "passes": false,
+   "notes": "Parked 2026-10-19: needs manual starts, which breaks the automatic-only rule. Revisit only if it can start itself (e.g. from calendar focus blocks)."
   },
   {
    "id": "night-dim",
-   "priority": 11,
+   "priority": 6,
    "title": "Night dim mode: auto-dim colors and motion after sunset for car/bedside use",
    "passes": false
   }

@@ -11,6 +11,12 @@ It borrows from three loops that work in practice:
 
 Grow Pixel Pilot into Chance's personal hub: an animated pixel assistant (Pip) that shows what matters right now from his real data. That includes email, weather, sky, music, the space station, and later his car, calendar and projects. It runs as one HTML file on GitHub Pages, opened on an iPad, phone or car screen.
 
+**Automatic, not manual (Chance's rule, 2026-10-19).** The point is to make life easier and more centralized. Every feature must fill itself from data Chance already produces: his Gmail, calendar, phone, car, accounts and public feeds. Manual input is allowed only as:
+- a one-time setup step (a sign-in, a tank size, an iOS Shortcut automation), or
+- a correction or fallback when the automatic source misses something.
+
+A feature that needs routine typing or tapping to be useful does not get built. Rework it to an automatic source, or park it in IDEAS.md under "Parked: manual".
+
 ## Files
 
 | File | What it is | Who edits it |
@@ -48,6 +54,7 @@ User-requested features built in a live conversation with Chance may go straight
 ## Rubric (score 1–5 each, log the scores)
 
 - **Works:** `tests/smoke.js` is green, there are no console errors, and the app degrades gracefully offline, inside the Claude artifact sandbox, and with expired sign-ins.
+- **Automatic:** it works with zero routine input after setup. Score 1 if it needs daily taps or typing; such a feature is discarded.
 - **Useful:** it surfaces something Chance would act on, or wants to see at a glance.
 - **Delight:** Pip reacts to it with animation and personality, and every action is animated.
 - **Clarity:** it's readable at arm's length and at phone size, with no clipped text and no horizontal scroll.
@@ -63,3 +70,4 @@ User-requested features built in a live conversation with Chance may go straight
 - Respect `prefers-reduced-motion`.
 - Sign-in redirect URIs must work for both `/Pixel-pilot/` and `/Pixel-pilot/preview/`.
 - Pip's lines: plain, friendly and short. No emoji.
+- No routine manual input (see Goal). When picking a task, prefer ones that work on the iPad today over ones that need hardware Chance hasn't confirmed he has.

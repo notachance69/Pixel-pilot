@@ -1,62 +1,69 @@
 # Ideas for the hub
 
-Hypothetical additions, roughly ranked by usefulness against effort. Tags say what each needs:
+**Rule: automatic, not manual.** Every idea must fill itself from data Chance already produces. Manual input is only allowed as one-time setup or a correction. Each idea names its **automatic source**.
 
-- **[free]** a public API with no key
-- **[google]** reuses the Google sign-in
-- **[device]** a browser sensor
-- **[relay]** a secret key, so it needs a small Cloudflare Worker
+Tags:
+- **[google]** uses the Google sign-in (Gmail, Calendar, Tasks)
+- **[free]** a public feed, no key
+- **[device]** a browser or phone sensor
+- **[shortcut]** an iOS Shortcuts automation, set up once, that runs on its own and emails or posts data
+- **[relay]** needs a secret key, so it needs a small Cloudflare Worker
 - **[hw]** hardware
 
 Promote an idea by adding it to `backlog.json` with acceptance criteria.
 
 ## Personal assistant
-- **Calendar countdown [google].** Next meeting, travel time to it, Pip pings 10 minutes before. *(in backlog)*
-- **Job search pipeline [google].** Auto-built from recruiter and ATS emails: company, stage, days since last reply, nudges to follow up. *(in backlog)*
-- **Bills radar [google].** Due dates parsed from bill emails, a "3 days left" countdown, Pip's stern face when overdue. *(in backlog)*
-- **Package tracker [google].** "Out for delivery" from shipping emails; Pip carries a little box. *(in backlog)*
-- **Morning brief at a set time.** Pip reads the brief automatically at 7:30 AM when the iPad is awake on its stand. Needs a wake lock and a quiet-hours setting.
-- **Reply drafts [relay].** Tap an email and Pip drafts a short reply with Claude, which you send from Gmail. Needs an API key behind a relay.
-- **To-do capture.** Say or type "remind me…" and it shows on the Brief. Local storage first, Google Tasks later.
-- **Focus timer.** 25/5 pomodoro, Pip wears headphones and tracks a streak. *(in backlog)*
+- **Bills radar [google].** Due dates and amounts parsed from bill emails. A payment-confirmation email marks the bill paid. *(in backlog)*
+- **Package tracker [google].** Status from shipping emails, advancing as new ones arrive. *(in backlog)*
+- **Subscriptions and spend [google].** Monthly totals and recurring charges from receipt and order emails, plus "this renews in 3 days" alerts.
+- **Calendar extras [google].**
+  - "Leave now" alert from the event's location plus travel time.
+  - Tomorrow's first event shown at night.
+  - Tap an event to open it.
+- **Job tracker extras [google].**
+  - A weekly "applications sent" count, from confirmation emails.
+  - Company names read from recruiter signatures.
+  - A one-time "not a job" correction per company.
+- **Tasks from email [google].** Starred emails and Google Tasks show in the Brief, with nothing typed into Pixel Pilot itself.
+- **Morning brief at a set time [device].** Pip reads the brief at 7:30 AM when the iPad is awake on its stand (wake lock plus quiet hours).
+- **Reply drafts [relay].** Pip drafts a short reply with Claude for important emails, which you send from Gmail.
 
 ## Car (the Honda Fit build)
-- **Live OBD-II gauges [hw].** BLE dongle plus Android Chrome; speed, RPM, coolant, MPG, range. *(in backlog)*
-- **Driving mode.** Huge calm gauges, only critical alerts, no taps needed above 5 mph. *(in backlog)*
-- **Trip log.** Every drive saved with distance, average MPG and top speed, plus a weekly fuel-cost estimate.
-- **Maintenance reminders.** Oil change every N miles from the odometer you enter, tire rotation, registration date.
-- **Track-day page (Miata).** G-force circle from phone motion sensors, lap timer by GPS.
-- **Parked-car finder.** Saves GPS when the car disconnects; Pip points home.
+- **Live OBD-II gauges [hw].** *(built in preview; Android Chrome plus a BLE adapter)*
+- **MPG and range [hw].** From the MAF and fuel-level sensors. Fill-ups are detected automatically, so there's no "filled up" button. *(in backlog)*
+- **Driving mode [hw].** Switches on by itself above 5 mph. *(in backlog)*
+- **Trip log [hw].** Every drive recorded automatically from engine on/off: distance, MPG, top speed and a weekly fuel cost.
+- **Maintenance from mileage [hw][google].** Odometer from OBD distance; service history from dealer and shop emails; oil change due at N miles.
+- **Check-engine explainer [hw].** Reads trouble codes (Mode 03) the moment the light comes on, and Pip explains them.
+- **Parked-car finder [device].** Saves GPS when the car's Bluetooth disconnects.
 
 ## Home and garage
-- **ADU project board.** Permit status, inspection dates, budget versus spend, contractor contacts. Feeds the Brief.
-- **Air quality and fire smoke [free].** AQI, Pip mask mood, red-flag warnings for the San Fernando Valley. *(in backlog)*
-- **Earthquake feed [free].** USGS, nearby M3+ with distance and a shake animation. *(in backlog)*
-- **Smart home [relay or hw].** Home Assistant entities (garage door, lights, temperature) as tappable tiles.
-- **Package-at-door camera [hw].** A frame from a doorbell camera when motion triggers.
-
-## Projects
-- **Robot arm console [hw].** Pip talks to the 6-DOF arm's local server over WebSocket: joint angles, servo temperatures, a camera snapshot and a "home" button.
-- **Matcha cart dashboard.** Daily sales tally, inventory (matcha tins, milk, cups), weather-based demand guess, events calendar.
-- **Learning tracker.** Certification study streak, next exam date, flashcard of the day.
+- **Air quality and fire smoke [free].** AQI from Open-Meteo, with Pip in a mask. *(in backlog)*
+- **Weather alerts [free].** National Weather Service red flag, heat and wind alerts. *(in backlog)*
+- **Earthquake feed [free].** USGS, M3+ within 100 mi. *(in backlog)*
+- **ADU project board [google].** Permit status and inspection dates from LADBS and contractor emails and calendar events; spend from invoice emails.
+- **Smart home [relay or hw].** Home Assistant states (garage door, lights, temperature) pushed live.
 
 ## Health and fitness
-- **Gym streak.** Tap to log a workout, weekly split view, and Pip flexes when you hit your weekly goal.
-- **Water and steps [device].** Steps from phone motion where available; otherwise manual taps.
+- **Gym days [google][shortcut].** *(built)* An iOS automation emails a check-in when the 24GO app opens, so nothing to tap.
+- **Steps, sleep and workouts [shortcut].** A nightly Shortcut exports Apple Health totals by email, and Pip charts them.
 
-## Money
-- **Watchlist [free/relay].** A few tickers or crypto with sparkline trends; Pip reacts to big moves.
-- **Monthly spend snapshot [google].** Totals parsed from receipt emails by category.
+## Projects and money
+- **Robot arm console [hw].** Live joint angles and servo temperatures pushed over WebSocket from the arm's local server.
+- **Matcha cart sales [relay].** Sales and inventory pulled from Square or Stripe, plus a weather-based demand guess.
+- **Learning tracker [google].** Course progress and exam dates from course-platform and certification emails.
+- **Watchlist [free/relay].** A few tickers with sparklines, and Pip reacts to big moves.
 
-## Fun and polish
-- **Mic visualizer [device].** The equalizer bars follow the room's music; Pip dances on the beat.
-- **Tilt Pip [device].** Pip rolls around when you tilt the iPad.
-- **Night dim.** Auto-dim after sunset for the car or the nightstand. *(in backlog)*
-- **Pip outfits.** Seasonal or holiday costumes, unlocked by streaks.
-- **Swappable sprites.** Drop in PixelLab or Retro Diffusion sprite sheets for Pip's moods.
+## Fun and polish (automatic by nature)
+- **Night dim [free].** Auto-dims after sunset. *(in backlog)*
+- **Mic visualizer [device].** The equalizer follows the room's music.
+- **Tilt Pip [device].** Pip rolls when the iPad tilts.
+- **Pip outfits.** Seasonal costumes, unlocked by streaks.
+- **Swappable sprites.** PixelLab or Retro Diffusion sprite sheets.
 
-- Calendar: tap an event row to open it in Google Calendar; "leave now" heads-up using travel time to the event's location; show tomorrow's first event at night.
-
-- Job tracker: recruiters on an ATS with no company in the subject group under their own name (e.g. "Dana Lee"). Could read the signature or the job title from the body (needs format=full, heavier). Also: "mark as not a job" per company, and a weekly "applications sent" count.
-
-- Car: redline setting (fixed at 5,500 RPM now); read trouble codes (Mode 03) and let Pip explain the check-engine light; trip log (start/stop, distance) kept on device; a Brief card with last battery voltage. iPad has no Web Bluetooth, so a phone-as-relay idea: Android Chrome reads the car and the iPad shows it (needs a relay).
+## Parked: manual
+These need routine input, so they don't get built unless an automatic source turns up.
+- **Focus timer:** needs a start tap. Revisit if it can start from calendar focus blocks.
+- **Manual water and step logging:** replaced by the Apple Health Shortcut idea.
+- **Manual to-do capture:** replaced by "Tasks from email".
+- **Tank-size "filled up" button:** replaced by fuel-level fill-up detection.
