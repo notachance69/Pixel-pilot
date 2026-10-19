@@ -237,6 +237,23 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .gAct{display:flex;flex-direction:column;gap:6px}
 .gAct .chip{white-space:normal}
 @media (max-width:760px){.gym{grid-template-columns:1fr}}
+/* car */
+.car{display:grid;grid-template-columns:minmax(150px,240px) minmax(0,1fr) minmax(130px,200px);gap:14px;width:100%;height:100%;align-items:center;min-width:0}
+.cMain{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:end;min-width:0}
+#crSpeed{font-size:clamp(30px,9vh,60px)}
+#crRpm{font-size:clamp(16px,3.6vh,24px)}
+.segs.rpm{grid-template-columns:repeat(16,minmax(0,1fr));height:10px;margin-top:4px;flex:none}
+.segs.rpm i.on{background:var(--cyan)}
+.segs.rpm i.on.y{background:var(--sun);box-shadow:0 0 5px var(--sun)}
+.segs.rpm i.on.r{background:var(--crit);box-shadow:0 0 6px var(--crit)}
+.cStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;min-width:0}
+.cStats .big{font-size:clamp(18px,4.6vh,30px)}
+.cStats .big.warn{color:var(--crit)}
+.cAct{display:flex;flex-direction:column;gap:5px;min-width:0}
+.cAct .chip{white-space:normal}
+.cAct .note{line-height:1.4}
+@media (max-height:420px) and (orientation:landscape){.car{gap:12px;grid-template-columns:minmax(160px,190px) minmax(0,1fr) minmax(110px,150px)}.cMain{gap:8px}.cAct .note{display:none}.cStats{gap:4px 8px}}
+@media (max-width:760px){.car{grid-template-columns:1fr 1fr}.cStats{grid-column:1/-1;order:3}}
 /* settings sheet */
 .sheetBox select{font:600 14px var(--f-talk);color:var(--ink);background:var(--paper);border:0;padding:6px 8px;margin:var(--px)}
 .setSec{display:flex;flex-direction:column;gap:6px;border-top:2px dashed var(--edge);padding-top:8px}
@@ -352,6 +369,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <button class="tab" role="tab" id="tab-iss" data-tab="iss" aria-selected="false" aria-controls="pane-iss" type="button"><span class="tic" aria-hidden="true">✦</span>ISS<span class="badge" id="badge-iss" hidden></span></button>
       <button class="tab" role="tab" id="tab-inbox" data-tab="inbox" aria-selected="false" aria-controls="pane-inbox" type="button"><span class="tic" aria-hidden="true">@</span>INBOX<span class="badge" id="badge-inbox" hidden></span></button>
       <button class="tab" role="tab" id="tab-gym" data-tab="gym" aria-selected="false" aria-controls="pane-gym" type="button"><span class="tic" aria-hidden="true">▲</span>GYM<span class="badge" id="badge-gym" hidden></span></button>
+      <button class="tab" role="tab" id="tab-car" data-tab="car" aria-selected="false" aria-controls="pane-car" type="button"><span class="tic" aria-hidden="true">◉</span>CAR<span class="badge" id="badge-car" hidden></span></button>
       <button class="tab" role="tab" id="tab-brief" data-tab="brief" aria-selected="false" aria-controls="pane-brief" type="button"><span class="tic" aria-hidden="true">◆</span>BRIEF<span class="badge" id="badge-brief" hidden></span></button>
     </div>
     <div class="status">
@@ -493,6 +511,26 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
         <div class="gAct">
           <button class="chip hot" id="gyBtn" type="button">I WENT TODAY</button>
           <span class="note" id="gyNote">TAP A DAY ON THE MAP TO PICK IT</span>
+        </div>
+      </div>
+    </div>
+    <div class="pane" id="pane-car" role="tabpanel" aria-labelledby="tab-car" hidden>
+      <div class="car">
+        <div class="cMain">
+          <div class="mini tap" data-say="carSpeed"><span class="lbl" id="crSpeedL">Speed</span><span class="big" id="crSpeed">--</span></div>
+          <div class="mini tap" data-say="carRpm"><span class="lbl">RPM</span><span class="big sm" id="crRpm">--</span><div class="segs rpm" id="crSegs" aria-hidden="true"></div></div>
+        </div>
+        <div class="cStats">
+          <div class="mini tap" data-say="carCool"><span class="lbl">Coolant</span><span class="big" id="crCool">--</span></div>
+          <div class="mini tap" data-say="carVolt"><span class="lbl">Battery</span><span class="big" id="crVolt">--</span></div>
+          <div class="mini tap" data-say="carThr"><span class="lbl">Throttle</span><span class="big" id="crThr">--</span></div>
+          <div class="mini tap" data-say="carLoad"><span class="lbl">Engine load</span><span class="big" id="crLoad">--</span></div>
+        </div>
+        <div class="cAct">
+          <span class="lbl tap" data-say="carStatus" id="crWho">OBD-II</span>
+          <button class="chip hot" id="crGo" type="button">CONNECT CAR</button>
+          <button class="linkbtn" id="crOut" type="button" hidden>DISCONNECT</button>
+          <span class="note" id="crNote"></span>
         </div>
       </div>
     </div>
@@ -887,7 +925,7 @@ function sweepArc(){ // replay the sun's path from the horizon to now
 }
 
 /* ---------- bottom deck tabs ---------- */
-const TABS=['fc','music','iss','inbox','gym','brief'];
+const TABS=['fc','music','iss','inbox','gym','car','brief'];
 let tab=TABS.includes(store.get('pp.tab'))?store.get('pp.tab'):'fc';
 function setTab(t,anim=true){
   if(!TABS.includes(t))return;const changed=t!==tab;tab=t;store.set('pp.tab',t);
@@ -896,6 +934,7 @@ function setTab(t,anim=true){
   if(t==='inbox')renderInbox();
   if(t==='gym'){renderGym();if(Date.now()-GY.at>5*60e3)loadGym()}
   if(t==='brief')renderBrief();
+  if(t==='car')renderCar();
   const badge=$('badge-'+t);if(badge)badge.hidden=true;
   if(anim){restart($('pane-'+t),'reveal');sfx('tap');
     const r=$('deck').getBoundingClientRect();if(r.bottom>innerHeight||r.top<0)$('deck').scrollIntoView({behavior:reduce?'auto':'smooth',block:'end'})}
@@ -1618,6 +1657,7 @@ function briefTips(){
     if(c.temperature_2m>=90)t.push('Hot one today. Drink water.');else if(d.temperature_2m_min[0]<=48)t.push(`Low of ${n(d.temperature_2m_min[0])}° tonight. Bring a jacket.`);
   }
   const gt=gymTip();if(gt)t.push(gt);
+  const ct=carTip();if(ct)t.push(ct);
   const v=nextPasses().find(p=>p.visible&&p.start-Date.now()<24*3600e3);if(v)t.push(`ISS visible ${when(v.start).toLowerCase()}. Look ${dirW(v.azStart)}.`);
   if(!t.length)t.push(S.wx||G.list?'Nothing urgent. Enjoy the day.':'Set your location and connect Gmail so I can plan your day.');
   return t.slice(0,4);
@@ -1786,6 +1826,156 @@ function gymTip(){const st=gymStats();if(!st.total)return null;   // only nudge 
   if(st.since>=3)return`${st.since} days since the gym. ${st.thisWeek} of ${GY.goal} this week so far.`;
   return null}
 
+/* ---------- Car: live OBD-II over Web Bluetooth ---------- */
+// Talks to a Bluetooth LE ELM327 adapter (Vgate/vLinker/Veepeak-style) plugged into the car's OBD-II port.
+// Works in Chrome on Android, ChromeOS, Windows and Mac. iPhone and iPad browsers have no Web Bluetooth,
+// so there the tab explains that and shows the last readings. Only the latest readings are kept on the device.
+const BLE_SVCS=[0xfff0,0xffe0,0x18f0,'e7810a71-73ae-499d-8c15-faa9aef0c3f2'];
+const BLE_NAMES=['OBD','ELM','V-LINK','VLINK','IOS-Vlink','Android-Vlink','vLinker','VEEPEAK','Viecar','KONNWEI','Carista','OBDLink'];
+const REDLINE=5500;
+const CAR={dev:null,rx:null,tx:null,buf:'',wait:null,live:false,busy:false,state:'',err:'',ecu:true,bye:false,tries:0,cycle:0,timer:0,movedAt:0,
+  d:store.get('pp.carLast'),name:store.get('pp.carName')||'',hasBT:!!(navigator.bluetooth&&navigator.bluetooth.requestDevice)};
+const KM_TO_MI=.621371;
+const PIDS={'0D':['speed',b=>b[0]*KM_TO_MI],'0C':['rpm',b=>(b[0]*256+(b[1]||0))/4],'05':['cool',b=>(b[0]-40)*9/5+32],'11':['thr',b=>b[0]*100/255],'04':['load',b=>b[0]*100/255]};
+function parsePid(txt,pid){
+  for(const ln of String(txt).toUpperCase().split(/[\r\n]+/)){const s=ln.replace(/\s/g,''),i=s.indexOf('41'+pid);if(i<0)continue;
+    const by=(s.slice(i+4).match(/[0-9A-F]{2}/g)||[]).map(h=>parseInt(h,16));if(by.length)return by}
+  return null}
+function carRx(e){
+  const v=e.target.value;CAR.buf+=new TextDecoder().decode(v.buffer?new Uint8Array(v.buffer,v.byteOffset,v.byteLength):v);
+  const i=CAR.buf.indexOf('>');if(i<0)return;
+  const txt=CAR.buf.slice(0,i);CAR.buf=CAR.buf.slice(i+1);if(CAR.wait)CAR.wait(txt);
+}
+function carSend(cmd,ms=2500){
+  return new Promise((res,rej)=>{
+    if(!CAR.tx)return rej(new Error('not connected'));
+    CAR.buf='';const t=setTimeout(()=>{CAR.wait=null;rej(new Error('timeout'))},ms);
+    CAR.wait=txt=>{clearTimeout(t);CAR.wait=null;res(txt)};
+    const data=new TextEncoder().encode(cmd+'\r'),c=CAR.tx;
+    Promise.resolve(c.properties.writeWithoutResponse&&c.writeValueWithoutResponse?c.writeValueWithoutResponse(data):c.writeValue(data)).catch(e=>{clearTimeout(t);CAR.wait=null;rej(e)});
+  });
+}
+async function carInit(){
+  for(const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP0']){try{await carSend(c,c==='ATZ'?4000:2000)}catch(e){if(c!=='ATZ')throw e}}
+  try{const r=await carSend('0100',9000);CAR.ecu=!/UNABLE|ERROR|BUS INIT|STOPPED/i.test(r)}catch(e){CAR.ecu=false}   // first request makes the adapter find the car's protocol
+}
+function carNoBT(){return SANDBOX?'The car link needs the live page in Chrome. It can\'t use Bluetooth inside Claude.':'Live car data needs Chrome on an Android phone (or a laptop) and a Bluetooth LE OBD-II adapter. iPhone and iPad browsers can\'t use Bluetooth.'}
+async function carConnect(){
+  if(!CAR.hasBT){say(carNoBT());renderCar();return}
+  CAR.err='';CAR.state='pick';renderCar();
+  try{
+    const filters=[...BLE_SVCS.map(s=>({services:[s]})),...BLE_NAMES.map(namePrefix=>({namePrefix}))];
+    const dev=await navigator.bluetooth.requestDevice({filters,optionalServices:BLE_SVCS});
+    await carOpen(dev);
+  }catch(e){
+    CAR.state='';CAR.err=e&&e.name==='NotFoundError'?'':e&&e.name==='SecurityError'?'Bluetooth is blocked on this page. Open the live link in Chrome.':`Couldn't connect: ${(e&&e.message)||'unknown error'}.`;
+    renderCar();if(CAR.err)say(CAR.err);
+  }
+}
+async function carOpen(dev){
+  CAR.dev=dev;CAR.name=dev.name||'OBD adapter';store.set('pp.carName',CAR.name);
+  if(!dev._pp){dev._pp=1;dev.addEventListener('gattserverdisconnected',carLost)}
+  CAR.state='link';renderCar();
+  const srv=await dev.gatt.connect();
+  let svc=null;for(const u of BLE_SVCS){try{svc=await srv.getPrimaryService(u);break}catch(e){}}
+  if(!svc)throw new Error('that device is not an OBD adapter');
+  const chars=await svc.getCharacteristics();
+  CAR.rx=chars.find(c=>c.properties.notify)||null;CAR.tx=chars.find(c=>c.properties.write||c.properties.writeWithoutResponse)||null;
+  if(!CAR.rx||!CAR.tx)throw new Error('the adapter has no data channel');
+  await CAR.rx.startNotifications();CAR.rx.addEventListener('characteristicvaluechanged',carRx);
+  CAR.state='init';renderCar();
+  await carInit();
+  CAR.live=true;CAR.state='';CAR.err='';CAR.tries=0;CAR.cycle=0;
+  sfx('data');kick(1.2);faceBurst('star',6);restart($('crWho'),'pop');
+  say(CAR.ecu?`Connected to ${CAR.name}. Reading your car now.`:`Connected to ${CAR.name}, but the car isn't answering yet. Turn the key to ON or start the engine.`);
+  carLoop();
+}
+function carLost(){
+  const was=CAR.live;CAR.live=false;CAR.busy=false;CAR.wait=null;clearTimeout(CAR.timer);
+  if(CAR.bye){CAR.bye=false;CAR.state='';renderCar();return}
+  if(CAR.retryT)return;
+  if(CAR.dev&&CAR.tries<3){const k=++CAR.tries;CAR.state='';CAR.err='Lost the adapter. Reconnecting...';renderCar();
+    CAR.retryT=setTimeout(()=>{CAR.retryT=0;carOpen(CAR.dev).catch(()=>carLost())},[0,2000,5000,10000][k])}
+  else{CAR.state='';CAR.err='Adapter disconnected. Tap CONNECT CAR to try again.';renderCar()}
+  if(was)say('Lost the car adapter. Trying to reconnect.');
+}
+function carDisconnect(){
+  CAR.bye=true;CAR.tries=0;clearTimeout(CAR.retryT);CAR.retryT=0;sfx('close');
+  if(CAR.dev&&CAR.dev.gatt&&CAR.dev.gatt.connected)CAR.dev.gatt.disconnect();else carLost();
+  say('Car disconnected. I kept your last readings.');
+}
+function carLoop(){clearTimeout(CAR.timer);if(!CAR.live)return;
+  if(document.hidden){CAR.timer=setTimeout(carLoop,3000);return}   // no Bluetooth chatter while the page is hidden
+  carPoll().finally(()=>{if(CAR.live)CAR.timer=setTimeout(carLoop,CAR.ecu?350:4000)})}
+async function carPoll(){
+  if(!CAR.live||CAR.busy)return;CAR.busy=true;
+  const slow=CAR.cycle%5===0;CAR.cycle++;
+  const list=CAR.ecu?(slow?['0D','0C','05','11','04','RV']:['0D','0C','11']):['RV','0D'];
+  const d=Object.assign({},CAR.d||{});let any=false,noEcu=0,asked=0;
+  for(const p of list){
+    if(!CAR.live)break;
+    try{
+      if(p==='RV'){const r=await carSend('ATRV');const m=r.match(/(\d+(?:\.\d+)?)\s*V/i);if(m){d.volt=+m[1];any=true}continue}
+      asked++;const r=await carSend('01'+p,CAR.ecu?2500:6000);
+      if(/UNABLE TO CONNECT|CAN ERROR|BUS INIT|STOPPED/i.test(r)){noEcu++;continue}
+      const b=parsePid(r,p);if(b){d[PIDS[p][0]]=PIDS[p][1](b);any=true}
+    }catch(e){if(e.message!=='timeout')break}
+  }
+  CAR.busy=false;if(!CAR.live)return;
+  const wasEcu=CAR.ecu;CAR.ecu=asked?noEcu<asked:CAR.ecu;
+  if(!CAR.ecu){d.speed=0;d.rpm=0}
+  if(wasEcu!==CAR.ecu)say(CAR.ecu?'The car is talking to me now.':'The car stopped answering. Engine off?');
+  if(any){d.t=Date.now();CAR.d=d;if(d.speed>3)CAR.movedAt=Date.now();if(slow||!wasEcu)store.set('pp.carLast',d)}
+  renderCar();
+}
+const carFresh=()=>CAR.live&&CAR.d&&Date.now()-(CAR.d.t||0)<15000;
+function carAlert(){
+  if(!carFresh())return null;const d=CAR.d;
+  if(d.rpm>=REDLINE)return'redline';
+  if(CAR.ecu&&d.cool>=235)return'carhot';   // a stale reading from before the engine went off doesn't count
+  if(d.volt&&d.volt<(d.rpm>400?12.5:11.8))return'lowvolt';
+  return null}
+const carCruise=()=>carFresh()&&Date.now()-CAR.movedAt<30000;   // stays on through a red light
+function carLine(){
+  const d=CAR.d;
+  if(!d)return CAR.hasBT?'No car data yet. Plug the OBD-II adapter in under the dashboard and tap CONNECT CAR.':carNoBT();
+  const ago=Date.now()-(d.t||0),live=carFresh();
+  const bits=[];if(live&&CAR.ecu)bits.push(d.speed>3?`Doing ${n(d.speed)} mph at ${n(d.rpm).toLocaleString()} RPM`:d.rpm>400?`Idling at ${n(d.rpm)} RPM`:'Engine off');
+  if(d.cool!=null&&(live?CAR.ecu:true))bits.push(`coolant ${n(d.cool)}°F${d.cool>=235?' (hot!)':''}`);
+  if(d.volt)bits.push(`battery ${d.volt.toFixed(1)} V`);
+  const s=bits.join(', ');
+  return live?`${s[0].toUpperCase()+s.slice(1)}. ${d.cool>=235?'Pull over when it\'s safe.':d.volt&&d.volt<12.2&&!(d.rpm>400)?'Battery is on the low side.':'All looks normal.'}`:`Last time I saw the car (${agoWords(d.t)}): ${s}.`;
+}
+function carTip(){const d=CAR.d;if(!d||!d.volt||carFresh())return null;
+  if(d.volt<12.2&&!(d.rpm>400))return`Car battery read ${d.volt.toFixed(1)} V last time. It may need a charge.`;return null}
+function renderCar(){
+  const d=CAR.d,live=carFresh(),on=live&&CAR.ecu;
+  const put=(id,v,suf,dec=0)=>{const el=$(id),h=v==null?'--':(+v).toFixed(dec)+suf;if(el._h!==h){if(el._h==='--'||el._h==null)restart(el,'glitch');el._h=h;el.innerHTML=h}};
+  put('crSpeed',d&&(on||!live)?d.speed:null,'<small>MPH</small>');
+  put('crRpm',d&&(on||!live)?d.rpm:null,'');
+  put('crCool',d?d.cool:null,'<small>°F</small>');
+  put('crVolt',d?d.volt:null,'<small>V</small>',1);
+  put('crThr',d&&on?d.thr:null,'<small>%</small>');
+  put('crLoad',d&&on?d.load:null,'<small>%</small>');
+  $('crCool').classList.toggle('warn',!!(d&&d.cool>=235));
+  $('crVolt').classList.toggle('warn',!!(d&&d.volt&&d.volt<(d.rpm>400?12.5:11.8)));
+  $('crSpeedL').textContent=live?'Speed':d?'Speed · last seen':'Speed';
+  const segs=$('crSegs');if(!segs.children.length)for(let i=0;i<16;i++)segs.appendChild(document.createElement('i'));
+  const lit=d&&on?Math.round(clamp(d.rpm/7000,0,1)*16):0;
+  [...segs.children].forEach((el,i)=>{const r=(i+1)/16*7000;el.className=i<lit?'on'+(r>REDLINE?' r':r>REDLINE-1500?' y':''):''});
+  $('crWho').textContent=live?`${CAR.name.toUpperCase()} · LIVE`:CAR.name?CAR.name.toUpperCase():'OBD-II';
+  const go=$('crGo');go.hidden=CAR.live||!CAR.hasBT;go.disabled=!!CAR.state;
+  go.textContent=CAR.state==='pick'?'PICK YOUR ADAPTER...':CAR.state==='link'?'CONNECTING...':CAR.state==='init'?'WAKING THE ADAPTER...':CAR.name?'RECONNECT CAR':'CONNECT CAR';
+  $('crOut').hidden=!CAR.live;
+  $('crNote').textContent=!CAR.hasBT?(SANDBOX?'OPEN THE LIVE LINK IN CHROME TO CONNECT':'NEEDS CHROME ON ANDROID + A BLE OBD-II ADAPTER. IPHONE AND IPAD CAN\'T DO BLUETOOTH IN A BROWSER.')+(d?` · LAST SEEN ${agoWords(d.t).toUpperCase()}`:'')
+    :CAR.err?CAR.err.toUpperCase():CAR.live?(CAR.ecu?'LIVE · TAP A NUMBER TO ASK PIP':'TURN THE KEY TO ON SO THE CAR ANSWERS'):d?`LAST SEEN ${agoWords(d.t).toUpperCase()}`:'PLUG THE ADAPTER IN UNDER THE DASH, THEN CONNECT';
+}
+$('crGo').onclick=()=>{restart($('crGo'),'hit');carConnect()};
+$('crOut').onclick=carDisconnect;
+// reconnect on load where Chrome remembers the adapter (no picker needed)
+if(CAR.hasBT&&CAR.name&&navigator.bluetooth.getDevices&&!SANDBOX)navigator.bluetooth.getDevices().then(ds=>{const dv=ds.find(x=>x.name===CAR.name);if(dv&&!CAR.live)carOpen(dv).catch(()=>{CAR.state='';renderCar()})}).catch(()=>{});
+window.__pipCar={CAR,parsePid,renderCar};   // test hook
+
 /* ---------- Ask Pip: plain-language commands ---------- */
 const CATS=[
   [/\b(jobs?|recruit\w*|career\w*|hiring|interviews?|applications?)\b/,'JOBS','job'],
@@ -1798,7 +1988,7 @@ const CATS=[
   [/\b(newsletters?|lists?|digests?|subscriptions?)\b/,'LIST','newsletter'],
   [/\b(social)\b/,'SOCIAL','social']
 ];
-const TABWORDS=[[/forecast|weather/,'fc'],[/music|spotify|song/,'music'],[/\biss\b|space station|satellite/,'iss'],[/inbox|e-?mails?|mail\b/,'inbox'],[/\bgym\b|workout|fitness/,'gym'],[/brief|summary|my day/,'brief']];
+const TABWORDS=[[/\bcar\b|obd|engine/,'car'],[/forecast|weather/,'fc'],[/music|spotify|song/,'music'],[/\biss\b|space station|satellite/,'iss'],[/inbox|e-?mails?|mail\b/,'inbox'],[/\bgym\b|workout|fitness/,'gym'],[/brief|summary|my day/,'brief']];
 const catOf=s=>CATS.find(([re])=>re.test(s));
 const clean=s=>s.replace(/^(the|my|any|all)\s+/,'').replace(/\s+(emails?|mail|messages?)$/,'').replace(/[."!?]+$/,'').trim();
 const addTo=(k,v)=>{const cur=splitList(store.get(k));if(!cur.includes(v))cur.push(v);store.set(k,cur.join(', '))};
@@ -1815,7 +2005,7 @@ function askPip(raw){
   const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
   let m;
   if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
-    return 'Try: "hide job emails", "show job emails", "mute emails from LinkedIn", "hide emails about crypto", "make mom a VIP", "gym goal 3", "only show unread", "open gym", "what\'s next", "how\'s my job search", "sound on", "what are my rules", or "reset my rules".';
+    return 'Try: "hide job emails", "show job emails", "mute emails from LinkedIn", "hide emails about crypto", "make mom a VIP", "gym goal 3", "only show unread", "open gym", "what\'s next", "how\'s my job search", "how\'s my car", "sound on", "what are my rules", or "reset my rules".';
   if(/^(what|list|show)( are)?( my)? rules\b|^my rules$/.test(s)){const r=ruleList();return r.length?`Your rules: ${r.map(x=>x.label.toLowerCase()).join('; ')}.`:'No rules yet. Try "hide job emails".'}
   if(/^(reset|clear|delete|remove) (all |my )*(the )?rules\b/.test(s)){RL.hideTags=[];RL.hideFrom=[];RL.hideWords=[];store.set('pp.vip','');store.set('pp.kw','');rulesChanged();return'All rules cleared. Your inbox is back to normal.'}
   if((m=s.match(/goal (?:to |is |of |=\s*)?(\d)\b/))&&/gym|goal|workout/.test(s)){
@@ -1854,6 +2044,8 @@ function askPip(raw){
   {const tw=TABWORDS.find(([re])=>re.test(s));if(/^(open|go to|switch to|take me to|show me)\b/.test(s)&&tw){setTab(tw[1]);return'On it.'}}
   // questions Pip can answer from what's on screen
   if(/calendar|meetings?|\bevents?\b|schedule|agenda|appointment|what's next|whats next|am i free|busy/.test(s))return calLine();
+  if(/^(connect|pair|link) (my |the )?car\b/.test(s)){setTab('car');if(CAR.hasBT&&!CAR.live){carConnect();return'Pick your OBD adapter from the list.'}return CAR.live?'Already connected.':carNoBT()}
+  if(/\b(car|engine|coolant|obd|battery voltage|my battery)\b/.test(s))return carLine();
   if(/weather|temperature|how (hot|cold)|outside/.test(s))return about('temp')+' '+about('feels');
   if(/rain|umbrella/.test(s))return about('rain');
   if(/how many|unread|any (new )?e-?mails?|inbox/.test(s)){const iu=shown().filter(e=>e.imp&&e.unread);return G.on&&G.list?(iu.length?`${iu.length} important unread. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email.'):'Gmail isn\'t connected yet. Tap Inbox to connect.'}
@@ -1986,6 +2178,10 @@ function moodLine(m){
     case'mail':return S.mailLine||"You've got mail!";
     case'gym':return S.gymLine||'Gains!';
     case'job':return S.jobLine||'Job news!';
+    case'cruise':return CAR.d?`Cruising at ${n(CAR.d.speed)} mph. Eyes on the road, I've got the gauges.`:'Cruising.';
+    case'redline':return CAR.d?`Easy! ${n(CAR.d.rpm).toLocaleString()} RPM. That's redline territory.`:'Redline!';
+    case'carhot':return CAR.d?`Engine's running hot: ${n(CAR.d.cool)}°F. Pull over when it's safe and let it cool.`:'Engine hot!';
+    case'lowvolt':{const d=CAR.d;return d?(d.rpm>400?`Battery is only ${d.volt.toFixed(1)} V with the engine running. The alternator may not be charging.`:`Car battery is low: ${d.volt.toFixed(1)} V. It might not start next time.`):'Low battery!'}
     case'heads':{const e=calHeads();return e?`Heads up: "${e.title}" starts in ${inWords(e.start-Date.now())}${e.where?`, at ${e.where}`:''}.`:'Heads up!'}
     case'music':return M.state?`Now playing: ${M.state.title} by ${M.state.artist}. Vibing.`:'Vibing.';
     case'iss':{const o=ISS.overhead;return o?`The ISS is right above you! Look ${dirW(o.az)}, about ${n(o.el)}° up. ${o.visible?'It should be a bright moving dot right now.':"It's too bright out to spot it, but it's up there."}`:'The ISS is overhead!'}
@@ -2035,6 +2231,13 @@ function about(key,el){
       const why=e.tags.length?` I flagged it: ${e.tags.join(', ').toLowerCase()}.`:e.important?' Gmail marked it important.':'';
       return`${e.name}, ${agoWords(e.t)}: "${e.subject}".${why}`}
     case'cal':return calLine();
+    case'carStatus':return carLine();
+    case'carSpeed':{const d=CAR.d;if(!d)return carLine();return carFresh()?(d.speed>3?`${n(d.speed)} mph, straight from the car's own speed sensor.`:'Parked or stopped. 0 mph.'):`${n(d.speed||0)} mph the last time I saw the car, ${agoWords(d.t)}.`}
+    case'carRpm':{const d=CAR.d;if(!d||!carFresh())return d?`Engine was at ${n(d.rpm||0)} RPM when I last saw it.`:carLine();return d.rpm<300?'Engine is off.':`Engine at ${n(d.rpm).toLocaleString()} RPM. ${d.rpm>=REDLINE?'That\'s redline. Ease off.':d.rpm<1000?'Idling.':'Redline starts around '+REDLINE.toLocaleString()+'.'}`}
+    case'carCool':{const d=CAR.d;if(!d||d.cool==null)return carLine();return`Coolant is ${n(d.cool)}°F. ${d.cool>=235?'That\'s hot. Pull over when it\'s safe.':d.cool<150?'Still warming up. Go easy until it\'s near 195°.':'Normal is about 195 to 220°.'}`}
+    case'carVolt':{const d=CAR.d;if(!d||!d.volt)return carLine();const run=d.rpm>400;return`Battery reads ${d.volt.toFixed(1)} V. ${run?(d.volt<12.5?'Low for a running engine. The alternator may not be charging.':'The alternator is charging it. 13.5 to 14.7 is normal while running.'):d.volt<12.2?'Low. A drive or a charger would help.':'Healthy for an engine that\'s off. 12.4 to 12.7 is normal.'}`}
+    case'carThr':{const d=CAR.d;return d&&d.thr!=null&&carFresh()?`Throttle is ${n(d.thr)}% open.`:'Throttle shows up while the car is connected and running.'}
+    case'carLoad':{const d=CAR.d;return d&&d.load!=null&&carFresh()?`The engine is working at ${n(d.load)}% of what it can do right now.`:'Engine load shows up while the car is connected and running.'}
     case'job':{const g=(JB.list||[]).find(x=>x.key===el.dataset.k);if(!g)return'';JB.open=JB.open===g.key?null:g.key;setTimeout(renderInbox,0);return jobAbout(g)}
     case'hour':{const h=nextHours()[+el.dataset.i];if(!h)return NOWX;return`${+el.dataset.i===0?'This hour':'At '+fmtHour(h.t)}: ${n(h.temp)}°, ${(WXNAME[h.code]||'').toLowerCase()}, ${h.p}% chance of rain.`}
   }
@@ -2053,6 +2256,7 @@ function facts(){
   if(G.on&&G.list){const iu=shown().filter(e=>e.imp&&e.unread);out.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email right now. Nice.')}
   if(CAL.ok&&CAL.list&&calUp().length)out.push(calLine());
   if(M.state&&M.state.playing)out.push(about('track'));
+  if(carFresh())out.push(carLine());
   {const st=gymStats();if(st.total)out.push(`Gym: ${st.thisWeek} of ${GY.goal} days this week${st.streak?`, ${st.streak}-week streak`:''}.`)}
   if(ISS.pos){out.push(about('issDist'));if(S.loc&&ISS.mode==='sgp4')out.push(about('issPass'))}
   if(S.fps)out.push(about('fps'));
@@ -2112,7 +2316,11 @@ const MOODS={
   mail:{label:'NEW MAIL',s:'hype',b:'#8ff3ff',d:'#3fb5d6'},
   gym:{label:'GAINS',s:'hype',b:'#ff8fd0',d:'#e0569f'},
   heads:{label:'HEADS UP',s:'warn',b:'#ffe34d',d:'#e0a623'},
-  job:{label:'JOB NEWS',s:'hype',b:'#c6ff7a',d:'#7ccf2a'}
+  job:{label:'JOB NEWS',s:'hype',b:'#c6ff7a',d:'#7ccf2a'},
+  cruise:{label:'CRUISING',s:'ok',b:'#8ff3ff',d:'#3fb5d6'},
+  redline:{label:'REDLINE',s:'crit',b:'#ff6a4d',d:'#d6333f'},
+  carhot:{label:'ENGINE HOT',s:'crit',b:'#ff6a4d',d:'#d6333f'},
+  lowvolt:{label:'LOW BATTERY',s:'warn',b:'#ffe34d',d:'#e0a623'}
 };
 function weatherMood(){
   if(!navigator.onLine)return'offline';
@@ -2134,10 +2342,12 @@ function weatherMood(){
 function moodFor(now){
   if(now<S.dizzyUntil)return'dizzy';
   if(now<S.pokeUntil)return'poke';
+  {const ca=carAlert();if(ca)return ca}
   if(now<(S.mailUntil||0))return'mail';
   if(now<(S.gymUntil||0))return'gym';
   if(now<(S.jobUntil||0))return'job';
   if(calHeads())return'heads';
+  if(carCruise())return'cruise';
   if(navigator.onLine&&ISS.overhead)return'iss';
   const w=weatherMood();
   if(M.state&&M.state.playing&&w!=='storm'&&w!=='offline'&&w!=='nodata')return'music';
@@ -2149,10 +2359,11 @@ function setMood(m,now){
   el.dataset.s=MOODS[m].s;restart(el,'flip');
   const quick=m==='poke'||prev==='poke';
   if(prev&&!reduce)S.trans={from:prev,t0:now,quick,burst:false};
-  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(m==='heads'?'alarm':'mood')}
+  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt)$/.test(m)?'alarm':'mood')}
+  if(/^(redline|carhot|lowvolt)$/.test(m)){flagTab('car');faceBurst('spark',6)}
   if(m==='heads'&&prev!=='poke'&&prev!=='dizzy'){flagTab('brief');faceBurst('star',4);renderBrief()}
   // don't talk over a fresh Ask Pip answer unless this mood is an alert
-  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss|job)$/.test(m))return;
+  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss|job|redline|carhot|lowvolt)$/.test(m))return;
   say((prev==='poke'||prev==='dizzy')&&m!=='dizzy'&&m!=='poke'?nextFact():moodLine(m));
 }
 function poke(e){
@@ -2241,10 +2452,15 @@ const FACE={
   mail:{eye:'happy',mouth:'o',blush:1,per:180,squash:1,orb:200,fx:'mail'},
   gym:{eye:'star',mouth:'grin',blush:1,per:140,squash:1,orb:180,fx:'gym'},
   heads:{eye:'open',mouth:'o',per:220,orb:260,fx:'clock'},
-  job:{eye:'star',mouth:'o',blush:1,per:200,squash:1,orb:220,fx:'case'}
+  job:{eye:'star',mouth:'o',blush:1,per:200,squash:1,orb:220,fx:'case'},
+  cruise:{eye:'shades',mouth:'smile',per:380,orb:500,fx:'speed'},
+  redline:{eye:'x',mouth:'teeth',per:120,orb:120,shake:1,fx:'speed'},
+  carhot:{eye:'x',mouth:'teeth',per:160,orb:260,shake:1,fx:'steam'},
+  lowvolt:{eye:'dot',mouth:'wave',per:520,orb:1400,fx:'battery'}
 };
 const BRIEFCASE=["...#####...","...#...#...","###########","#ooooooooo#","#####y#####","#ooooooooo#","#ooooooooo#","###########"];
 const CLOCK=["yy.....yy","y.#####.y",".#WWWWW#.","#WWW#WWW#","#WWW#WWW#","#WWW##WW#","#WWWWWWW#",".#WWWWW#.","..#####..",".#.....#."];
+const BATTERY=["....#.#....","###########","#ppWWWWWWW#","#ppWWWWWWW#","###########"];
 const DUMBBELL=["#L#...#L#","#S#LLL#S#","#L#...#L#"];
 const ENVELOPE=["###########","#W#WWWWW#W#","#WW#WWW#WW#","#WWW#p#WWW#","#WWWWWWWWW#","###########"];
 // face particles: hearts, stars and sparks that fly off Pip
@@ -2325,6 +2541,9 @@ function drawFace(t){
   if(f.fx==='rain'||f.fx==='umbrella'){fc.fillStyle=C.cyan;fc.globalAlpha=.8;
     for(let i=0;i<12;i++){const x=(i*11+5)%64;if(f.fx==='umbrella'&&Math.abs(x-cx)<16)continue;const y=Math.floor(((reduce?0:t)/16+i*13)%58)-4;fc.fillRect(x,y,1,2)}
     fc.globalAlpha=1}
+  if(f.fx==='speed'){const fast=m==='redline';   // speed lines streaming past
+    for(let i=0;i<7;i++){const y=cy-12+i*4,len=fast?9:6,x=63-Math.floor(((reduce?0:t)/(fast?5:11)+i*23)%84);
+      fc.fillStyle=i%2?C.cyan:fast?C.crit:C.pink;fc.globalAlpha=.75;fc.fillRect(x,y,len,1)}fc.globalAlpha=1}
   drawOrbit(32,40,ot,false,orbPer);
   blob(cx,cy,rx,ry,b,d,ob,od,prog);
   spr(["..gg",".g..","g..."],cx-10,cy-9);
@@ -2356,6 +2575,7 @@ function drawFace(t){
   if(f.fx==='clock'){const ring=!reduce&&t%1200<450,jx=ring?(Math.floor(t/50)%2?1:-1):0;spr(CLOCK,cx-4+jx,Math.max(0,cy-ry-11));
     if(ring&&Math.floor(t/100)%2){fc.fillStyle=C.sun;fc.fillRect(cx-8,cy-ry-9,2,1);fc.fillRect(cx+7,cy-ry-9,2,1)}}
   if(f.fx==='case'){const bob=reduce?0:Math.round(Math.sin(t/140)*2);spr(BRIEFCASE,cx-5,Math.max(0,cy-ry-9+bob))}
+  if(f.fx==='battery'){const lowBar=reduce||Math.floor(t/400)%2;spr(BATTERY.map(r=>lowBar?r:r.replace(/p/g,'.')),cx-5,Math.max(0,cy-ry-8))}
   if(f.fx==='mail'){const bob=reduce?0:Math.round(Math.sin(t/160)*2);spr(ENVELOPE,cx-5,Math.max(0,cy-ry-8+bob))}
   drawOrbit(32,40,ot,true,orbPer);
   if(f.fx==='umbrella')umbrella(cx,Math.max(1,cy-23));

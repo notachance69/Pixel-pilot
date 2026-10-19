@@ -102,6 +102,24 @@
     "mocked BLE in the smoke test",
     "clear message on iOS (no Web Bluetooth)"
    ],
+   "passes": true,
+   "notes": "Slice 1 built 2026-10-19 (preview): CAR tab, BLE ELM327 connect (FFF0/FFE0/18F0/vLinker services + common adapter names), AT init, live speed/RPM/coolant/voltage/throttle/load, RPM bar, Pip moods CRUISING/REDLINE/ENGINE HOT/LOW BATTERY, auto-reconnect after a dropped link, last readings kept on device, clear iPhone/iPad message. MPG/range split out to 'car-mpg'. Untested on a real adapter yet."
+  },
+  {
+   "id": "car-mpg",
+   "priority": 3,
+   "title": "Car MPG and range: instant/trip MPG from MAF (PID 10) and speed, range estimate, 'filled up' reset",
+   "needs": [
+    "car-obd"
+   ],
+   "acceptance": [
+    "reads MAF (0110) with speed",
+    "instant and trip MPG",
+    "tank size setting and 'filled up' reset",
+    "range estimate",
+    "Pip comments on a good or bad trip",
+    "mocked in the smoke test"
+   ],
    "passes": false
   },
   {

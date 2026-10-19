@@ -110,6 +110,34 @@ async function mock(page) {
   });
 }
 
+// car: a fake Bluetooth LE ELM327 adapter (FFF0 service, FFF1 notify, FFF2 write) that answers like a real one,
+// including "SEARCHING...", spaced and unspaced hex, 20-byte BLE chunks, engine-off and a dropped link
+function fakeBluetooth() {
+  const elm = window.__elm = { kmh: 68, rpm: 2100, coolC: 91, volt: 14.1, thr: 46, load: 89, ecu: true, log: [] };
+  const hx = n => n.toString(16).toUpperCase().padStart(2, '0');
+  const reply = c => {
+    c = c.trim().toUpperCase(); elm.log.push(c);
+    if (c === 'ATZ') return '\r\rELM327 v1.5\r\r>';
+    if (c === 'ATRV') return elm.volt.toFixed(1) + 'V\r\r>';
+    if (c.startsWith('AT')) return 'OK\r\r>';
+    if (!elm.ecu) return 'UNABLE TO CONNECT\r\r>';
+    if (c === '0100') return 'SEARCHING...\r41 00 BE 3E B8 11\r\r>';
+    const r4 = Math.round(elm.rpm * 4), m = { '0D': hx(elm.kmh), '0C': hx(r4 >> 8) + ' ' + hx(r4 & 255), '05': hx(elm.coolC + 40), '11': hx(elm.thr), '04': hx(elm.load) }[c.slice(2)];
+    return m ? `41 ${c.slice(2)} ${m}\r\r>` : 'NO DATA\r\r>';
+  };
+  const rx = { properties: { notify: true }, value: null, fns: [], startNotifications: async () => rx, addEventListener: (t, f) => rx.fns.push(f) };
+  const tx = { properties: { write: true, writeWithoutResponse: true }, writeValue: async d => tx.writeValueWithoutResponse(d),
+    writeValueWithoutResponse: async d => { if (!gatt.connected) throw new Error('GATT disconnected'); const r = new TextEncoder().encode(reply(new TextDecoder().decode(d)));
+      setTimeout(() => { for (let i = 0; i < r.length; i += 20) { rx.value = new DataView(r.slice(i, i + 20).buffer); rx.fns.forEach(f => f({ target: rx })); } }, 15); } };
+  const svc = { getCharacteristics: async () => [rx, tx] };
+  const lis = [];
+  const gatt = { connected: false, connect: async () => { gatt.connected = true; rx.fns = []; return { getPrimaryService: async u => { if (u === 0xfff0) return svc; throw new Error('NotFoundError'); } }; },
+    disconnect: () => { gatt.connected = false; lis.forEach(f => f()); } };
+  const dev = { name: 'IOS-Vlink', gatt, addEventListener: (t, f) => lis.push(f) };
+  window.__elmDrop = () => { gatt.connected = false; lis.forEach(f => f()); };
+  Object.defineProperty(navigator, 'bluetooth', { configurable: true, value: { requestDevice: async o => { window.__btOpts = o; return dev; }, getDevices: async () => [] } });
+}
+
 (async () => {
   if (!fs.existsSync(PAGE)) { console.error('missing ' + PAGE + ' (run tools/build.py first)'); process.exit(2); }
   const browser = await chromium.launch({ executablePath: fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined }).catch(() => chromium.launch());
@@ -121,6 +149,7 @@ async function mock(page) {
     set('pp.spotTok', { access: 'AT', refresh: 'RT', exp: Date.now() + 3600e3 }); set('pp.spotId', '0123456789abcdef0123456789abcdef');
     set('pp.gOn', true); set('pp.gId', 'x.apps.googleusercontent.com'); set('pp.gTok', { access: 'GT', exp: Date.now() + 3600e3 }); set('pp.vip', 'mom'); set('pp.gCal', true);
   });
+  await ctx.addInitScript(fakeBluetooth);
   const page = await ctx.newPage(); const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await mock(page);
@@ -235,6 +264,41 @@ async function mock(page) {
   await page.evaluate(() => { const { CAL, renderBrief } = window.__pipCal; CAL.ok = true; renderBrief(); });
   check('ALLOW CALENDAR hides once granted', !(await page.isVisible('#calAllow')));
 
+  // car: OBD-II over Web Bluetooth (mocked adapter)
+  await page.click('#tab-car'); await page.waitForTimeout(3500);   // let the Ask Pip answer hold expire
+  check('car tab offers CONNECT CAR', await page.isVisible('#crGo') && (await t('#crGo')).trim() === 'CONNECT CAR', await t('#crGo'));
+  await page.click('#crGo'); await page.waitForTimeout(2500);
+  const btOpts = await page.evaluate(() => JSON.stringify(window.__btOpts || {}));
+  check('connect asks for BLE OBD adapters (FFF0/FFE0 services or adapter names)', /"services":\[65520\]/.test(btOpts) && /"services":\[65504\]/.test(btOpts) && /"namePrefix":"OBD"/.test(btOpts), btOpts.slice(0, 120));
+  check('adapter is initialized with ELM327 AT commands', await page.evaluate(() => ['ATZ', 'ATE0', 'ATSP0', '0100'].every(c => window.__elm.log.includes(c))));
+  check('car shows live adapter name', /IOS-VLINK · LIVE/.test(await t('#crWho')), await t('#crWho'));
+  const gauges = { speed: (await t('#crSpeed')).trim(), rpm: (await t('#crRpm')).trim(), cool: (await t('#crCool')).trim(), volt: (await t('#crVolt')).trim(), thr: (await t('#crThr')).trim(), load: (await t('#crLoad')).trim() };
+  check('car reads speed, RPM, coolant, voltage, throttle and load', gauges.speed === '42MPH' && gauges.rpm === '2100' && gauges.cool === '196°F' && gauges.volt === '14.1V' && gauges.thr === '18%' && gauges.load === '35%', JSON.stringify(gauges));
+  check('RPM bar lights up', (await page.$$('#crSegs i.on')).length === 5);
+  check('Pip cruises while the car is moving', (await t('#mood')).trim() === 'CRUISING' && /Cruising at 42 mph/.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 60));
+  await page.screenshot({ path: path.join(OUT, '3c-car.png') });
+  await page.click('#pane-car [data-say="carCool"]'); await page.waitForTimeout(2200);
+  check('tapping coolant makes Pip explain it', /Coolant is 196°F\. Normal is about 195 to 220°/.test(await t('#say')), (await t('#say')).slice(0, 80));
+  await page.evaluate(() => { window.__elm.rpm = 6200; }); await page.waitForTimeout(1500);
+  check('Pip warns at redline', (await t('#mood')).trim() === 'REDLINE' && /6,200 RPM/.test(await t('#say')) && (await page.$$('#crSegs i.on.r')).length > 0, (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 60));
+  await page.screenshot({ path: path.join(OUT, '3d-car-redline.png') });
+  await page.evaluate(() => { window.__elm.rpm = 2100; window.__elm.coolC = 115; }); await page.waitForTimeout(2600);
+  check('Pip warns when the engine runs hot', (await t('#mood')).trim() === 'ENGINE HOT' && /239°F/.test(await t('#say')) && await page.$('#crCool.warn') !== null, (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 60));
+  await page.evaluate(() => { window.__elm.coolC = 91; window.__elm.ecu = false; window.__elm.volt = 11.5; }); await page.waitForTimeout(9000);
+  check('Pip warns about a low car battery with the engine off', (await t('#mood')).trim() === 'LOW BATTERY' && /Car battery is low: 11\.5 V/.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 60));
+  check('engine off shows a key-on hint', /TURN THE KEY/.test(await t('#crNote')), await t('#crNote'));
+  await page.evaluate(() => { window.__elm.ecu = true; window.__elm.volt = 14.1; }); await page.waitForTimeout(5000);
+  await page.evaluate(() => window.__elmDrop()); await page.waitForTimeout(300);
+  check('dropped adapter shows reconnecting', /RECONNECTING/.test(await t('#crNote')), await t('#crNote'));
+  await page.waitForTimeout(4500);
+  check('car reconnects by itself after a dropped link', /LIVE/.test(await t('#crWho')) && (await t('#crSpeed')).trim() === '42MPH', (await t('#crWho')) + ' ' + (await t('#crSpeed')));
+  reply = await ask("how's my car");
+  check('Ask Pip sums up the car', /Doing 42 mph at 2,100 RPM, coolant 196°F, battery 14\.1 V\. All looks normal\./.test(reply), reply.slice(0, 100));
+  await page.click('#crOut'); await page.waitForTimeout(1200);
+  const last = await page.evaluate(() => JSON.parse(localStorage.getItem('pp.carLast') || 'null'));
+  check('disconnect keeps last readings on the device', !!last && Math.round(last.speed) === 42 && /last seen/i.test(await t('#crSpeedL')) && /RECONNECT CAR/.test(await t('#crGo')), JSON.stringify(last));
+  check('Pip stops cruising after disconnect', (await t('#mood')).trim() !== 'CRUISING', await t('#mood'));
+
   await page.click('#tab-music'); await page.waitForTimeout(900);
   check('spotify now playing', (await t('#mTitle')).includes('Midnight Pixel Drive'));
   await page.screenshot({ path: path.join(OUT, '4-music.png') });
@@ -267,6 +331,20 @@ async function mock(page) {
   const jFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && [...document.querySelectorAll('#mlist .jrow .mfrom')].every(e => e.getBoundingClientRect().width > 40));
   check('jobs pipeline fits on phone landscape', jFit);
   await page.screenshot({ path: path.join(OUT, '7c-phone-jobs.png') });
+
+  await page.click('#tab-car'); await page.waitForTimeout(600);
+  const carFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && ['crSpeed', 'crVolt', 'crLoad', 'crGo'].every(id => { const r = document.getElementById(id).getBoundingClientRect(); return r.width > 20 && r.bottom <= innerHeight + 1; }));
+  check('car tab fits on phone landscape', carFit);
+  await page.screenshot({ path: path.join(OUT, '7d-phone-car.png') });
+
+  // iPhone/iPad: no Web Bluetooth, so the car tab explains why and hides the button
+  const ctx2 = await browser.newContext({ viewport: { width: 1180, height: 740 } });
+  await ctx2.addInitScript(() => { Object.defineProperty(Navigator.prototype, 'bluetooth', { configurable: true, get: () => undefined }); try { localStorage.setItem('pp.tab', JSON.stringify('car')); } catch (e) {} });
+  const p2 = await ctx2.newPage(); p2.on('pageerror', e => errors.push('no-bt: ' + e.message)); await mock(p2);
+  await p2.goto('file://' + PAGE); await p2.waitForTimeout(2500);
+  check('car tab explains iPhone/iPad have no Web Bluetooth', /IPHONE AND IPAD/.test((await p2.textContent('#crNote')) || '') && !(await p2.isVisible('#crGo')), await p2.textContent('#crNote'));
+  await p2.screenshot({ path: path.join(OUT, '3e-car-no-bluetooth.png') });
+  await ctx2.close();
 
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

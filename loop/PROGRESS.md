@@ -81,3 +81,13 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Tests 58/58 (13 new: Medtronic waiting, Edwards replied, Stryker rejected, Abbott via ATS, LinkedIn alert ignored, phone fit). First run caught a mock bug (the jobs query contains "-in:sent") and a wrong expectation in my own test.
 - Scores: Works 5, Useful 5, Delight 5, Clarity 4 (phone shows 3 companies before scrolling), Resilience 4, Privacy 5, Performance 5.
 - Next: `car-obd` (or `air-quality` as a quicker win). Check the pipeline against Chance's real job mail and tune company names.
+
+## 2026-10-19, round 10: Car tab, slice 1 (scheduled run)
+- Task: `car-obd` (top unbuilt backlog item). Baseline 58/58 green first. Split it: this run is live gauges and Pip; MPG/range is the new `car-mpg` item.
+- New CAR tab. CONNECT CAR opens Chrome's Bluetooth picker filtered to OBD adapters (FFF0/FFE0/18F0/vLinker services, or names like OBD, Vlink, Veepeak). Pip sends the ELM327 setup (ATZ, ATE0, ATSP0...) and then reads speed, RPM, coolant, battery voltage, throttle and engine load. Speed and RPM about 2-3 times a second; the rest every few seconds. Polling stops while the page is hidden.
+- Pip: CRUISING (shades, speed lines, stays on through red lights), REDLINE at 5,500 RPM, ENGINE HOT at 235°F, LOW BATTERY (under 11.8 V off, under 12.5 V running). Alerts chirp, flag the tab and talk over Ask Pip holds. Tap any gauge for an explanation; Ask Pip "how's my car" / "connect my car".
+- Resilience: a dropped link reconnects by itself (3 tries with backoff); engine-off shows TURN THE KEY and ignores stale coolant; last readings kept on device and shown as "last seen". Chrome's getDevices reconnects without the picker where supported. Brief tip if the last battery reading was low.
+- iPhone/iPad: no Web Bluetooth in any iOS browser, so the tab says so and hides the button.
+- Tests 77/77 (19 new, with a fake BLE ELM327 that answers in 20-byte chunks, spaced hex, SEARCHING..., engine-off and a dropped link). First run caught a stale-coolant false alarm after engine off and an Ask Pip hold hiding the cruise line in the test.
+- Scores: Works 5, Useful 3 (needs Android Chrome + a BLE adapter; untested on a real car), Delight 5, Clarity 4, Resilience 4, Privacy 5, Performance 4.
+- Next: try it with a real adapter if Chance has one; then `car-mpg` or `air-quality` as a quick win for the iPad.
