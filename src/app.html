@@ -120,8 +120,37 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .sunTimes{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-label);font-size:10px;letter-spacing:.06em;color:var(--muted);font-variant-numeric:tabular-nums}
 .sunTimes b{color:var(--text);font-weight:400}
 #daylight{color:var(--sun);text-align:center}
+.tab[hidden],.fchip[hidden],.setSec[hidden]{display:none!important}
+#setup{z-index:9}
+.suBox{width:min(480px,100%);gap:12px}
+.suBox input,.sheetBox input#setName{font:600 16px var(--f-talk);color:var(--ink);background:var(--paper);border:0;padding:9px 10px;margin:var(--px);box-shadow:0 0 0 var(--px) var(--ink)}
+.suStep{display:flex;flex-direction:column;gap:10px;min-height:150px}
+.suStep[hidden]{display:none}
+.suDots{display:flex;gap:6px}
+.suDots i{width:22px;height:5px;background:var(--edge)}
+.suDots i.on{background:var(--pink);box-shadow:0 0 6px var(--pink)}
+.suDots i.done{background:var(--cyan)}
+.suRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px var(--edge)}
+.suRow>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.suRow b{font-size:15px;color:var(--text)}
+.chip.ok{background:var(--cyan)}
+.suOk{color:var(--cyan)!important}
+.suMods{display:flex;flex-direction:column;gap:6px}
+.suMod{display:flex;align-items:center;gap:10px;text-align:left;padding:8px 10px;border:0;cursor:pointer;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px var(--edge);color:var(--text);font:inherit}
+.suMod .sw{flex:none;width:30px;height:16px;background:var(--edge);position:relative;transition:background .15s steps(3)}
+.suMod .sw::after{content:'';position:absolute;top:3px;left:3px;width:10px;height:10px;background:var(--text);transition:left .15s steps(3)}
+.suMod[aria-pressed="true"] .sw{background:var(--pink)}
+.suMod[aria-pressed="true"] .sw::after{left:17px}
+.suMod span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.suMod b{font-size:14px}
+.suNav{display:flex;align-items:center;gap:8px;border-top:2px dashed var(--edge);padding-top:10px}
+.suNav .sp{flex:1}
 .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;border-top:2px dashed var(--edge);padding-top:7px}
 .tiles .big{font-size:clamp(20px,6vh,30px)}
+.tiles.glance{grid-template-columns:repeat(2,minmax(0,1fr))}
+.devGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.devGrid .big{font-size:22px}
+.devGrid .big.sm{font-size:15px;white-space:normal}
 .tiles .big.sm{font-size:clamp(15px,4.2vh,22px);white-space:normal;line-height:1.05}
 
 /* bottom deck: forecast / music / ISS */
@@ -364,13 +393,13 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <span class="sub" id="sub">LIVE STATS · v0.4</span>
     </div>
     <div class="tabs" role="tablist" aria-label="Bottom panel">
-      <button class="tab" role="tab" id="tab-fc" data-tab="fc" aria-selected="true" aria-controls="pane-fc" type="button"><span class="tic" aria-hidden="true">✸</span>FORECAST</button>
-      <button class="tab" role="tab" id="tab-music" data-tab="music" aria-selected="false" aria-controls="pane-music" type="button"><span class="tic" aria-hidden="true">♪</span>MUSIC<span class="badge" id="badge-music" hidden></span></button>
-      <button class="tab" role="tab" id="tab-iss" data-tab="iss" aria-selected="false" aria-controls="pane-iss" type="button"><span class="tic" aria-hidden="true">✦</span>ISS<span class="badge" id="badge-iss" hidden></span></button>
+      <button class="tab" role="tab" id="tab-brief" data-tab="brief" aria-selected="true" aria-controls="pane-brief" type="button"><span class="tic" aria-hidden="true">◆</span>TODAY<span class="badge" id="badge-brief" hidden></span></button>
       <button class="tab" role="tab" id="tab-inbox" data-tab="inbox" aria-selected="false" aria-controls="pane-inbox" type="button"><span class="tic" aria-hidden="true">@</span>INBOX<span class="badge" id="badge-inbox" hidden></span></button>
-      <button class="tab" role="tab" id="tab-gym" data-tab="gym" aria-selected="false" aria-controls="pane-gym" type="button"><span class="tic" aria-hidden="true">▲</span>GYM<span class="badge" id="badge-gym" hidden></span></button>
-      <button class="tab" role="tab" id="tab-car" data-tab="car" aria-selected="false" aria-controls="pane-car" type="button"><span class="tic" aria-hidden="true">◉</span>CAR<span class="badge" id="badge-car" hidden></span></button>
-      <button class="tab" role="tab" id="tab-brief" data-tab="brief" aria-selected="false" aria-controls="pane-brief" type="button"><span class="tic" aria-hidden="true">◆</span>BRIEF<span class="badge" id="badge-brief" hidden></span></button>
+      <button class="tab" role="tab" id="tab-fc" data-tab="fc" aria-selected="false" aria-controls="pane-fc" type="button"><span class="tic" aria-hidden="true">✸</span>WEATHER</button>
+      <button class="tab" role="tab" id="tab-music" data-tab="music" aria-selected="false" aria-controls="pane-music" type="button"><span class="tic" aria-hidden="true">♪</span>MUSIC<span class="badge" id="badge-music" hidden></span></button>
+      <button class="tab" role="tab" id="tab-gym" data-tab="gym" data-mod="gym" aria-selected="false" aria-controls="pane-gym" type="button"><span class="tic" aria-hidden="true">▲</span>GYM<span class="badge" id="badge-gym" hidden></span></button>
+      <button class="tab" role="tab" id="tab-car" data-tab="car" data-mod="car" aria-selected="false" aria-controls="pane-car" type="button"><span class="tic" aria-hidden="true">◉</span>CAR<span class="badge" id="badge-car" hidden></span></button>
+      <button class="tab" role="tab" id="tab-iss" data-tab="iss" data-mod="iss" aria-selected="false" aria-controls="pane-iss" type="button"><span class="tic" aria-hidden="true">✦</span>ISS<span class="badge" id="badge-iss" hidden></span></button>
     </div>
     <div class="status">
       <button class="tag np" id="npChip" type="button" hidden><b>♪</b><span id="npTxt"></span></button>
@@ -418,7 +447,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <canvas class="px" id="face" width="64" height="52" role="button" tabindex="0" aria-label="Pip. Tap to poke."></canvas>
       <span class="mood" id="mood" data-s="ok">HI!</span>
       <form class="ask" id="askForm" autocomplete="off">
-        <input id="askIn" type="text" enterkeyhint="send" placeholder="Ask Pip: hide job emails" aria-label="Ask Pip">
+        <input id="askIn" type="text" enterkeyhint="send" placeholder="Ask Pip: what's next?" aria-label="Ask Pip">
         <button class="chip" id="askMic" type="button" aria-pressed="false" aria-label="Speak to Pip" hidden>MIC</button>
         <button class="chip hot" type="submit">ASK</button>
       </form>
@@ -437,13 +466,11 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
         </div>
         <div class="sunTimes tap" data-say="sun"><span>RISE <b id="rise">--</b></span><span id="daylight">NEEDS LOCATION</span><span>SET <b id="set">--</b></span></div>
       </div>
-      <div class="tiles">
-        <div class="mini tap" data-say="fps"><span class="lbl">Frame rate</span><span class="big" id="fps">--</span></div>
-        <div class="mini tap" data-say="ping"><span class="lbl">Ping</span><span class="big" id="ping">--</span></div>
-        <div class="mini tap" data-say="scr"><span class="lbl">Screen</span><span class="big sm" id="scr">--</span></div>
-        <div class="mini tap" data-say="cores"><span class="lbl">CPU cores</span><span class="big" id="cores">--</span></div>
-        <div class="mini tap" data-say="up"><span class="lbl">Uptime</span><span class="big" id="up">0:00</span></div>
-        <div class="mini tap" data-say="taps"><span class="lbl">Taps</span><span class="big" id="taps">0</span></div>
+      <div class="tiles glance">
+        <div class="mini tap" data-say="gDate" data-go="brief"><span class="lbl">Today</span><span class="big" id="gDate">--</span></div>
+        <div class="mini tap" data-say="cal" data-go="brief"><span class="lbl">Next up</span><span class="big" id="gNext">--</span></div>
+        <div class="mini tap" data-say="gMail" data-go="inbox"><span class="lbl">Mail</span><span class="big" id="gMail">--</span></div>
+        <div class="mini tap" data-say="rain"><span class="lbl">Rain</span><span class="big" id="gRain">--</span></div>
       </div>
     </section>
   </main>
@@ -485,7 +512,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
             <button class="fchip" type="button" data-f="imp" aria-pressed="true">IMPORTANT</button>
             <button class="fchip" type="button" data-f="unread" aria-pressed="false">UNREAD</button>
             <button class="fchip" type="button" data-f="all" aria-pressed="false">ALL</button>
-            <button class="fchip" type="button" data-f="jobs" aria-pressed="false">JOBS</button>
+            <button class="fchip" type="button" data-f="jobs" data-mod="jobs" aria-pressed="false">JOBS</button>
           </div>
           <span class="note" id="inNote"></span>
         </div>
@@ -537,15 +564,15 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
     <div class="pane" id="pane-brief" role="tabpanel" aria-labelledby="tab-brief" hidden>
       <div class="brief">
         <div class="bHello">
-          <h3 id="bHi">Hi, Chance</h3>
+          <h3 id="bHi">Hi there</h3>
           <span class="lbl" id="bDate">--</span>
           <ul class="tips" id="bTips"></ul>
-          <div class="row"><button class="chip hot" id="bRead" type="button">READ IT TO ME</button></div>
+          <div class="row"><button class="chip hot" id="bRead" type="button">READ IT TO ME</button><button class="chip" id="bSetup" type="button" hidden>FINISH SETUP</button></div>
         </div>
         <div class="bcard bCal tap" data-say="cal" role="button" tabindex="0"><span class="lbl">Next up · Calendar</span><span class="big" id="bCal">--</span><ul class="calList" id="bCalL"></ul><button class="chip hot" id="calAllow" type="button" hidden>ALLOW CALENDAR</button></div>
         <div class="bcard tap" data-go="fc" role="button" tabindex="0"><span class="lbl">Weather</span><span class="big" id="bWx">--</span><p id="bWxT">Set a location.</p></div>
         <div class="bcard tap" data-go="inbox" role="button" tabindex="0"><span class="lbl">Inbox</span><span class="big" id="bIn">--</span><p id="bInT">Connect Gmail.</p></div>
-        <div class="bcard tap" data-go="iss" role="button" tabindex="0"><span class="lbl">Sky</span><span class="big" id="bSky">--</span><p id="bSkyT">--</p></div>
+        <div class="bcard tap" data-go="iss" data-sky role="button" tabindex="0"><span class="lbl">Sky</span><span class="big" id="bSky">--</span><p id="bSkyT">--</p></div>
         <div class="bcard tap" data-go="music" role="button" tabindex="0"><span class="lbl">Music</span><span class="big" id="bMu">--</span><p id="bMuT">Connect Spotify.</p></div>
       </div>
     </div>
@@ -579,9 +606,49 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
   </div>
 </div>
 
+<div class="sheet" id="setup" hidden>
+  <div class="sheetBox frame suBox" role="dialog" aria-modal="true" aria-labelledby="suTitle">
+    <div class="suDots" id="suDots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="suStep" data-step="0">
+      <h2 id="suTitle">Hi, I'm Pip</h2>
+      <p class="msg">I keep an eye on your day so you don't have to: weather, mail, calendar and music in one place. Setup takes about a minute.</p>
+      <label class="fl" for="suName">What should I call you?</label>
+      <input id="suName" type="text" placeholder="Your first name" autocomplete="given-name" enterkeyhint="next" maxlength="24">
+    </div>
+    <div class="suStep" data-step="1" hidden>
+      <h2>Where are you?</h2>
+      <p class="msg">For your weather, sunrise and rain warnings. It stays on this device.</p>
+      <div class="row"><button class="chip hot" id="suLoc" type="button">USE MY LOCATION</button><button class="chip" id="suCity" type="button">SEARCH A CITY</button></div>
+      <p class="msg suOk" id="suLocMsg"></p>
+    </div>
+    <div class="suStep" data-step="2" hidden>
+      <h2>Connect your accounts</h2>
+      <p class="msg">Pip only reads, and everything stays on this device. Skip any you don't use.</p>
+      <div class="suRow"><div><b>Google</b><span class="fl">Important mail and your calendar</span></div><button class="chip hot" id="suG" type="button">CONNECT</button></div>
+      <div class="suRow"><div><b>Spotify</b><span class="fl">What's playing, with controls</span></div><button class="chip hot" id="suS" type="button">CONNECT</button></div>
+      <p class="msg" id="suAccMsg"></p>
+    </div>
+    <div class="suStep" data-step="3" hidden>
+      <h2>Pick your extras</h2>
+      <p class="msg">Switch on what fits your life. You can change these any time in Settings.</p>
+      <div class="suMods" id="suMods"></div>
+    </div>
+    <div class="suNav"><button class="linkbtn" id="suBack" type="button">BACK</button><span class="sp"></span><button class="linkbtn" id="suSkip" type="button">SKIP</button><button class="chip hot" id="suNext" type="button">NEXT</button></div>
+  </div>
+</div>
 <div class="sheet" id="settings" hidden>
   <div class="sheetBox frame" role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <h2 id="setTitle">Settings</h2>
+    <section class="setSec">
+      <span class="lbl">You</span>
+      <label class="fl" for="setName">Your name</label>
+      <input id="setName" type="text" placeholder="Your first name" autocomplete="given-name" maxlength="24">
+      <div class="row"><button class="chip" id="setRerun" type="button">RUN SETUP AGAIN</button></div>
+    </section>
+    <section class="setSec">
+      <span class="lbl">On your dashboard</span>
+      <div class="suMods" id="setMods"></div>
+    </section>
     <section class="setSec">
       <span class="lbl">Sound</span>
       <div class="row"><button class="chip" id="soundBtn" type="button" aria-pressed="false">SOUND OFF</button></div>
@@ -598,17 +665,17 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
     <section class="setSec">
       <span class="lbl">Inbox rules</span>
       <label class="fl" for="vip">VIP senders: names, emails or domains, separated by commas</label>
-      <textarea id="vip" rows="2" placeholder="mom, @medtronic.com, recruiter@company.com"></textarea>
+      <textarea id="vip" rows="2" placeholder="mom, @yourwork.com, boss@company.com"></textarea>
       <label class="fl" for="kw">Extra important words</label>
-      <textarea id="kw" rows="2" placeholder="escrow, inspection, ADU permit"></textarea>
+      <textarea id="kw" rows="2" placeholder="invoice, appointment, school"></textarea>
       <div class="row"><button class="chip" id="rulesSave" type="button">SAVE RULES</button></div>
     </section>
     <section class="setSec">
       <span class="lbl">Rules you told Pip</span>
       <div class="rchips" id="ruleChips"></div>
-      <p class="fl">Tap a rule to remove it. Add more by asking Pip, like "hide job emails" or "mute emails from LinkedIn".</p>
+      <p class="fl">Tap a rule to remove it. Add more by asking Pip, like "hide promo emails" or "mute emails from LinkedIn".</p>
     </section>
-    <section class="setSec">
+    <section class="setSec" data-mod="gym">
       <span class="lbl">Gym</span>
       <label class="fl" for="gyGoal">Weekly goal</label>
       <select id="gyGoal"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option></select>
@@ -617,6 +684,17 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
     <section class="setSec">
       <span class="lbl">Spotify</span>
       <p class="msg" id="sStatus">Not connected.</p>
+    </section>
+    <section class="setSec">
+      <span class="lbl">This device</span>
+      <div class="devGrid">
+        <div class="mini tap" data-say="fps"><span class="lbl">Frame rate</span><span class="big" id="fps">--</span></div>
+        <div class="mini tap" data-say="ping"><span class="lbl">Ping</span><span class="big" id="ping">--</span></div>
+        <div class="mini tap" data-say="scr"><span class="lbl">Screen</span><span class="big sm" id="scr">--</span></div>
+        <div class="mini tap" data-say="cores"><span class="lbl">CPU cores</span><span class="big" id="cores">--</span></div>
+        <div class="mini tap" data-say="up"><span class="lbl">Uptime</span><span class="big" id="up">0:00</span></div>
+        <div class="mini tap" data-say="taps"><span class="lbl">Taps</span><span class="big" id="taps">0</span></div>
+      </div>
     </section>
     <section class="setSec">
       <span class="lbl">App</span>
@@ -743,7 +821,7 @@ $('placeBtn').onclick=openSheet;$('openSearch').onclick=openSheet;$('sheetClose'
 sheet.addEventListener('click',e=>{if(e.target===sheet)closeSheet()});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)closeSheet()});
 function setLoc(loc){
-  S.loc=loc;store.set('pp.loc',loc);S.wx=null;S.wxErr=null;S.revealed=false;
+  S.loc=loc;store.set('pp.loc',loc);setTimeout(()=>{if(typeof suRender==='function')suRender()},0);S.wx=null;S.wxErr=null;S.revealed=false;
   ['temp','feels','hum','wind','hi','lo','rainMax','uv'].forEach(id=>{$(id)._to=null});
   closeSheet();renderPlace();restart($('placeBtn'),'flip');loadWeather();computePasses();renderISS();
 }
@@ -925,10 +1003,23 @@ function sweepArc(){ // replay the sun's path from the horizon to now
 }
 
 /* ---------- bottom deck tabs ---------- */
-const TABS=['fc','music','iss','inbox','gym','car','brief'];
-let tab=TABS.includes(store.get('pp.tab'))?store.get('pp.tab'):'fc';
+const NAME=()=>String(store.get('pp.name')||'').trim().slice(0,24);
+const TABS=['brief','inbox','fc','music','gym','car','iss'];
+// optional modules: niche tabs and features a person switches on (setup or Settings)
+const MOD_INFO={gym:['Gym visits','Days you went, from gym check-in emails'],jobs:['Job search','Applications by company, and who is waiting on you'],car:['Car','Live gauges from a Bluetooth OBD adapter (Android Chrome)'],iss:['Space station','Where the ISS is and when you can see it']};
+let MODS=store.get('pp.mods');
+if(!MODS){const old=!!(store.get('pp.loc')||store.get('pp.gOn')||store.get('pp.spotTok'));MODS={gym:old,jobs:old,car:old,iss:true};store.set('pp.mods',MODS)}
+function applyMods(){
+  document.querySelectorAll('[data-mod]').forEach(el=>{el.hidden=!MODS[el.dataset.mod]});
+  const sky=document.querySelector('.bcard[data-sky]');if(sky)sky.dataset.go=MODS.iss?'iss':'fc';
+  if(typeof tab!=='undefined'&&MOD_OF[tab]&&!MODS[MOD_OF[tab]])setTab('brief',false);
+}
+const MOD_OF={gym:'gym',car:'car',iss:'iss'};
+function setMod(k,on){MODS[k]=!!on;store.set('pp.mods',MODS);applyMods();if(on&&k==='gym'&&G.on)loadGym();if(on&&k==='jobs'&&G.on&&!JB.busy)loadJobs();renderBrief()}
+let tab=TABS.includes(store.get('pp.tab'))?store.get('pp.tab'):'brief';
 function setTab(t,anim=true){
-  if(!TABS.includes(t))return;const changed=t!==tab;tab=t;store.set('pp.tab',t);
+  if(!TABS.includes(t))return;
+  if(MOD_OF[t]&&!MODS[MOD_OF[t]]){MODS[MOD_OF[t]]=true;store.set('pp.mods',MODS);applyMods()}   // asked for it, so switch it onconst changed=t!==tab;tab=t;store.set('pp.tab',t);
   TABS.forEach(k=>{$('tab-'+k).setAttribute('aria-selected',String(k===t));$('pane-'+k).hidden=k!==t});
   $('deck').classList.toggle('tall',t==='inbox'||t==='brief'||t==='gym');
   if(t==='inbox')renderInbox();
@@ -1322,7 +1413,7 @@ function scoreMsg(e,ur){
   if(tags.includes('SECURITY')&&Date.now()-e.t>3600e3)s-=20;
   e.score=s;e.allTags=tags;e.tags=tags.slice(0,3);e.imp=s>=45;return e;
 }
-// rules Chance gives Pip ("hide job emails", "mute emails from linkedin"); kept on this device
+// rules the person gives Pip ("hide job emails", "mute emails from linkedin"); kept on this device
 const RL=Object.assign({hideTags:[],hideFrom:[],hideWords:[]},store.get('pp.rules')||{});
 const saveRules=()=>store.set('pp.rules',RL);
 function hiddenBy(e){
@@ -1400,9 +1491,9 @@ async function loadMail(){
   }
   G.busy=false;renderInbox();renderBrief();
   if(G.on)G.timer=setTimeout(loadMail,wait);
-  if(G.on&&!G.err&&Date.now()-GY.at>30*60e3)loadGym();
+  if(MODS.gym&&G.on&&!G.err&&Date.now()-GY.at>30*60e3)loadGym();
   if(G.on&&!G.err&&CAL.ok&&Date.now()-CAL.at>5*60e3)loadCal();
-  if(G.on&&!G.err&&Date.now()-JB.at>30*60e3)loadJobs();
+  if(MODS.jobs&&G.on&&!G.err&&Date.now()-JB.at>30*60e3)loadJobs();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.on&&Date.now()-G.at>60e3)loadMail()});
 function newMail(list){
@@ -1512,7 +1603,7 @@ async function loadJobs(){
 function jobNews(){ // Pip speaks up when a company moves you forward, or someone has waited on you for 3+ days
   const first=!Object.keys(JB.seen).length,today=dayKey(new Date());let line='',label='';
   for(const g of JB.list){const prev=JB.seen[g.key];
-    if(g.stage==='OFFER'&&prev!=='OFFER'){line=`An offer from ${g.name}! That's huge, Chance.`;label='OFFER!';break}
+    if(g.stage==='OFFER'&&prev!=='OFFER'){line=`An offer from ${g.name}! That's huge${NAME()?', '+NAME():''}.`;label='OFFER!';break}
     if(!first&&prev&&STAGE_RANK[g.stage]>STAGE_RANK[prev]&&g.stage==='INTERVIEW'&&!line){line=`${g.name} moved you to interviews. Nice.`;label='JOB NEWS'}}
   if(!line){const o=JB.list.find(g=>g.owe&&JB.nudged[g.key]!==today);
     if(o){line=`${o.name} wrote ${o.wait} days ago and is waiting on your reply.`;label='YOUR MOVE';JB.nudged[o.key]=today;store.set('pp.jobNudged',JB.nudged)}}
@@ -1602,7 +1693,7 @@ function renderCal(){
   const big=$('bCal'),ul=$('bCalL'),ready=G.on&&!G.needTap;
   $('calAllow').hidden=!(ready&&!CAL.ok);
   const msg=t=>{ul.innerHTML='';const li=document.createElement('li');li.className='msg';li.textContent=t;ul.appendChild(li)};
-  if(!G.on){big.textContent='--';return msg('Connect Gmail and I can read your calendar too.')}
+  if(!G.on){big.textContent='--';return msg('Connect Google to see what is next on your calendar.')}
   if(!ready){big.textContent='--';return msg('Google needs a reconnect.')}
   if(!CAL.ok){big.textContent='--';return msg(CAL.err||'One more tap lets me read your calendar. Read-only.')}
   if(!CAL.list){big.textContent='--';return msg(CAL.err||'Checking your calendar...')}
@@ -1645,7 +1736,7 @@ function briefTips(){
   const iu=shown().filter(e=>e.imp&&e.unread);
   const nx=calNext();if(nx&&nx.start-Date.now()<3*3600e3)t.push(`"${nx.title}" at ${fmtTime(new Date(nx.start))}, in ${inWords(nx.start-Date.now())}.${nx.where?` ${nx.where}.`:''}`);
   // at most two email tips so weather and the rest still fit
-  const et=[],jt=jobTip();if(jt)et.push(jt);
+  const et=[],jt=MODS.jobs?jobTip():null;if(jt)et.push(jt);
   const job=iu.find(e=>e.tags.includes('JOBS'));if(job)et.push(`Job email from ${job.name}: "${job.subject}". Worth a reply.`);
   const vip=iu.find(e=>e.tags.includes('VIP')&&e!==job);if(vip)et.push(`${vip.name} wrote: "${vip.subject}".`);
   const money=iu.find(e=>e.tags.includes('MONEY'));if(money)et.push(`Money: "${money.subject}" from ${money.name}.`);
@@ -1656,14 +1747,14 @@ function briefTips(){
     const uv=d.uv_index_max[0]??0;if(uv>=6&&si&&si.day)t.push(`UV peaks at ${uv.toFixed(0)}. Sunscreen if you're outside.`);
     if(c.temperature_2m>=90)t.push('Hot one today. Drink water.');else if(d.temperature_2m_min[0]<=48)t.push(`Low of ${n(d.temperature_2m_min[0])}° tonight. Bring a jacket.`);
   }
-  const gt=gymTip();if(gt)t.push(gt);
+  const gt=MODS.gym?gymTip():null;if(gt)t.push(gt);
   const ct=carTip();if(ct)t.push(ct);
   const v=nextPasses().find(p=>p.visible&&p.start-Date.now()<24*3600e3);if(v)t.push(`ISS visible ${when(v.start).toLowerCase()}. Look ${dirW(v.azStart)}.`);
   if(!t.length)t.push(S.wx||G.list?'Nothing urgent. Enjoy the day.':'Set your location and connect Gmail so I can plan your day.');
   return t.slice(0,4);
 }
 function renderBrief(){
-  $('bHi').textContent=`${greet()}, Chance`;
+  $('bHi').textContent=`${greet()}${NAME()?', '+NAME():''}`;
   $('bDate').textContent=new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
   const tips=briefTips(),ul=$('bTips'),key=tips.join('|');
   if(ul._k!==key){ul._k=key;ul.innerHTML='';tips.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});if(tab==='brief')restart(ul,'reveal')}
@@ -1672,13 +1763,13 @@ function renderBrief(){
   $('bWxT').textContent=c?`${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.`:SANDBOX?'Weather loads on the live link.':'Set a location.';
   const imp=shown().filter(e=>e.imp),iu=imp.filter(e=>e.unread);
   $('bIn').textContent=G.on&&G.list?`${iu.length} new`:'--';
-  $('bInT').textContent=!G.on?'Connect Gmail to see what matters.':G.needTap?'Gmail needs a reconnect.':!G.list?'Checking your inbox...':iu.length?`Top: "${iu[0].subject}" from ${iu[0].name}.`:imp.length?'All important mail is read.':'Nothing important in 3 days.';
+  $('bInT').textContent=!G.on?'Connect Google to see the emails that matter.':G.needTap?'Gmail needs a reconnect.':!G.list?'Checking your inbox...':iu.length?`Top: "${iu[0].subject}" from ${iu[0].name}.`:imp.length?'All important mail is read.':'Nothing important in 3 days.';
   const si=sunInfo(),v=nextPasses().find(p=>p.visible),mo=moonInfo();
   $('bSky').textContent=si?fmtTime(new Date(si.day?si.set:si.nextRise)):`${n(mo.illum*100)}%`;
   $('bSkyT').textContent=(si?(si.day?'Sunset. ':'Sunrise. '):'Moon lit. ')+(v?`ISS visible ${when(v.start).toLowerCase()}.`:`${mo.name}, ${n(mo.illum*100)}% lit.`);
   renderCal();
   $('bMu').textContent=M.state&&M.state.playing?'Playing':M.tok?'Quiet':'--';
-  $('bMuT').textContent=M.state?`${M.state.title} · ${M.state.artist}`:M.tok?'Nothing playing right now.':'Connect Spotify in the Music tab.';
+  $('bMuT').textContent=M.state?`${M.state.title} · ${M.state.artist}`:M.tok?'Nothing playing right now.':'Connect Spotify to see what is playing.';
 }
 function speakLines(lines){ // Pip reads lines in the bubble, and out loud when the device allows it
   let i=0;clearTimeout(S.readT);try{speechSynthesis.cancel()}catch(e){}
@@ -1689,7 +1780,7 @@ function speakLines(lines){ // Pip reads lines in the bubble, and out loud when 
 }
 $('bRead').onclick=()=>{
   restart($('bRead'),'hit');kick(1);faceBurst('star',5);
-  const c=S.wx&&S.wx.current,lines=[`${greet()}, Chance. Here's your brief.`];
+  const c=S.wx&&S.wx.current,lines=[`${greet()}${NAME()?', '+NAME():''}. Here's your day.`];
   if(c)lines.push(`It's ${n(c.temperature_2m)}° and ${(WXNAME[c.weather_code]||'').toLowerCase()} in ${place()}.`);
   const iu=shown().filter(e=>e.imp&&e.unread);
   if(G.on&&G.list)lines.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}.`:'No important emails waiting.');
@@ -1988,7 +2079,7 @@ const CATS=[
   [/\b(newsletters?|lists?|digests?|subscriptions?)\b/,'LIST','newsletter'],
   [/\b(social)\b/,'SOCIAL','social']
 ];
-const TABWORDS=[[/\bcar\b|obd|engine/,'car'],[/forecast|weather/,'fc'],[/music|spotify|song/,'music'],[/\biss\b|space station|satellite/,'iss'],[/inbox|e-?mails?|mail\b/,'inbox'],[/\bgym\b|workout|fitness/,'gym'],[/brief|summary|my day/,'brief']];
+const TABWORDS=[[/\btoday\b|brief|summary|my day/,'brief'],[/\bcar\b|obd|engine/,'car'],[/forecast|weather/,'fc'],[/music|spotify|song/,'music'],[/\biss\b|space station|satellite/,'iss'],[/inbox|e-?mails?|mail\b/,'inbox'],[/\bgym\b|workout|fitness/,'gym'],[/brief|summary|my day/,'brief']];
 const catOf=s=>CATS.find(([re])=>re.test(s));
 const clean=s=>s.replace(/^(the|my|any|all)\s+/,'').replace(/\s+(emails?|mail|messages?)$/,'').replace(/[."!?]+$/,'').trim();
 const addTo=(k,v)=>{const cur=splitList(store.get(k));if(!cur.includes(v))cur.push(v);store.set(k,cur.join(', '))};
@@ -2000,12 +2091,16 @@ function rulesChanged(){
 function askPip(raw){
   const s0=raw.toLowerCase().replace(/[’']/g,"'").replace(/\s+/g,' ').trim();
   const s=s0.replace(/^(hey |ok |okay )?pip,?\s*/,'').replace(/^(please|can you|could you|would you|i want you to|i'd like you to)\s+/,'').replace(/\s*please$/,'');
-  if(!s)return'Type or say something, like "hide job emails".';
+  if(!s)return'Type or say something, like "what\'s next?"';
   const hideV=/^(hide|don't show|do not show|dont show|stop showing|remove|filter out|mute|ignore|block|exclude|get rid of|no more|i don't want to see|i dont want to see|i do not want to see|i don't need|i don't care about)\b/;
   const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
   let m;
   if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
-    return 'Try: "hide job emails", "show job emails", "mute emails from LinkedIn", "hide emails about crypto", "make mom a VIP", "gym goal 3", "only show unread", "open gym", "what\'s next", "how\'s my job search", "how\'s my car", "sound on", "what are my rules", or "reset my rules".';
+    return 'Try: "what\'s next", "will it rain", "any important email", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
+  if(/^(set ?up|setup|run setup|start over)( again)?$|^set me up$/.test(s)){setTimeout(()=>openSetup(0),600);return'Sure, let\'s go through setup.'}
+  if((m=s.match(/^(turn on|switch on|enable|add|turn off|switch off|disable|remove) (?:the |my )?(gym|workouts?|jobs?|job search|car|space station|iss)(?: tab| module| tracker| visits)?$/))){
+    const on=/on|enable|add/.test(m[1]),k=/gym|workout/.test(m[2])?'gym':/job/.test(m[2])?'jobs':/car/.test(m[2])?'car':'iss';
+    setMod(k,on);return on?`${MOD_INFO[k][0]} is on.${k==='jobs'?' Find it under the JOBS chip in your inbox.':''}`:`${MOD_INFO[k][0]} is off. Say "turn on ${m[2]}" to bring it back.`}
   if(/^(what|list|show)( are)?( my)? rules\b|^my rules$/.test(s)){const r=ruleList();return r.length?`Your rules: ${r.map(x=>x.label.toLowerCase()).join('; ')}.`:'No rules yet. Try "hide job emails".'}
   if(/^(reset|clear|delete|remove) (all |my )*(the )?rules\b/.test(s)){RL.hideTags=[];RL.hideFrom=[];RL.hideWords=[];store.set('pp.vip','');store.set('pp.kw','');rulesChanged();return'All rules cleared. Your inbox is back to normal.'}
   if((m=s.match(/goal (?:to |is |of |=\s*)?(\d)\b/))&&/gym|goal|workout/.test(s)){
@@ -2054,7 +2149,7 @@ function askPip(raw){
   if(/gym|workout|streak/.test(s))return about('gymWeek')+' '+about('gymStreak');
   if(/sun(set|rise)|daylight/.test(s))return about('sun');
   if(/moon/.test(s))return about('moon');
-  if(/^(hi|hello|hey|yo|sup)\b/.test(s))return`Hey Chance! ${nextFact()}`;
+  if(/^(hi|hello|hey|yo|sup)\b/.test(s))return`Hey${NAME()?' '+NAME():''}! ${nextFact()}`;
   if(/thank/.test(s))return'Anytime!';
   return`I didn't get that one. Try "hide job emails", "mute emails from LinkedIn", or say "help".`;
 }
@@ -2099,6 +2194,7 @@ $('askForm').addEventListener('submit',e=>{
 /* ---------- settings sheet ---------- */
 const setEl=$('settings');
 function renderSettings(){
+  if(document.activeElement!==$('setName'))$('setName').value=NAME();modButtons($('setMods'));
   $('gStatus').textContent=G.on&&!G.needTap?`Connected${G.email?' as '+G.email:''}. Pip checks the last 3 days of your inbox every 2 minutes${CAL.ok?' and your calendar every 5':''}. Read-only.${CAL.ok?'':' Calendar not allowed yet: tap Reconnect and tick it.'}`:G.needTap?'Sign-in expired. Tap Connect.':'Not connected. Paste the Client ID from your Google Cloud project (steps in the README).';
   if(!$('gId').value)$('gId').value=G.id||'';$('gOut').hidden=!G.on;$('gGo').textContent=G.on?'RECONNECT':'CONNECT';
   $('sStatus').textContent=M.tok?`Connected${M.state&&M.state.device?' · playing on '+M.state.device:''}. Disconnect from the Music tab.`:'Not connected. Use the Music tab.';
@@ -2126,7 +2222,7 @@ $('updBtn').onclick=()=>{store.set('pp.updTried',null);checkUpdate(true)};
 /* ---------- device ---------- */
 $('scr').innerHTML=`${screen.width}×${screen.height} <small>@${devicePixelRatio}x</small>`;
 $('cores').textContent=navigator.hardwareConcurrency||'--';
-$('sub').textContent=`LIVE STATS · ${DEVICE.toUpperCase()}`;
+$('sub').textContent=`PERSONAL HUB · ${DEVICE.toUpperCase()}`;
 async function doPing(){
   if(SANDBOX||!navigator.onLine){S.ping=null;return}
   const t0=performance.now();
@@ -2139,6 +2235,7 @@ function renderDevice(){
   const s=Math.floor((Date.now()-S.start)/1000);
   $('up').textContent=s>=3600?`${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m`:`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   tween($('taps'),S.taps,{ms:200});
+  renderGlance();
   const on=navigator.onLine,dot=$('netDot');if(dot.classList.contains('off')===on||$('netTxt').hidden===!on){dot.classList.toggle('off',!on);$('netTxt').textContent='OFFLINE';$('netTxt').hidden=on;if(!on)restart($('netTxt'),'glitch')}
   dot.title=on?'Online':'Offline';
   $('clock').textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
@@ -2159,8 +2256,8 @@ const place=()=>S.loc?S.loc.name:'here';
 function moodLine(m){
   const c=S.wx&&S.wx.current,t=c?n(c.temperature_2m):0,si=sunInfo(),cond=c?(WXNAME[c.weather_code]||'').toLowerCase():'';
   switch(m){
-    case'hello':return"Hi Chance! I'm Pip. Tap USE MY LOCATION and I'll read the sky for you.";
-    case'sandbox':return"Hi Chance! Weather needs the Safari link, but tap any iPad stat and I'll explain it.";
+    case'hello':if(!document.getElementById('setup').hidden)return"Let's get you set up. It only takes a minute.";return S.loc?`Hi${NAME()?' '+NAME():''}! Good to see you.`:`Hi${NAME()?' '+NAME():''}! I'm Pip. Tap USE MY LOCATION and I'll read the sky for you.`;
+    case'sandbox':return"Hi! This is a demo copy. Open the live link to connect your weather, mail and music.";
     case'loading':return`Checking the sky over ${place()}...`;
     case'offline':return"I lost the internet. Weather's paused until we're back online.";
     case'nodata':return"I can't reach the weather service right now. Trying again soon.";
@@ -2190,6 +2287,16 @@ function moodLine(m){
   return'';
 }
 const NOWX="No weather yet. Set a location and I'll fill this in.";
+function renderGlance(){
+  const d=new Date(),sm=(a,b)=>`${a}<small>${b}</small>`,set=(id,h)=>{const el=$(id);if(el._h!==h){el._h=h;el.innerHTML=h}};
+  set('gDate',sm(d.getDate(),d.toLocaleDateString([],{weekday:'short'}).toUpperCase()));
+  const nx=G.on&&CAL.ok?calNext():null,[hm,ap]=nx?fmtTime(new Date(nx.start)).split(/\s/):[];
+  set('gNext',!G.on||!CAL.ok?'--':nx?(nx.start<=Date.now()?'NOW':sm(hm,(ap||'')+(dayKey(new Date(nx.start))===dayKey(d)?'':' TMRW'))):'FREE');
+  const iu=G.on&&G.list?shown().filter(e=>e.imp&&e.unread).length:null;
+  set('gMail',iu==null?'--':iu?sm(iu,'NEW'):'0');
+  const wet=S.wx?nextHours().find(h=>h.p>=50):null,[wh,wa]=wet?fmtHour(wet.t).split(/\s/):[];
+  set('gRain',!S.wx?'--':wet?sm(wh,wa||''):'DRY');
+}
 function about(key,el){
   const c=S.wx&&S.wx.current,d=S.wx&&S.wx.daily,si=sunInfo(),mo=moonInfo();
   switch(key){
@@ -2231,6 +2338,9 @@ function about(key,el){
       const why=e.tags.length?` I flagged it: ${e.tags.join(', ').toLowerCase()}.`:e.important?' Gmail marked it important.':'';
       return`${e.name}, ${agoWords(e.t)}: "${e.subject}".${why}`}
     case'cal':return calLine();
+    case'gDate':{const d=new Date(),ev=G.on&&CAL.ok?(CAL.list||[]).filter(e=>dayKey(new Date(e.start))===dayKey(d)&&e.end>Date.now()).length:null,iu=G.on&&G.list?shown().filter(e=>e.imp&&e.unread).length:null;
+      return`It's ${d.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}.${ev!=null?` ${ev?`${ev} thing${ev>1?'s':''} left on your calendar.`:'Nothing left on your calendar.'}`:''}${iu!=null?` ${iu?`${iu} important email${iu>1?'s':''} waiting.`:'Inbox is calm.'}`:''}`}
+    case'gMail':{if(!G.on)return'Connect Google in Settings and I\'ll flag the emails that matter.';const iu=shown().filter(e=>e.imp&&e.unread);return iu.length?`${iu.length} important unread. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email. Nice.'}
     case'carStatus':return carLine();
     case'carSpeed':{const d=CAR.d;if(!d)return carLine();return carFresh()?(d.speed>3?`${n(d.speed)} mph, straight from the car's own speed sensor.`:'Parked or stopped. 0 mph.'):`${n(d.speed||0)} mph the last time I saw the car, ${agoWords(d.t)}.`}
     case'carRpm':{const d=CAR.d;if(!d||!carFresh())return d?`Engine was at ${n(d.rpm||0)} RPM when I last saw it.`:carLine();return d.rpm<300?'Engine is off.':`Engine at ${n(d.rpm).toLocaleString()} RPM. ${d.rpm>=REDLINE?'That\'s redline. Ease off.':d.rpm<1000?'Idling.':'Redline starts around '+REDLINE.toLocaleString()+'.'}`}
@@ -2348,7 +2458,7 @@ function moodFor(now){
   if(now<(S.jobUntil||0))return'job';
   if(calHeads())return'heads';
   if(carCruise())return'cruise';
-  if(navigator.onLine&&ISS.overhead)return'iss';
+  if(MODS.iss&&navigator.onLine&&ISS.overhead)return'iss';
   const w=weatherMood();
   if(M.state&&M.state.playing&&w!=='storm'&&w!=='offline'&&w!=='nodata')return'music';
   return w;
@@ -2725,11 +2835,81 @@ async function checkUpdate(manual){
 }
 setTimeout(checkUpdate,(reduce?0:1250)+5000);setInterval(checkUpdate,30*60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
+/* ---------- guided setup (first run, or "set up again") ---------- */
+const SU={el:$('setup'),step:0,n:4};
+function needSetup(){return!SANDBOX&&!store.get('pp.setupDone')}
+function setupGaps(){const g=[];if(!S.loc)g.push(1);if(!G.on)g.push(2);return g}
+function modButtons(box){
+  box.innerHTML='';
+  Object.entries(MOD_INFO).forEach(([k,[name,desc]])=>{
+    const b=document.createElement('button');b.type='button';b.className='suMod';b.dataset.k=k;b.setAttribute('aria-pressed',String(!!MODS[k]));
+    const note=k==='car'&&!navigator.bluetooth?' Not available on iPhone or iPad.':'';
+    b.innerHTML='<i class="sw" aria-hidden="true"></i><span><b></b><small class="fl"></small></span>';
+    b.querySelector('b').textContent=name;b.querySelector('small').textContent=desc+'.'+note;
+    b.onclick=()=>{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));setMod(k,on);sfx(on?'data':'tap');restart(b,'hit');
+      if(on){kick(.8);faceBurst('star',4)}};
+    box.appendChild(b)});
+}
+function suRender(){
+  if(SU.el.hidden)return;
+  [...$('suDots').children].forEach((d,i)=>{d.className=i===SU.step?'on':i<SU.step?'done':''});
+  $('suBack').hidden=SU.step===0;$('suSkip').hidden=SU.step===0||SU.step===3;
+  $('suNext').textContent=SU.step===3?"LET'S GO":SU.step===1&&!S.loc||SU.step===2&&!G.on&&!M.tok?'NEXT':'NEXT';
+  if(SU.step===1){$('suLocMsg').textContent=S.loc?`Got it: ${S.loc.name}.`:$('suLocMsg').textContent;$('suLocMsg').classList.toggle('suOk',!!S.loc);$('suLoc').textContent=S.loc?'UPDATE LOCATION':'USE MY LOCATION'}
+  if(SU.step===2){
+    const g=G.on&&!G.needTap,sp=!!M.tok;
+    $('suG').textContent=g?(CAL.ok?'CONNECTED':'ADD CALENDAR'):'CONNECT';$('suG').classList.toggle('ok',g&&CAL.ok);$('suG').classList.toggle('hot',!(g&&CAL.ok));
+    $('suS').textContent=sp?'CONNECTED':'CONNECT';$('suS').classList.toggle('ok',sp);$('suS').classList.toggle('hot',!sp);
+  }
+}
+function suGo(n){
+  SU.step=clamp(n,0,SU.n-1);store.set('pp.setupStep',SU.step);
+  SU.el.querySelectorAll('.suStep').forEach(st=>{const on=+st.dataset.step===SU.step;st.hidden=!on;if(on)restart(st,'reveal')});
+  if(SU.step===3)modButtons($('suMods'));
+  suRender();
+  if(SU.step===0)setTimeout(()=>$('suName').focus(),reduce?0:350);
+}
+function openSetup(step=0){
+  if(SANDBOX)return;
+  if(!setEl.hidden)closeSettings();
+  SU.el.classList.remove('out');SU.el.hidden=false;sfx('open');
+  $('suName').value=NAME();suGo(step);kick(.8);
+  say(step===0?"Let's get you set up. It only takes a minute.":"Let's finish setting you up.");
+}
+function closeSetup(){if(SU.el.hidden)return;sfx('close');if(reduce){SU.el.hidden=true;return}SU.el.classList.add('out');setTimeout(()=>{SU.el.hidden=true;SU.el.classList.remove('out')},230)}
+function finishSetup(){
+  store.set('pp.setupDone',true);store.set('pp.setupStep',null);closeSetup();setTab('brief');renderBrief();
+  const nm=NAME();setTimeout(()=>{say(`All set${nm?', '+nm:''}! This is your day at a glance. Tap anything and I'll explain it.`);kick(1.3);faceBurst('heart',8);sfx('data')},reduce?0:300);
+  if(!store.get('pp.seenAsk'))setTimeout(()=>{if(document.activeElement===$('askIn')||$('askIn').value)return;store.set('pp.seenAsk',true);restart($('askForm'),'hit');say('You can also talk to me down here. Try "what\'s next?" or "will it rain?"')},reduce?0:9000);
+}
+function saveName(v){store.set('pp.name',String(v||'').trim().slice(0,24));renderBrief()}
+$('suNext').onclick=()=>{
+  if(SU.step===0){saveName($('suName').value);const nm=NAME();say(nm?`Nice to meet you, ${nm}!`:'Nice to meet you!');faceBurst('heart',5)}
+  if(SU.step===3){finishSetup();return}
+  sfx('tap');suGo(SU.step+1);
+};
+$('suSkip').onclick=()=>{sfx('tap');suGo(SU.step+1)};
+$('suBack').onclick=()=>{sfx('tap');suGo(SU.step-1)};
+$('suName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('suNext').click()}});
+$('suLoc').onclick=()=>geolocate($('suLocMsg'));
+$('suCity').onclick=openSheet;
+$('suG').onclick=()=>{store.set('pp.setupStep',2);gLogin(false)};
+$('suS').onclick=()=>{if(M.tok){$('suAccMsg').textContent='Spotify is already connected.';return}store.set('pp.setupStep',2);spotLogin()};
+$('bSetup').onclick=()=>{const g=setupGaps();openSetup(g.length?g[0]:0)};
+$('setRerun').onclick=()=>openSetup(0);
+$('setName').addEventListener('change',e=>{saveName(e.target.value);say(NAME()?`Got it, ${NAME()}.`:'Okay, no name.')});
+setInterval(()=>{suRender();const b=$('bSetup');const show=!!store.get('pp.setupDone')&&setupGaps().length>0&&!SANDBOX;if(b.hidden===show)b.hidden=!show},1000);
+applyMods();
 gCallback();renderInbox();renderGym();renderBrief();if(G.on)setTimeout(loadMail,reduce?0:1500);
-spotCallback().then(()=>{renderMusic();pollSpotify()});
-if(!store.get('pp.seenAsk')&&!new URLSearchParams(location.search).has('code')){ // one-time intro to Ask Pip
+spotCallback().then(()=>{renderMusic();pollSpotify();
+  if(needSetup()){
+    const has=!!(store.get('pp.loc')||G.on||M.tok),st=store.get('pp.setupStep');
+    if(st==null&&has)store.set('pp.setupDone',true);   // set up before guided setup existed
+    else setTimeout(()=>openSetup(st??0),reduce?0:Math.max(0,BOOT-performance.now())+900);
+  }});
+if(!needSetup()&&!store.get('pp.seenAsk')&&!new URLSearchParams(location.search).has('code')){ // one-time intro to Ask Pip
   setTimeout(()=>{if(document.activeElement===$('askIn')||$('askIn').value)return;store.set('pp.seenAsk',true);store.set('pp.seenTabs',true);
-    restart($('askForm'),'hit');say('New! Talk to me down here. Try "hide job emails" or "set my gym goal to 3".');kick(1)},(reduce?0:BOOT-performance.now())+6000)}
+    restart($('askForm'),'hit');say('You can talk to me down here. Try "what\'s next?" or "hide promo emails".');kick(1)},(reduce?0:BOOT-performance.now())+6000)}
 loadTLE();loadLand();
 requestAnimationFrame(frame);
 })();

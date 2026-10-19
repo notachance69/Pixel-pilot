@@ -1,5 +1,5 @@
 {
- "note": "Prioritized feature list. Loop runs flip 'passes' and add 'notes'; they never delete items. Lower priority number = sooner. Rule (2026-10-19): features must track automatically; no routine manual input.",
+ "note": "Prioritized feature list. Loop runs flip 'passes' and add 'notes'; they never delete items. Lower priority number = sooner. Rules (2026-10-19): features must track automatically (no routine manual input), fit a general person's day, and keep the flow natural.",
  "features": [
   {
    "id": "weather",
@@ -187,6 +187,13 @@
    "priority": 6,
    "title": "Night dim mode: auto-dim colors and motion after sunset for car/bedside use",
    "passes": false
+  },
+  {
+   "id": "ux-flow",
+   "priority": 0,
+   "title": "Natural flow: guided first-run setup, Today first, optional modules, glance tiles, no hard-coded name",
+   "passes": true,
+   "notes": "Built 2026-10-19 at Chance's request. Device stats moved to Settings. Modules: gym, jobs, car, iss (existing users keep all on)."
   }
  ]
 }

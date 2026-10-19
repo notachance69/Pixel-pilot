@@ -96,3 +96,11 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - New rule: features must track automatically from data Chance already produces; manual input only for one-time setup or corrections. Added to LOOP.md (Goal, rubric "Automatic", hard rules).
 - Backlog re-ranked: bills, packages, air quality, weather alerts, quakes, night dim first (automatic and work on the iPad today), then car MPG (fill-ups now auto-detected from the fuel-level sensor) and driving mode. Focus timer parked.
 - IDEAS.md rewritten so each idea names its automatic source; manual ideas moved to "Parked: manual".
+
+## 2026-10-19, round 11: natural flow + general audience (Chance asked)
+- Loop rules: build for a general person (nothing personal hard-coded; niche features are optional modules) and keep the flow natural (one guided setup, Today first, every empty state has a next step). Added "Flow" to the rubric. IDEAS.md rewritten around everyday needs.
+- First-run audit found: no guided setup (connect buttons spread over 3 tabs), app opened on Forecast with the summary as the last tab, 7 equal tabs, developer stats on the main screen, "Chance" hard-coded.
+- Built: guided setup (name, location, Google, Spotify, extras) that resumes after sign-in redirects; TODAY is the first tab and the default; tabs ordered Today, Inbox, Weather, Music, then optional Gym, Car, ISS; Job search is an optional module too. "At a glance" tiles (date, next event, important mail, next rain) replace device stats, which moved to Settings. Name from setup in greetings. Settings gains Your name, On your dashboard toggles, Run setup again. Ask Pip: "turn on/off gym|jobs|car|space station", "set up again". FINISH SETUP button on Today until location and Google are connected. Existing users keep every module on and skip setup.
+- Tests 91/91 (14 new first-run checks). Bug caught: new copy put an apostrophe inside a single-quoted string.
+- Scores: Works 5, Automatic 5, Useful 5, Flow 5, Delight 5, Clarity 5, Resilience 4, Privacy 5, Performance 5.
+- Preview only. Next: `bills`.

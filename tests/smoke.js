@@ -346,6 +346,41 @@ function fakeBluetooth() {
   await p2.screenshot({ path: path.join(OUT, '3e-car-no-bluetooth.png') });
   await ctx2.close();
 
+  // A brand-new person: guided setup, Today first, optional extras, name in the greeting
+  const ctx3 = await browser.newContext({ viewport: { width: 1180, height: 740 }, geolocation: { latitude: 34.24, longitude: -118.53 }, permissions: ['geolocation'] });
+  const p3 = await ctx3.newPage(); p3.on('pageerror', e => errors.push('first-run: ' + e.message)); await mock(p3);
+  const t3 = async sel => (await p3.textContent(sel).catch(() => '')) || '';
+  await p3.goto('file://' + PAGE); await p3.waitForTimeout(3200);
+  check('first run opens guided setup', await p3.isVisible('#setup .suBox'));
+  check('app opens on Today', (await p3.getAttribute('#tab-brief', 'aria-selected')) === 'true' && (await p3.$eval('.tabs .tab', b => b.id)) === 'tab-brief');
+  check('niche tabs are off for a new person', !(await p3.isVisible('#tab-gym')) && !(await p3.isVisible('#tab-car')) && await p3.isVisible('#tab-iss'));
+  await p3.screenshot({ path: path.join(OUT, '8a-setup-hello.png') });
+  await p3.fill('#suName', 'Alex'); await p3.click('#suNext'); await p3.waitForTimeout(700);
+  check('setup step 2 asks for location', await p3.isVisible('.suStep[data-step="1"]') && /Nice to meet you, Alex/.test(await t3('#say')), await t3('#say'));
+  await p3.click('#suLoc'); await p3.waitForTimeout(2200);
+  check('setup finds your location', /Got it: Northridge/.test(await t3('#suLocMsg')), await t3('#suLocMsg'));
+  await p3.click('#suNext'); await p3.waitForTimeout(600);
+  check('setup step 3 offers Google and Spotify', await p3.isVisible('#suG') && await p3.isVisible('#suS'));
+  await p3.screenshot({ path: path.join(OUT, '8b-setup-accounts.png') });
+  await p3.click('#suSkip'); await p3.waitForTimeout(600);
+  check('setup step 4 lists the extras', (await p3.$$('#suMods .suMod')).length === 4);
+  await p3.click('#suMods .suMod[data-k="gym"]'); await p3.waitForTimeout(300);
+  check('switching on an extra adds its tab', await p3.isVisible('#tab-gym'));
+  await p3.screenshot({ path: path.join(OUT, '8c-setup-extras.png') });
+  await p3.click('#suNext'); await p3.waitForTimeout(1200);
+  check('finishing setup lands on Today with your name', !(await p3.isVisible('#setup .suBox')) && (await p3.getAttribute('#tab-brief', 'aria-selected')) === 'true' && /, Alex$/.test((await t3('#bHi')).trim()), await t3('#bHi'));
+  check('glance tiles show date and rain instead of device stats', /\d/.test(await t3('#gDate')) && (await t3('#gRain')).trim() !== '--' && !(await p3.isVisible('#fps')), (await t3('#gDate')) + ' / ' + (await t3('#gRain')));
+  check('Today offers FINISH SETUP while Google is not connected', await p3.isVisible('#bSetup'));
+  await p3.screenshot({ path: path.join(OUT, '8d-today-after-setup.png') });
+  await p3.click('#bSetup'); await p3.waitForTimeout(700);
+  check('FINISH SETUP jumps to the missing step', await p3.isVisible('.suStep[data-step="2"]'));
+  await p3.click('#suSkip'); await p3.waitForTimeout(400); await p3.click('#suNext'); await p3.waitForTimeout(800);
+  await p3.fill('#askIn', 'turn off gym'); await p3.press('#askIn', 'Enter'); await p3.waitForTimeout(800);
+  check('Ask Pip turns an extra off', !(await p3.isVisible('#tab-gym')) && /Gym visits is off/.test(await t3('#say')), await t3('#say'));
+  await p3.reload(); await p3.waitForTimeout(3000);
+  check('setup does not come back after it is done', !(await p3.isVisible('#setup .suBox')));
+  await ctx3.close();
+
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   const failed = results.filter(r => !r.ok);

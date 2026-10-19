@@ -9,9 +9,19 @@ It borrows from three loops that work in practice:
 
 ## Goal
 
-Grow Pixel Pilot into Chance's personal hub: an animated pixel assistant (Pip) that shows what matters right now from his real data. That includes email, weather, sky, music, the space station, and later his car, calendar and projects. It runs as one HTML file on GitHub Pages, opened on an iPad, phone or car screen.
+Grow Pixel Pilot into a personal hub that anyone could pick up and use: an animated pixel assistant (Pip) that shows what matters in an ordinary day, from data the person already has. That means mail, calendar, weather, music, deliveries, bills, commute and home, plus optional extras someone can switch on. It runs as one HTML file on GitHub Pages, on an iPad, phone or car screen.
 
-**Automatic, not manual (Chance's rule, 2026-10-19).** The point is to make life easier and more centralized. Every feature must fill itself from data Chance already produces: his Gmail, calendar, phone, car, accounts and public feeds. Manual input is allowed only as:
+Chance is the first user, but **build for a general person**. Features should fit most people's daily lives, not one person's projects. Nothing personal is hard-coded: names, employers and hobbies come from setup or from the person's own data. Niche features (car, gym, space station, job search) are optional modules, off unless the person turns them on.
+
+**The flow must feel natural (rule, 2026-10-19).** User experience comes first:
+- A new person gets one guided setup, not connect buttons scattered across tabs.
+- The app opens on Today, the summary.
+- Every empty state has one obvious next step.
+- No dead ends, no jargon, no developer stats on the main screen.
+- New features slot into Today and Ask Pip instead of always adding a tab.
+- Every run walks the first-run path and the changed screens like a new user before deciding to keep a change.
+
+**Automatic, not manual (rule, 2026-10-19).** The point is to make life easier and more centralized. Every feature must fill itself from data the person already produces: their mail, calendar, phone, car, accounts and public feeds. Manual input is allowed only as:
 - a one-time setup step (a sign-in, a tank size, an iOS Shortcut automation), or
 - a correction or fallback when the automatic source misses something.
 
@@ -55,7 +65,8 @@ User-requested features built in a live conversation with Chance may go straight
 
 - **Works:** `tests/smoke.js` is green, there are no console errors, and the app degrades gracefully offline, inside the Claude artifact sandbox, and with expired sign-ins.
 - **Automatic:** it works with zero routine input after setup. Score 1 if it needs daily taps or typing; such a feature is discarded.
-- **Useful:** it surfaces something Chance would act on, or wants to see at a glance.
+- **Useful:** it surfaces something a typical person would act on, or wants to see at a glance.
+- **Flow:** a new person could find and use it without help. Setup lives in the guided setup or Settings, it shows up on Today, and it has no dead ends. Score 1 if it needs explaining.
 - **Delight:** Pip reacts to it with animation and personality, and every action is animated.
 - **Clarity:** it's readable at arm's length and at phone size, with no clipped text and no horizontal scroll.
 - **Resilience:** network errors retry, sign-ins renew themselves where the provider allows, and state survives reloads.
