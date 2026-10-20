@@ -148,14 +148,15 @@
    "id": "bills",
    "priority": 1,
    "title": "Bills: due dates pulled from MONEY emails, countdown in Brief",
-   "passes": false,
+   "passes": true,
    "acceptance": [
     "due dates and amounts parsed from MONEY emails (utilities, cards, subscriptions)",
     "marks a bill paid when a payment-confirmation email arrives",
     "Brief countdown and Pip stern face when 3 days or less",
     "nothing typed by Chance",
     "mocked in the smoke test"
-   ]
+   ],
+   "notes": "Built 2026-10-20 (preview). BILLS chip in the Inbox (not a module: everyone has bills). 45 days of bill/statement/renewal/payment emails (metadata only); due date + amount from subject and preview text; payee = sender domain. Payment email newer than the bill -> PAID; autopay/renewal wording -> AUTOPAY; >7 days past due with no payment email is dropped. Pip BILL DUE (stern, bill over head) once a day when <=3 days; PAID! when a payment email clears one. Today inbox card shows the countdown; Brief tip when there is room. Ask Pip: 'what bills are due'. Only payee->status and nudge dates stored. Not yet checked against real bill emails."
   },
   {
    "id": "packages",

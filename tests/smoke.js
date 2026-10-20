@@ -75,6 +75,23 @@ const CAL = { items: [
 ] };
 let calHits = 0;
 const GYM_CSV = `Date,Club\n${ymd(dayOff(12))},Northridge Super-Sport\n`;
+// bills: SoCal Edison due in 2 days (Pip goes stern), Chase statement due in 10 days, Spectrum billed then paid,
+// Netflix on autopay, an old water bill long past (dropped) and a bank promo (ignored). b8 is a payment that arrives later.
+const mdShort = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const bmsg = (id, from, subject, snippet, days, labels = ['INBOX', 'CATEGORY_UPDATES']) => ({ id, threadId: 't' + id, labelIds: labels, internalDate: dAgo(days), snippet,
+  payload: { headers: [{ name: 'From', value: from }, { name: 'Subject', value: subject }] } });
+const BILLS = {};
+const addBill = (...a) => { BILLS[a[0]] = bmsg(...a); };
+addBill('b1', 'SoCal Edison <billing@sce.com>', 'Your SoCal Edison bill is ready', `Amount due: $84.12. Payment due date: ${mdShort(dayOff(-2))}. View your bill online.`, 3);
+addBill('b2', 'Chase <no.reply.alerts@chase.com>', 'Your credit card statement is ready', `New balance $612.40. Minimum payment due $35.00 by ${mdy(dayOff(-10))}.`, 2);
+addBill('b3', 'Spectrum <billing@spectrum.net>', 'Your Spectrum bill is ready', `Your bill of $70.00 is due ${mdShort(dayOff(-5))}.`, 6);
+addBill('b4', 'Spectrum <billing@spectrum.net>', 'Thank you for your payment', 'We received your payment of $70.00. It may take 1-2 days to post.', 1);
+addBill('b5', 'Netflix <info@account.netflix.com>', 'Your membership renews soon', `Your plan will renew on ${mdShort(dayOff(-6))} and you will be charged $15.49.`, 1);
+addBill('b6', 'City Water <ebill@citywater.org>', 'Your water bill', `Amount due $41.00, due ${mdShort(dayOff(25))}.`, 40);
+addBill('b7', 'Chase <offers@chase.com>', 'Earn 5% cash back this month', 'Limited time deal on your card statement credits', 1, ['INBOX', 'CATEGORY_PROMOTIONS']);
+addBill('b8', 'SoCal Edison <billing@sce.com>', 'Payment received: thank you', 'We received your payment of $84.12 for account ending 1234.', 0);
+const billIds = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
+let billQ = '';
 const topo = { type: 'Topology', transform: { scale: [1, 1], translate: [0, 0] }, objects: { land: { type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', arcs: [[[0]], [[1]]] }] } },
   arcs: [[[-125, 50], [55, 0], [0, -25], [-45, 0], [-10, -10]], [[-80, 10], [45, 0], [0, -55], [-35, 0], [-10, 55]]] };
 
@@ -96,11 +113,13 @@ async function mock(page) {
       if (u.includes('/profile')) return r.fulfill({ json: { emailAddress: 'chance@example.com' } });
       if (u.includes('/attachments/a1')) return r.fulfill({ json: { data: b64(GYM_CSV) } });
       const j = u.match(/messages\/([js]\d)/); if (j) return r.fulfill({ json: JOBS[j[1]] });
+      const b = u.match(/messages\/(b\d)/); if (b) return r.fulfill({ json: BILLS[b[1]] });
       const g = u.match(/messages\/(g\d)/); if (g) return r.fulfill({ json: GYM[g[1]] });
       const m = u.match(/messages\/(m\d)/); if (m) return r.fulfill({ json: gmsg(MAIL.find(x => x.id === m[1])) });
       if (u.includes('/messages?')) {
         const dq = decodeURIComponent(u);
         if (dq.includes('q=in:sent')) return r.fulfill({ json: { messages: [{ id: 's1' }, { id: 's2' }] } });
+        if (dq.includes('newer_than:45d')) { billQ = dq; return r.fulfill({ json: { messages: billIds.map(id => ({ id })) } }); }
         if (dq.includes('newer_than:30d')) { jobQ = dq; return r.fulfill({ json: { messages: ['m1', 'j1', 'j2', 'j3', 'j4', 'j5', 'j6'].map(id => ({ id })) } }); }
         if (decodeURIComponent(u).includes('24hourfitness')) return r.fulfill({ json: { messages: Object.keys(GYM).map(id => ({ id })) } });
         return r.fulfill({ json: { messages: MAIL.map(x => ({ id: x.id, threadId: 't' + x.id })) } });
@@ -161,6 +180,12 @@ function fakeBluetooth() {
   check('Pip nudges when a recruiter has waited 3+ days', nudged && /Medtronic wrote 5 days ago and is waiting on your reply/.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
   await page.screenshot({ path: path.join(OUT, '0-job-nudge.png') });
   await page.waitForFunction(() => !/YOUR MOVE/.test(document.querySelector('#mood').textContent), null, { timeout: 8000 }).catch(() => {});
+  // bill due in 2 days: Pip goes stern right after the job nudge (queued, not talking over it)
+  const stern = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'BILL DUE', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(2000);
+  check('Pip goes stern when a bill is due within 3 days', stern && /Your SoCal Edison bill \(\$84\.12\) is due in 2 days/.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
+  await page.screenshot({ path: path.join(OUT, '0b-bill-due.png') });
+  await page.waitForFunction(() => !/BILL DUE/.test(document.querySelector('#mood').textContent), null, { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(1500);
 
   check('weather loads', (await t('#temp')).trim() === '72', await t('#temp'));
@@ -182,7 +207,9 @@ function fakeBluetooth() {
   await page.screenshot({ path: path.join(OUT, '2-inbox.png') });
 
   // Ask Pip: plain-language rules
-  const ask = async q => { await page.fill('#askIn', q); await page.press('#askIn', 'Enter'); await page.waitForTimeout(2200); return t('#say'); };
+  // wait for Pip to finish typing (the bubble stops changing) so long answers aren't read half-typed
+  const settled = async () => { let prev = null; for (let i = 0; i < 20; i++) { const cur = await t('#say'); if (cur === prev) return cur; prev = cur; await page.waitForTimeout(250); } return prev; };
+  const ask = async q => { await page.fill('#askIn', q); await page.press('#askIn', 'Enter'); await page.waitForTimeout(2200); return settled(); };
   let reply = await ask("i don't want to see any of the job related emails");
   const rowsAfterHide = await page.$$eval('#mlist .mrow', rs => rs.map(r => r.textContent).join('|'));
   check('Ask Pip hides job emails', !rowsAfterHide.includes('Dana Lee') && /hiding job emails/i.test(reply), reply.slice(0, 90));
@@ -221,6 +248,38 @@ function fakeBluetooth() {
   check('Ask Pip sums up the job search', /4 active companies in 30 days: 1 interview, 2 in screening, 1 applied\. Medtronic is waiting/.test(reply), reply.slice(0, 120));
   await page.click('.fchip[data-f="imp"]'); await page.waitForTimeout(400);
   check('switching back to IMPORTANT restores the inbox', /Important/i.test(await t('#inImpL')) && /^\d+$/.test((await t('#inImp')).trim()) && /CHECKED/.test(await t('#inNote')) && (await page.$$('#mlist .jrow')).length === 0, await t('#inImp'));
+
+  // bills
+  check('bills search covers 45 days and skips promos', /newer_than:45d/.test(billQ) && /-category:promotions/.test(billQ), billQ.slice(0, 80));
+  const dueParse = await page.evaluate(() => { const { dueOf } = window.__pipBills, base = new Date(2026, 9, 20).getTime(), k = t => t == null ? null : new Date(t).toDateString();
+    return [k(dueOf('Payment due date: Nov 3', base)), k(dueOf('due by November 3, 2026', base)), k(dueOf('Pay by 11/03/26', base)), k(dueOf('Your bill is due tomorrow', base)), k(dueOf('Statement for Dec 31 - due Jan 2', base)), k(dueOf('Hello there', base))]; });
+  check('due dates read from common bill wording', JSON.stringify(dueParse) === JSON.stringify(['Tue Nov 03 2026', 'Tue Nov 03 2026', 'Tue Nov 03 2026', 'Wed Oct 21 2026', 'Sat Jan 02 2027', null]), JSON.stringify(dueParse));
+  await page.click('.fchip[data-f="bills"]'); await page.waitForTimeout(900);
+  const brows = await page.$$eval('#mlist .brow', rs => rs.map(r => r.textContent));
+  check('BILLS lists one row per payee, soonest due first', brows.length === 4 && /^SoCal Edison\s*DUE/.test(brows[0]) && /DUE IN 2 DAYS · \$84\.12/.test(brows[0]) && /^Chase\s*DUE/.test(brows[1]) && /\$612\.40/.test(brows[1]), brows.join(' | ').slice(0, 240));
+  check('a payment email marks the bill paid', brows.some(r => /^Spectrum\s*PAID/.test(r)), brows.join(' | ').slice(0, 240));
+  check('a renewal is autopay, not a nag', brows.some(r => /^Netflix\s*AUTOPAY/.test(r) && /\$15\.49 · renews/.test(r) && /pays itself/.test(r)), brows.find(r => /Netflix/.test(r)));
+  check('promos and long-past bills are skipped', !brows.some(r => /cash back|City Water/i.test(r)), brows.join(' | ').slice(0, 240));
+  check('bills summary counts due soon and the total to pay', (await t('#inImp')).trim() === '1' && (await t('#inUnread')).trim() === '$697' && /To pay/i.test(await t('#inUnreadL')), (await t('#inImp')) + '/' + (await t('#inUnread')));
+  await page.click('#mlist .brow'); await page.waitForTimeout(2600);
+  check('tapping a bill makes Pip explain it', /SoCal Edison: \$84\.12 due .*in 2 days\. I'll mark it paid/.test(await t('#say')) && await page.$('#mlist .brow.open a[href*="mail.google.com"]') !== null, (await t('#say')).slice(0, 100));
+  await page.screenshot({ path: path.join(OUT, '2c-bills.png') });
+  reply = await ask('what bills are due');
+  check('Ask Pip sums up bills', /^2 to pay: SoCal Edison \$84\.12 due in 2 days, Chase \$612\.40 due in 10 days\. 1 on autopay\. 1 paid recently\./.test(reply), reply.slice(0, 200));
+  reply = await ask('hide bill emails');
+  check('"hide bill emails" still makes an inbox rule', /hiding bill and money emails/i.test(reply), reply.slice(0, 80));
+  await ask('show bill emails');
+  await page.click('#tab-brief'); await page.waitForTimeout(700);
+  check('Today shows the bill countdown on the inbox card', /^SoCal Edison \$84\.12 due in 2 days\./.test(await t('#bInT')), await t('#bInT'));
+  billIds.push('b8');
+  await page.evaluate(() => { const { BL, loadBills } = window.__pipBills; BL.at = 0; return loadBills(); });
+  const paid = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'PAID!', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(1800);
+  check('Pip cheers when a payment email clears a bill', paid && /SoCal Edison is paid \(\$84\.12\)\. One less thing\./.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
+  await page.screenshot({ path: path.join(OUT, '2d-bill-paid.png') });
+  check('paid bill leaves the Today countdown', !/SoCal Edison/.test(await t('#bInT')), await t('#bInT'));
+  await page.waitForFunction(() => !/PAID!/.test(document.querySelector('#mood').textContent), null, { timeout: 8000 }).catch(() => {});
+  await page.click('#tab-inbox'); await page.click('.fchip[data-f="imp"]'); await page.waitForTimeout(300);
 
   await page.click('#tab-gym'); await page.waitForTimeout(1500);
   const gnote = await t('#gyNote');
@@ -331,6 +390,10 @@ function fakeBluetooth() {
   const jFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && [...document.querySelectorAll('#mlist .jrow .mfrom')].every(e => e.getBoundingClientRect().width > 40));
   check('jobs pipeline fits on phone landscape', jFit);
   await page.screenshot({ path: path.join(OUT, '7c-phone-jobs.png') });
+  await page.click('.fchip[data-f="bills"]'); await page.waitForTimeout(700);
+  const bFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && [...document.querySelectorAll('#mlist .brow .mfrom')].every(e => e.getBoundingClientRect().width > 40) && [...document.querySelectorAll('.filters .fchip')].filter(b => !b.hidden).every(b => b.getBoundingClientRect().bottom <= innerHeight));
+  check('bills list and filter chips fit on phone landscape', bFit);
+  await page.screenshot({ path: path.join(OUT, '7e-phone-bills.png') });
 
   await page.click('#tab-car'); await page.waitForTimeout(600);
   const carFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && ['crSpeed', 'crVolt', 'crLoad', 'crGo'].every(id => { const r = document.getElementById(id).getBoundingClientRect(); return r.width > 20 && r.bottom <= innerHeight + 1; }));

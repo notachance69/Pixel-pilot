@@ -104,3 +104,14 @@ Built in conversation: the pixel Pip character, Y2K chrome style, live weather a
 - Tests 91/91 (14 new first-run checks). Bug caught: new copy put an apostrophe inside a single-quoted string.
 - Scores: Works 5, Automatic 5, Useful 5, Flow 5, Delight 5, Clarity 5, Resilience 4, Privacy 5, Performance 5.
 - Preview only. Next: `bills`.
+
+## 2026-10-20, round 12: Bills (scheduled run)
+- Task: `bills` (top unbuilt backlog item). Baseline 91/91 green first.
+- New BILLS chip in the Inbox (on for everyone, not a module). Reads 45 days of bill, statement, renewal and payment emails (headers and preview text only), groups by payee (sender domain), and reads the amount and due date ("due Oct 22", "due by 11/03/26", "due tomorrow", "renews on...", year guessed when missing).
+- Status per payee: DUE (with days left), OVERDUE (up to 7 days, then dropped as probably paid elsewhere), AUTOPAY (autopay/renewal wording, never nags) and PAID (a payment-confirmation email newer than the bill). Rows show amount, due date, and expand to the last emails plus Open in Gmail. Summary: due within 7 days and total to pay.
+- Pip: new BILL DUE mood (yellow, stern brows, flat mouth, a $ bill swaying over his head) once a day per bill due within 3 days, queued after a job nudge instead of talking over it. PAID! mood (green, grin, the bill turns green) when a payment email clears a bill he'd flagged.
+- Today: the inbox card leads with the countdown ("SoCal Edison $84.12 due in 2 days."); Brief tip when there's room; read-aloud always includes it. Ask Pip: "what bills are due" opens BILLS and sums up. "hide bill emails" still makes an inbox rule.
+- Polls with Gmail every 30 minutes, only fetches messages it hasn't seen. Stored on device: payee -> status and nudge dates only.
+- Tests 106/106 (15 new: due-date parser, payee rows and order, paid, autopay, promo and stale bills skipped, summary, tap, Ask Pip, Today countdown, Pip stern and paid moods, phone fit). Also made the Ask Pip test helper wait until Pip finishes typing (one existing check was flaky reading a half-typed answer). Screenshots caught the phone inbox summary clipping its note under the chips; short screens now hide the account line and use smaller numbers. Fixed "1 days ago".
+- Scores: Works 5, Automatic 5, Useful 5, Flow 4 (Brief tips can be full of job items, so the countdown sits on the inbox card), Delight 5, Clarity 4, Resilience 4 (depends on the preview text holding the date), Privacy 5, Performance 5.
+- Preview only. Next: `packages`. Check BILLS against Chance's real bill emails and tune payee names and date wording.

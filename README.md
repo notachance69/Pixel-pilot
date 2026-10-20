@@ -43,9 +43,13 @@ Type (or tap the keyboard mic and speak) in the box under Pip:
 - "make mom a VIP", "flag emails about escrow"
 - "only show unread", "set my gym goal to 3", "sound on", "open gym"
 - "what are my rules", "reset my rules", "help"
-- Questions: "will it rain?", "any new emails?", "when's the ISS?", "what song is this?"
+- Questions: "will it rain?", "any new emails?", "what bills are due?", "when's the ISS?", "what song is this?"
 
 Rules live on your device. See or remove them in Settings → Rules you told Pip.
+
+## Bills
+
+The BILLS chip in the Inbox lists bills Pip found in the last 45 days of email: payee, amount, due date, and DUE, OVERDUE, AUTOPAY or PAID. A payment-confirmation email marks a bill paid by itself. Pip goes stern once a day when a bill is due within 3 days, and the Today inbox card counts it down. Nothing to type.
 
 ## Gym days from 24 Hour Fitness
 

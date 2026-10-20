@@ -204,6 +204,7 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .inSum{display:flex;flex-direction:column;gap:6px;justify-content:center;min-width:0}
 .inSum .big{font-size:clamp(26px,6vh,42px)}
 .filters{display:flex;gap:4px;flex-wrap:wrap}
+@media (max-height:460px) and (min-width:761px){.inSum{gap:3px}.inSum .big{font-size:24px}#inWho{display:none}}
 .fchip{font-family:var(--f-label);font-size:9px;letter-spacing:.06em;padding:5px 8px;border:0;background:var(--panel);color:var(--muted);box-shadow:0 0 0 1px var(--c-3);cursor:pointer}
 .fchip[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .mlist{list-style:none;margin:0;padding:0;overflow-y:auto;min-height:0;height:100%;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin}
@@ -221,6 +222,7 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .mtag[data-k="VIP"]{background:var(--chrome-btn)}.mtag[data-k="DELIVERY"]{background:#c7a6ff}.mtag[data-k="SECURITY"]{background:var(--c-2)}
 .mtag[data-k="APPLIED"]{background:var(--cyan)}.mtag[data-k="SCREEN"]{background:var(--sun)}.mtag[data-k="INTERVIEW"]{background:var(--pink)}
 .mtag[data-k="OFFER"]{background:var(--lime)}.mtag[data-k="CLOSED"]{background:var(--c-2)}
+.mtag[data-k="DUE"]{background:var(--sun)}.mtag[data-k="OVERDUE"]{background:var(--crit);color:var(--paper)}.mtag[data-k="AUTOPAY"]{background:var(--cyan)}.mtag[data-k="PAID"]{background:var(--lime)}
 .jrow.owe{border-left-color:var(--sun)}.jrow.closed{opacity:.55}.jrow .msub b{color:var(--sun);font-weight:600}
 .jhist{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
 .mmore{grid-column:2/4;font-size:13px;line-height:1.45;color:var(--text);white-space:normal;padding-top:4px;display:flex;flex-direction:column;gap:6px}
@@ -512,6 +514,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
             <button class="fchip" type="button" data-f="imp" aria-pressed="true">IMPORTANT</button>
             <button class="fchip" type="button" data-f="unread" aria-pressed="false">UNREAD</button>
             <button class="fchip" type="button" data-f="all" aria-pressed="false">ALL</button>
+            <button class="fchip" type="button" data-f="bills" aria-pressed="false">BILLS</button>
             <button class="fchip" type="button" data-f="jobs" data-mod="jobs" aria-pressed="false">JOBS</button>
           </div>
           <span class="note" id="inNote"></span>
@@ -1460,7 +1463,7 @@ function gAuto(){ // token expired: bounce through Google silently, at most ever
   if(G.needTap||Date.now()-(store.get('pp.gAutoAt')||0)<10*60e3){G.needTap=true;renderInbox();return}
   store.set('pp.gAutoAt',Date.now());gLogin(true);
 }
-function gLogout(){G.on=false;G.tok=null;G.list=null;CAL.list=null;G.needTap=false;['pp.gOn','pp.gTok','pp.gNeedTap'].forEach(k=>store.set(k,null));clearTimeout(G.timer);renderInbox();renderBrief();sfx('close')}
+function gLogout(){G.on=false;G.tok=null;G.list=null;CAL.list=null;BL.list=null;G.needTap=false;['pp.gOn','pp.gTok','pp.gNeedTap'].forEach(k=>store.set(k,null));clearTimeout(G.timer);renderInbox();renderBrief();sfx('close')}
 async function gApi(path){
   const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/'+path,{headers:{Authorization:'Bearer '+G.tok.access}});
   if(!r.ok){const e=new Error('HTTP '+r.status);e.status=r.status;throw e}
@@ -1494,6 +1497,7 @@ async function loadMail(){
   if(MODS.gym&&G.on&&!G.err&&Date.now()-GY.at>30*60e3)loadGym();
   if(G.on&&!G.err&&CAL.ok&&Date.now()-CAL.at>5*60e3)loadCal();
   if(MODS.jobs&&G.on&&!G.err&&Date.now()-JB.at>30*60e3)loadJobs();
+  if(G.on&&!G.err&&Date.now()-BL.at>30*60e3)loadBills();
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.on&&Date.now()-G.at>60e3)loadMail()});
 function newMail(list){
@@ -1502,7 +1506,7 @@ function newMail(list){
   S.mailUntil=performance.now()+4500;flagTab('inbox');flagTab('brief');faceBurst('star',6);
 }
 const relTime=t=>{const m=Math.round((Date.now()-t)/60e3);if(m<1)return'NOW';if(m<60)return m+'M';const h=Math.round(m/60);return h<24?h+'H':Math.round(h/24)+'D'};
-const agoWords=t=>{const m=Math.round((Date.now()-t)/60e3);if(m<2)return'just now';if(m<60)return`${m} minutes ago`;const h=Math.round(m/60);return h<24?`${h} hour${h>1?'s':''} ago`:`${Math.round(h/24)} days ago`};
+const agoWords=t=>{const m=Math.round((Date.now()-t)/60e3);if(m<2)return'just now';if(m<60)return`${m} minutes ago`;const h=Math.round(m/60);const dd=Math.round(h/24);return h<24?`${h} hour${h>1?'s':''} ago`:`${dd} day${dd>1?'s':''} ago`};
 function renderInbox(){
   const live=G.on&&!G.needTap;$('inboxLive').hidden=!live;$('inboxConnect').hidden=live;
   $('gOpen').textContent=G.on&&G.needTap?'RECONNECT GMAIL':'CONNECT GMAIL';
@@ -1511,6 +1515,7 @@ function renderInbox(){
   $('inWho').textContent=G.email?G.email.toUpperCase():'GMAIL';
   document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===G.filter)));
   if(G.filter==='jobs'){renderJobs();return}
+  if(G.filter==='bills'){renderBills();return}
   $('inImpL').textContent='Important';$('inUnreadL').textContent='Unread · 3 days';
   if(G.list){tween($('inImp'),imp.length);tween($('inUnread'),unread.length)}
   $('inNote').textContent=G.err||(G.at?`CHECKED ${fmtTime(new Date(G.at)).toUpperCase()}${nHid?` · ${nHid} HIDDEN BY YOUR RULES`:' · TAP AN EMAIL'}`:'LOADING YOUR INBOX...');
@@ -1531,7 +1536,7 @@ function renderInbox(){
     ul.appendChild(li);
   });
 }
-document.querySelectorAll('.fchip').forEach(b=>b.addEventListener('click',()=>{G.filter=b.dataset.f;store.set('pp.gFilter',G.filter);sfx('tap');G.open=null;JB.open=null;renderInbox();restart($('mlist'),'reveal')}));
+document.querySelectorAll('.fchip').forEach(b=>b.addEventListener('click',()=>{G.filter=b.dataset.f;store.set('pp.gFilter',G.filter);sfx('tap');G.open=null;JB.open=null;BL.open=null;renderInbox();restart($('mlist'),'reveal')}));
 $('gOpen').onclick=()=>gLogin(false);
 
 /* ---------- Job tracker: a pipeline built from job emails ---------- */
@@ -1608,7 +1613,7 @@ function jobNews(){ // Pip speaks up when a company moves you forward, or someon
   if(!line){const o=JB.list.find(g=>g.owe&&JB.nudged[g.key]!==today);
     if(o){line=`${o.name} wrote ${o.wait} days ago and is waiting on your reply.`;label='YOUR MOVE';JB.nudged[o.key]=today;store.set('pp.jobNudged',JB.nudged)}}
   JB.seen={};JB.list.forEach(g=>{JB.seen[g.key]=g.stage});store.set('pp.jobSeen',JB.seen);
-  if(line){MOODS.job.label=label;S.jobLine=line;S.jobUntil=performance.now()+4800;flagTab('inbox');flagTab('brief');faceBurst('star',label==='OFFER!'?12:5)}
+  if(line){MOODS.job.label=label;S.jobLine=line;S.jobUntil=performance.now()+4800;if((S.billUntil||0)>performance.now()){const d=S.billUntil-S.billAt;S.billAt=S.jobUntil;S.billUntil=S.jobUntil+d}flagTab('inbox');flagTab('brief');faceBurst('star',label==='OFFER!'?12:5)}
 }
 function renderJobs(){
   const L=JB.list,act=L?L.filter(g=>g.stage!=='CLOSED'):[],owe=act.filter(g=>g.owe);
@@ -1652,6 +1657,143 @@ function jobLine(){
 }
 function jobTip(){const o=JB.list&&JB.list.find(g=>g.owe);return o?`${o.name} is waiting on your reply (${o.wait} days): "${o.last.subject}".`:null}
 window.__pipJobs={JB,companyOf,buildJobs};   // test hook
+
+/* ---------- Bills: what's due, from your email ---------- */
+// Reads 45 days of bill, statement and payment-confirmation emails. Due dates and amounts come from the subject and preview text.
+// A payment email newer than the bill marks it paid. Kept in memory; only payee -> status and nudge dates are stored on the device.
+const MON_RE='(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\.?';
+const DUE_LEAD='(?:due(?: date)?|pay(?:ment)? by|by|on or before|renews?(?: on)?|will (?:renew|be (?:automatically )?(?:charged|debited|drafted|processed|paid))(?: on)?|scheduled for|draft(?:ed)? on)\\s*(?:on|by|is|:|-)?\\s*(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\\.?,?\\s*)?';
+const DUE_MON=new RegExp(DUE_LEAD+MON_RE+'\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?:,?\\s*(\\d{4}))?','i');
+const DUE_NUM=new RegExp(DUE_LEAD+'(\\d{1,2})/(\\d{1,2})(?:/(\\d{2,4}))?\\b','i');
+const PAID_RE=/\b(payment (?:was |has been )?(?:received|posted|confirmation|confirmed|successful|processed|completed?|applied)|thanks? (?:you )?for (?:your|the) payment|(?:we've|we have|has been) received your payment|we received your payment|paid in full|receipt for your payment)\b/i;
+const AUTO_RE=/\b(auto-?pay|automatic payment|automatically (?:paid|charged|debited|drafted)|will be (?:automatically )?(?:charged|debited|drafted|deducted)|scheduled payment|payment (?:is )?scheduled|renews?|renewal)\b/i;
+const BILL_RE=/\b(bill|statement|invoice|payment due|amount due|balance due|minimum payment|due date|past due|renews?|renewal|e-?bill)\b/i;
+const BILL_NOISE=/\b(\d+% off|sale|deals?|webinar|newsletter|cash ?back|apply now|pre-?approved|refer a friend|rewards offer|interview|application)\b/i;
+const BL={list:null,at:0,busy:false,err:'',cache:new Map(),open:null,seen:store.get('pp.billSeen')||{},nudged:store.get('pp.billNudged')||{}};
+const dayStart=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
+function dueOf(text,sent){ // the due (or renewal) day as local midnight, or null
+  const s=text.replace(/\s+/g,' '),base=new Date(sent||Date.now());let m,mo,d,y;
+  if((m=s.match(DUE_MON))){mo=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[1].slice(0,3).toLowerCase());d=+m[2];y=m[3]?+m[3]:null}
+  else if((m=s.match(DUE_NUM))){mo=+m[1]-1;d=+m[2];y=m[3]?(+m[3]<100?2000+ +m[3]:+m[3]):null}
+  else if((m=s.match(/\bdue (today|tomorrow)\b/i)))return dayStart(base.getTime())+(m[1].toLowerCase()==='tomorrow'?864e5:0);
+  else if((m=s.match(/\bdue in (\d{1,2}) days?\b/i)))return dayStart(base.getTime())+ +m[1]*864e5;
+  else return null;
+  if(mo<0||mo>11||d<1||d>31)return null;
+  let t=new Date(y||base.getFullYear(),mo,d).getTime();
+  if(!y){if(t<base.getTime()-60*864e5)t=new Date(base.getFullYear()+1,mo,d).getTime();else if(t>base.getTime()+300*864e5)t=new Date(base.getFullYear()-1,mo,d).getTime()}
+  return t;
+}
+function amountOf(text){
+  const s=text.replace(/\s+/g,' ');
+  const m=s.match(/(?:statement balance|new balance|amount due|total due|balance due|total amount due|amount|balance|total|payment of|charge of|charged|bill (?:is|for|of)|due)\s*(?:of|is|:)?\s*\$\s?([\d,]+(?:\.\d{2})?)/i)||s.match(/\$\s?([\d,]+\.\d{2})/);
+  return m?+m[1].replace(/,/g,''):null;
+}
+const PAYEE_NAMES={sce:'SoCal Edison',socalgas:'SoCalGas',ladwp:'LADWP',att:'AT&T',tmobile:'T-Mobile',americanexpress:'American Express',aexp:'American Express',bankofamerica:'Bank of America',bofa:'Bank of America',wellsfargo:'Wells Fargo',capitalone:'Capital One',paypal:'PayPal'};
+function payeeOf(e){
+  const dom=(e.addr.split('@')[1]||'').toLowerCase(),pt=dom.split('.');
+  const base=(pt.length>2&&/^(co|com|org|net)$/.test(pt[pt.length-2])?pt[pt.length-3]:pt[pt.length-2])||dom||'unknown';
+  let name=e.name.replace(/\b(billing|bill pay|payments?|customer (service|care)|accounts?|statements?|alerts?|notifications?|no-?reply|e-?bill|team|support|online|services?)\b/ig,'').replace(/[|·:,@-]+/g,' ').replace(/\s+/g,' ').trim();
+  if(!name||name.length<2||name.includes('@'))name=PAYEE_NAMES[base]||capWord(base);
+  return{key:FREEMAIL.test(dom)?name.toLowerCase().replace(/[^a-z0-9]/g,'')||base:base,name};
+}
+function readBill(e){ // what kind of money email this is, and the numbers in it
+  const text=e.subject+' . '+e.snippet;
+  const kind=PAID_RE.test(text)?'paid':BILL_RE.test(text)||AUTO_RE.test(text)?'bill':null;
+  return Object.assign(e,{kind,auto:kind==='bill'&&AUTO_RE.test(text),due:kind==='bill'?dueOf(text,e.t):null,amount:amountOf(text)});
+}
+const B_ORDER={OVERDUE:0,DUE:1,AUTOPAY:2,PAID:3};
+function buildBills(msgs){
+  const by=new Map(),now=Date.now(),today=dayStart(now);
+  msgs.forEach(e=>{if(!e.kind)return;const p=payeeOf(e);if(!by.has(p.key))by.set(p.key,{key:p.key,name:p.name,msgs:[]});by.get(p.key).msgs.push(e)});
+  const out=[];
+  by.forEach(g=>{
+    g.msgs.sort((a,b)=>b.t-a.t);
+    const b=g.msgs.find(e=>e.kind==='bill'),pay=g.msgs.find(e=>e.kind==='paid');
+    if(!b){if(pay&&now-pay.t<10*864e5)out.push(Object.assign(g,{status:'PAID',due:null,days:null,amount:pay.amount,last:pay,paidAt:pay.t}));return}
+    g.last=b;g.due=b.due;g.days=b.due!=null?Math.round((b.due-today)/864e5):null;g.amount=b.amount!=null?b.amount:pay&&pay.amount;
+    if(pay&&pay.t>=b.t-3600e3){g.status='PAID';g.paidAt=pay.t;g.last=pay;if(now-pay.t>10*864e5)return}
+    else if(b.auto){g.status='AUTOPAY';if(g.days!=null&&g.days<-1)return}
+    else{g.status=g.days!=null&&g.days<0?'OVERDUE':'DUE';
+      if(g.days!=null&&g.days<-7)return;          // long past and no payment email: probably paid some other way
+      if(g.days==null&&now-b.t>21*864e5)return}
+    out.push(g);
+  });
+  return out.sort((a,b)=>(B_ORDER[a.status]-B_ORDER[b.status])||((a.days??99)-(b.days??99))||(b.last.t-a.last.t));
+}
+const BILL_Q='newer_than:45d -in:sent -in:chats -category:promotions -category:social (bill OR statement OR invoice OR "payment due" OR "amount due" OR "minimum payment" OR "due date" OR autopay OR "automatic payment" OR "payment received" OR "payment confirmation" OR "thank you for your payment" OR "payment scheduled" OR renews OR renewal)';
+async function loadBills(){
+  if(!G.on||!G.tok||G.needTap||BL.busy||Date.now()>G.tok.exp-60e3)return;
+  BL.busy=true;BL.at=Date.now();
+  try{
+    const hdr='&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=List-Unsubscribe';
+    const L=await gApi('messages?maxResults=60&q='+encodeURIComponent(BILL_Q));
+    await Promise.all((L.messages||[]).filter(m=>!BL.cache.has(m.id)).map(m=>gApi(`messages/${m.id}?format=metadata${hdr}`).then(x=>BL.cache.set(m.id,parseMsg(x))).catch(()=>null)));
+    const ids=new Set((L.messages||[]).map(m=>m.id));
+    const msgs=[...BL.cache].filter(([id])=>ids.has(id)).map(([,e])=>readBill(Object.assign({},e)))
+      .filter(e=>!e.promo&&!e.social&&!BILL_NOISE.test(e.subject)&&!GYM_SUBJECT.test(e.subject)&&!RL.hideFrom.some(f=>(e.name+' '+e.addr).toLowerCase().includes(f)));
+    BL.list=buildBills(msgs);BL.err='';
+    billNews();
+  }catch(e){BL.err=e.status===401?'RENEWING YOUR GOOGLE SIGN-IN...':navigator.onLine?"COULDN'T CHECK FOR BILLS. RETRYING SOON.":'OFFLINE.';BL.at=Date.now()-25*60e3}
+  BL.busy=false;renderInbox();renderBrief();
+}
+const usd=v=>v==null?'':'$'+v.toLocaleString('en-US',{minimumFractionDigits:v%1?2:0,maximumFractionDigits:2});
+const billUrgent=g=>(g.status==='DUE'||g.status==='OVERDUE')&&g.days!=null&&g.days<=3;
+const billWhen=g=>g.days==null?'soon':g.days===0?'today':g.days===1?'tomorrow':g.days<0?`${-g.days} day${g.days<-1?'s':''} ago`:`in ${g.days} days`;
+const billDate=g=>g.due!=null?new Date(g.due).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}):'';
+function billNews(){ // Pip goes stern once a day for a bill due within 3 days, and cheers when one gets paid
+  const first=!Object.keys(BL.seen).length,today=dayKey(new Date());let line='',mood='';
+  for(const g of BL.list){const prev=BL.seen[g.key];
+    if(!first&&g.status==='PAID'&&(prev==='DUE'||prev==='OVERDUE')){line=`${g.name} is paid${g.amount!=null?` (${usd(g.amount)})`:''}. One less thing.`;mood='paid';break}}
+  if(!line){const o=BL.list.find(g=>billUrgent(g)&&BL.nudged[g.key]!==today);
+    if(o){line=o.status==='OVERDUE'?`Your ${o.name} bill${o.amount!=null?` (${usd(o.amount)})`:''} was due ${billWhen(o)}. I haven't seen a payment yet.`
+      :`Your ${o.name} bill${o.amount!=null?` (${usd(o.amount)})`:''} is due ${billWhen(o)}. Don't forget.`;mood='bill';BL.nudged[o.key]=today;store.set('pp.billNudged',BL.nudged)}}
+  BL.seen={};BL.list.forEach(g=>{BL.seen[g.key]=g.status});store.set('pp.billSeen',BL.seen);
+  if(line){const now=performance.now();S.billMood=mood;S.billLine=line;S.billAt=Math.max(now,S.jobUntil||0,S.mailUntil||0);S.billUntil=S.billAt+4800;flagTab('inbox');flagTab('brief')}
+}
+function renderBills(){
+  const L=BL.list,un=L?L.filter(g=>g.status==='DUE'||g.status==='OVERDUE'):[],soon=un.filter(g=>g.days==null||g.days<=7);
+  $('inImpL').textContent='Due · 7 days';$('inUnreadL').textContent='To pay';
+  const u=$('inUnread');u._to=null;if(L){tween($('inImp'),soon.length);u.textContent=usd(Math.round(un.reduce((a,g)=>a+(g.amount||0),0)))}else{$('inImp')._to=null;$('inImp').textContent='--';u.textContent='--'}
+  $('inNote').textContent=BL.err||(L?`${L.length} BILL${L.length===1?'':'S'} FROM 45 DAYS OF EMAIL · TAP ONE`:'LOOKING FOR BILLS IN YOUR EMAIL...');
+  if(!L&&!BL.busy)loadBills();
+  const ul=$('mlist');ul.innerHTML='';
+  if(!L||!L.length){const li=document.createElement('li');li.className='empty';li.textContent=!L?'FINDING YOUR BILLS...':'NO BILLS IN THE LAST 45 DAYS OF EMAIL.';ul.appendChild(li);return}
+  L.forEach(g=>{
+    const li=document.createElement('li'),urgent=billUrgent(g);
+    li.className='mrow tap jrow brow'+(urgent?' owe':'')+(g.status==='PAID'?' closed':'')+(BL.open===g.key?' open':'');
+    li.dataset.say='bill';li.dataset.k=g.key;li.tabIndex=0;li.setAttribute('role','button');
+    li.innerHTML='<span class="mdot"></span><span class="mfrom"></span><span class="mtime"></span><span class="msub"></span>';
+    li.querySelector('.mdot').classList.toggle('read',!urgent);
+    const f=li.querySelector('.mfrom');f.textContent=g.name;const tg=document.createElement('span');tg.className='mtags';
+    const s=document.createElement('span');s.className='mtag';s.dataset.k=g.status;s.textContent=g.status;tg.appendChild(s);f.appendChild(tg);
+    li.querySelector('.mtime').textContent=g.status==='PAID'?relTime(g.paidAt):g.due!=null?new Date(g.due).toLocaleDateString([],{month:'short',day:'numeric'}).toUpperCase():relTime(g.last.t);
+    const sub=li.querySelector('.msub'),amt=g.amount!=null?usd(g.amount)+' · ':'';
+    if(urgent){const b=document.createElement('b');b.textContent=g.status==='OVERDUE'?`OVERDUE · `:`DUE ${billWhen(g).toUpperCase()} · `;sub.append(b,amt+g.last.subject)}
+    else sub.textContent=g.status==='PAID'?`Paid ${agoWords(g.paidAt)}. ${amt}${g.last.subject}`:g.status==='AUTOPAY'?`${amt}${g.due!=null?(/renew/i.test(g.last.subject+g.last.snippet)?'renews ':'charges ')+billDate(g)+' · ':''}pays itself`
+      :`${amt}${g.due!=null?'due '+billDate(g)+' · ':''}${g.last.subject}`;
+    if(BL.open===g.key){const d=document.createElement('div');d.className='mmore';const h=document.createElement('div');h.className='jhist';
+      g.msgs.slice(0,3).forEach(e=>{const r=document.createElement('span');r.textContent=`${new Date(e.t).toLocaleDateString([],{month:'short',day:'numeric'}).toUpperCase()} · ${e.subject}`;h.appendChild(r)});
+      const a=document.createElement('a');a.href=`https://mail.google.com/mail/u/0/#all/${g.last.thread}`;a.target='_blank';a.rel='noopener';a.textContent='OPEN IN GMAIL ›';d.append(h,a);li.appendChild(d)}
+    ul.appendChild(li);
+  });
+}
+function billAbout(g){
+  const amt=g.amount!=null?usd(g.amount):'The bill';
+  if(g.status==='PAID')return`${g.name}: paid. The payment email came in ${agoWords(g.paidAt)}.`;
+  if(g.status==='AUTOPAY')return`${g.name}: ${amt}${g.due!=null?` on ${billDate(g)}`:''}. It's on autopay, so there's nothing to do.`;
+  if(g.status==='OVERDUE')return`${g.name}: ${amt} was due ${billWhen(g)} and I haven't seen a payment email. If you paid another way, you're fine.`;
+  return`${g.name}: ${amt} due ${g.due!=null?`${billDate(g)}, ${billWhen(g)}`:'soon (no date in the email)'}. I'll mark it paid when the payment email shows up.`;
+}
+function billLine(){
+  if(!G.on)return'Connect Google and I\'ll find your bills in your email. No typing.';
+  if(!BL.list){if(!BL.busy)loadBills();return'Looking through your email for bills. Ask me again in a sec.'}
+  if(!BL.list.length)return'No bills in the last 45 days of email.';
+  const un=BL.list.filter(g=>g.status==='DUE'||g.status==='OVERDUE'),au=BL.list.filter(g=>g.status==='AUTOPAY').length,pd=BL.list.filter(g=>g.status==='PAID').length;
+  const parts=un.slice(0,3).map(g=>`${g.name}${g.amount!=null?' '+usd(g.amount):''} ${g.status==='OVERDUE'?'was due '+billWhen(g):'due '+billWhen(g)}`);
+  return`${un.length?`${un.length} to pay: ${parts.join(', ')}.`:'Nothing to pay right now.'}${au?` ${au} on autopay.`:''}${pd?` ${pd} paid recently.`:''}`;
+}
+function billTip(){const g=BL.list&&BL.list.find(billUrgent);return g?(g.status==='OVERDUE'?`${g.name} bill${g.amount!=null?' ('+usd(g.amount)+')':''} was due ${billWhen(g)}. No payment email yet.`:`${g.name} bill${g.amount!=null?' ('+usd(g.amount)+')':''} is due ${billWhen(g)}.`):null}
+window.__pipBills={BL,dueOf,amountOf,buildBills,readBill,loadBills};   // test hook
 
 /* ---------- Calendar: what's next ---------- */
 // Read-only primary calendar, today through the next 7 days, kept in memory on this device only.
@@ -1739,7 +1881,8 @@ function briefTips(){
   const et=[],jt=MODS.jobs?jobTip():null;if(jt)et.push(jt);
   const job=iu.find(e=>e.tags.includes('JOBS'));if(job)et.push(`Job email from ${job.name}: "${job.subject}". Worth a reply.`);
   const vip=iu.find(e=>e.tags.includes('VIP')&&e!==job);if(vip)et.push(`${vip.name} wrote: "${vip.subject}".`);
-  const money=iu.find(e=>e.tags.includes('MONEY'));if(money)et.push(`Money: "${money.subject}" from ${money.name}.`);
+  const bt=billTip();if(bt)et.push(bt);
+  const money=bt?null:iu.find(e=>e.tags.includes('MONEY'));if(money)et.push(`Money: "${money.subject}" from ${money.name}.`);
   const dl=iu.find(e=>e.tags.includes('DEADLINE')&&e!==money&&e!==job);if(dl)et.push(`Deadline: "${dl.subject}".`);
   t.push(...et.slice(0,2));
   if(c){
@@ -1763,7 +1906,8 @@ function renderBrief(){
   $('bWxT').textContent=c?`${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.`:SANDBOX?'Weather loads on the live link.':'Set a location.';
   const imp=shown().filter(e=>e.imp),iu=imp.filter(e=>e.unread);
   $('bIn').textContent=G.on&&G.list?`${iu.length} new`:'--';
-  $('bInT').textContent=!G.on?'Connect Google to see the emails that matter.':G.needTap?'Gmail needs a reconnect.':!G.list?'Checking your inbox...':iu.length?`Top: "${iu[0].subject}" from ${iu[0].name}.`:imp.length?'All important mail is read.':'Nothing important in 3 days.';
+  const ub=G.on&&BL.list&&BL.list.find(billUrgent);
+  $('bInT').textContent=ub?`${ub.name}${ub.amount!=null?' '+usd(ub.amount):''} ${ub.status==='OVERDUE'?'was due':'due'} ${billWhen(ub)}.${iu.length?` Top: "${iu[0].subject}".`:''}`:!G.on?'Connect Google to see the emails that matter.':G.needTap?'Gmail needs a reconnect.':!G.list?'Checking your inbox...':iu.length?`Top: "${iu[0].subject}" from ${iu[0].name}.`:imp.length?'All important mail is read.':'Nothing important in 3 days.';
   const si=sunInfo(),v=nextPasses().find(p=>p.visible),mo=moonInfo();
   $('bSky').textContent=si?fmtTime(new Date(si.day?si.set:si.nextRise)):`${n(mo.illum*100)}%`;
   $('bSkyT').textContent=(si?(si.day?'Sunset. ':'Sunrise. '):'Moon lit. ')+(v?`ISS visible ${when(v.start).toLowerCase()}.`:`${mo.name}, ${n(mo.illum*100)}% lit.`);
@@ -1784,7 +1928,8 @@ $('bRead').onclick=()=>{
   if(c)lines.push(`It's ${n(c.temperature_2m)}° and ${(WXNAME[c.weather_code]||'').toLowerCase()} in ${place()}.`);
   const iu=shown().filter(e=>e.imp&&e.unread);
   if(G.on&&G.list)lines.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}.`:'No important emails waiting.');
-  lines.push(...briefTips());speakLines(lines);
+  const tips=briefTips(),bt=billTip();if(bt&&!tips.includes(bt))lines.push(bt);
+  lines.push(...tips);speakLines(lines);
 };
 document.addEventListener('click',e=>{const c=e.target.closest('[data-go]');if(c){sfx('tap');restart(c,'hit');setTab(c.dataset.go)}});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('[data-go]')){e.preventDefault();setTab(e.target.dataset.go)}});
@@ -2096,7 +2241,7 @@ function askPip(raw){
   const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
   let m;
   if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
-    return 'Try: "what\'s next", "will it rain", "any important email", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
+    return 'Try: "what\'s next", "will it rain", "any important email", "what bills are due", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
   if(/^(set ?up|setup|run setup|start over)( again)?$|^set me up$/.test(s)){setTimeout(()=>openSetup(0),600);return'Sure, let\'s go through setup.'}
   if((m=s.match(/^(turn on|switch on|enable|add|turn off|switch off|disable|remove) (?:the |my )?(gym|workouts?|jobs?|job search|car|space station|iss)(?: tab| module| tracker| visits)?$/))){
     const on=/on|enable|add/.test(m[1]),k=/gym|workout/.test(m[2])?'gym':/job/.test(m[2])?'jobs':/car/.test(m[2])?'car':'iss';
@@ -2113,6 +2258,8 @@ function askPip(raw){
     const who=clean(m[1]);if(!who||who.length<2)return'Who should be a VIP?';addTo('pp.vip',who);RL.hideFrom=RL.hideFrom.filter(x=>x!==who);rulesChanged();return`Got it. Emails from ${who} always go to the top.`}
   if((m=s.match(/^(?:flag|watch for|look out for|highlight) (?:emails? |mail )?(?:about |with |mentioning |containing )?(.+)$/))){
     const w=clean(m[1]);addTo('pp.kw',w);rulesChanged();return`I'll flag anything mentioning "${w}".`}
+  if(/\b(bills?|what do i owe|anything (?:due|to pay)|payments? due)\b/.test(s)&&(!hideV.test(s)&&!showV.test(s)||/^(show|let me see)( me)? (my |the )?bills?$/.test(s))){
+    if(G.on){G.filter='bills';store.set('pp.gFilter','bills');setTab('inbox',false);renderInbox()}return billLine()}
   if(/\b(pipeline|job (search|hunt|status|tracker|apps?)|my (job )?applications|any offers?|who('s| is) waiting on me|where do i stand)\b/.test(s)){
     if(G.on){G.filter='jobs';store.set('pp.gFilter','jobs');setTab('inbox',false);renderInbox()}return jobLine()}
   const verb=hideV.test(s)?'hide':showV.test(s)?'show':null;
@@ -2275,6 +2422,7 @@ function moodLine(m){
     case'mail':return S.mailLine||"You've got mail!";
     case'gym':return S.gymLine||'Gains!';
     case'job':return S.jobLine||'Job news!';
+    case'bill':case'paid':return S.billLine||'Bill news!';
     case'cruise':return CAR.d?`Cruising at ${n(CAR.d.speed)} mph. Eyes on the road, I've got the gauges.`:'Cruising.';
     case'redline':return CAR.d?`Easy! ${n(CAR.d.rpm).toLocaleString()} RPM. That's redline territory.`:'Redline!';
     case'carhot':return CAR.d?`Engine's running hot: ${n(CAR.d.cool)}°F. Pull over when it's safe and let it cool.`:'Engine hot!';
@@ -2348,6 +2496,7 @@ function about(key,el){
     case'carVolt':{const d=CAR.d;if(!d||!d.volt)return carLine();const run=d.rpm>400;return`Battery reads ${d.volt.toFixed(1)} V. ${run?(d.volt<12.5?'Low for a running engine. The alternator may not be charging.':'The alternator is charging it. 13.5 to 14.7 is normal while running.'):d.volt<12.2?'Low. A drive or a charger would help.':'Healthy for an engine that\'s off. 12.4 to 12.7 is normal.'}`}
     case'carThr':{const d=CAR.d;return d&&d.thr!=null&&carFresh()?`Throttle is ${n(d.thr)}% open.`:'Throttle shows up while the car is connected and running.'}
     case'carLoad':{const d=CAR.d;return d&&d.load!=null&&carFresh()?`The engine is working at ${n(d.load)}% of what it can do right now.`:'Engine load shows up while the car is connected and running.'}
+    case'bill':{const g=(BL.list||[]).find(x=>x.key===el.dataset.k);if(!g)return'';BL.open=BL.open===g.key?null:g.key;setTimeout(renderInbox,0);return billAbout(g)}
     case'job':{const g=(JB.list||[]).find(x=>x.key===el.dataset.k);if(!g)return'';JB.open=JB.open===g.key?null:g.key;setTimeout(renderInbox,0);return jobAbout(g)}
     case'hour':{const h=nextHours()[+el.dataset.i];if(!h)return NOWX;return`${+el.dataset.i===0?'This hour':'At '+fmtHour(h.t)}: ${n(h.temp)}°, ${(WXNAME[h.code]||'').toLowerCase()}, ${h.p}% chance of rain.`}
   }
@@ -2427,6 +2576,8 @@ const MOODS={
   gym:{label:'GAINS',s:'hype',b:'#ff8fd0',d:'#e0569f'},
   heads:{label:'HEADS UP',s:'warn',b:'#ffe34d',d:'#e0a623'},
   job:{label:'JOB NEWS',s:'hype',b:'#c6ff7a',d:'#7ccf2a'},
+  bill:{label:'BILL DUE',s:'warn',b:'#ffe34d',d:'#e0a623'},
+  paid:{label:'PAID!',s:'hype',b:'#c6ff7a',d:'#7ccf2a'},
   cruise:{label:'CRUISING',s:'ok',b:'#8ff3ff',d:'#3fb5d6'},
   redline:{label:'REDLINE',s:'crit',b:'#ff6a4d',d:'#d6333f'},
   carhot:{label:'ENGINE HOT',s:'crit',b:'#ff6a4d',d:'#d6333f'},
@@ -2456,6 +2607,7 @@ function moodFor(now){
   if(now<(S.mailUntil||0))return'mail';
   if(now<(S.gymUntil||0))return'gym';
   if(now<(S.jobUntil||0))return'job';
+  if(now>=(S.billAt||0)&&now<(S.billUntil||0))return S.billMood;
   if(calHeads())return'heads';
   if(carCruise())return'cruise';
   if(MODS.iss&&navigator.onLine&&ISS.overhead)return'iss';
@@ -2469,11 +2621,12 @@ function setMood(m,now){
   el.dataset.s=MOODS[m].s;restart(el,'flip');
   const quick=m==='poke'||prev==='poke';
   if(prev&&!reduce)S.trans={from:prev,t0:now,quick,burst:false};
-  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt)$/.test(m)?'alarm':'mood')}
+  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt|bill)$/.test(m)?'alarm':'mood')}
+  if(m==='bill'||m==='paid'){flagTab('inbox');faceBurst(m==='paid'?'star':'spark',m==='paid'?10:4)}
   if(/^(redline|carhot|lowvolt)$/.test(m)){flagTab('car');faceBurst('spark',6)}
   if(m==='heads'&&prev!=='poke'&&prev!=='dizzy'){flagTab('brief');faceBurst('star',4);renderBrief()}
   // don't talk over a fresh Ask Pip answer unless this mood is an alert
-  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss|job|redline|carhot|lowvolt)$/.test(m))return;
+  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss|job|bill|paid|redline|carhot|lowvolt)$/.test(m))return;
   say((prev==='poke'||prev==='dizzy')&&m!=='dizzy'&&m!=='poke'?nextFact():moodLine(m));
 }
 function poke(e){
@@ -2525,6 +2678,7 @@ const EYE={
   happy:[".###.","#...#"],
   star:["..y..","yyyyy",".yyy.",".y.y."],
   dot:["##","##"],
+  stern:["##","##"],
   x:["#...#",".#.#.","..#..",".#.#.","#...#"],
   sleep:["#...#",".###."],
   spiral:[".###.","#...#","#.#.#","#..##",".##.."]
@@ -2537,7 +2691,8 @@ const MOUTH={
   wave:[".##...##.","#..###..#"],
   teeth:["#########","#w#w#w#w#","#########"],
   o:[".###.","#mmm#",".###."],
-  tiny:[".#.","#.#",".#."]
+  tiny:[".#.","#.#",".#."],
+  flat:["#####"]
 };
 const FACE={
   hello:{eye:'open',mouth:'smile',blush:1,per:420,orb:700},
@@ -2563,6 +2718,8 @@ const FACE={
   gym:{eye:'star',mouth:'grin',blush:1,per:140,squash:1,orb:180,fx:'gym'},
   heads:{eye:'open',mouth:'o',per:220,orb:260,fx:'clock'},
   job:{eye:'star',mouth:'o',blush:1,per:200,squash:1,orb:220,fx:'case'},
+  bill:{eye:'stern',mouth:'flat',per:480,orb:900,fx:'bill'},
+  paid:{eye:'happy',mouth:'grin',blush:1,per:180,squash:1,orb:220,fx:'bill'},
   cruise:{eye:'shades',mouth:'smile',per:380,orb:500,fx:'speed'},
   redline:{eye:'x',mouth:'teeth',per:120,orb:120,shake:1,fx:'speed'},
   carhot:{eye:'x',mouth:'teeth',per:160,orb:260,shake:1,fx:'steam'},
@@ -2570,6 +2727,7 @@ const FACE={
 };
 const BRIEFCASE=["...#####...","...#...#...","###########","#ooooooooo#","#####y#####","#ooooooooo#","#ooooooooo#","###########"];
 const CLOCK=["yy.....yy","y.#####.y",".#WWWWW#.","#WWW#WWW#","#WWW#WWW#","#WWW##WW#","#WWWWWWW#",".#WWWWW#.","..#####..",".#.....#."];
+const BILLSPR=["#########","#WWW#WWW#","#WW###WW#","#W#W#WWW#","#WW###WW#","#WWW#W#W#","#WW###WW#","#WWW#WWW#","#########"];
 const BATTERY=["....#.#....","###########","#ppWWWWWWW#","#ppWWWWWWW#","###########"];
 const DUMBBELL=["#L#...#L#","#S#LLL#S#","#L#...#L#"];
 const ENVELOPE=["###########","#W#WWWWW#W#","#WW#WWW#WW#","#WWW#p#WWW#","#WWWWWWWWW#","###########"];
@@ -2672,6 +2830,7 @@ function drawFace(t){
   }
   if(m==='offline'||m==='nodata'){spr(["..##","##.."],cx-8,cy-7);spr(["##..","..##"],cx+3,cy-7)}
   if(m==='cold'){spr(["##.."],cx-8,cy-8);spr(["..##"],cx+4,cy-8)}
+  if(f.eye==='stern'){spr(["##..","..##"],cx-8,cy-8);spr(["..##","##.."],cx+3,cy-8)}
   const talking=typing!==null||performance.now()<talkUntil;
   let mk=f.mouth;
   if(f.chatter)mk=Math.floor(t/90)%2?'teeth':'tiny';
@@ -2685,6 +2844,8 @@ function drawFace(t){
   if(f.fx==='clock'){const ring=!reduce&&t%1200<450,jx=ring?(Math.floor(t/50)%2?1:-1):0;spr(CLOCK,cx-4+jx,Math.max(0,cy-ry-11));
     if(ring&&Math.floor(t/100)%2){fc.fillStyle=C.sun;fc.fillRect(cx-8,cy-ry-9,2,1);fc.fillRect(cx+7,cy-ry-9,2,1)}}
   if(f.fx==='case'){const bob=reduce?0:Math.round(Math.sin(t/140)*2);spr(BRIEFCASE,cx-5,Math.max(0,cy-ry-9+bob))}
+  if(f.fx==='bill'){const paid=m==='paid',sw=reduce?0:Math.round(Math.sin(t/(paid?120:300))*(paid?2:1));   // a bill waves over Pip's head; it turns green once paid
+    spr(paid?BILLSPR.map((r,i)=>i&&i<8?'#'+r.slice(1,-1).replace(/#/g,'l')+'#':r):BILLSPR,cx-4+sw,Math.max(0,cy-ry-10+(paid?-Math.abs(sw):0)))}
   if(f.fx==='battery'){const lowBar=reduce||Math.floor(t/400)%2;spr(BATTERY.map(r=>lowBar?r:r.replace(/p/g,'.')),cx-5,Math.max(0,cy-ry-8))}
   if(f.fx==='mail'){const bob=reduce?0:Math.round(Math.sin(t/160)*2);spr(ENVELOPE,cx-5,Math.max(0,cy-ry-8+bob))}
   drawOrbit(32,40,ot,true,orbPer);

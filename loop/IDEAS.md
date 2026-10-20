@@ -18,7 +18,7 @@ Each idea names its automatic source with a tag:
 Promote an idea by adding it to `backlog.json` with acceptance criteria.
 
 ## Every day (core)
-- **Bills and due dates [google].** Due dates and amounts from bill emails. A payment-confirmation email marks the bill paid. *(in backlog)*
+- **Bills and due dates [google].** Due dates and amounts from bill emails. A payment-confirmation email marks the bill paid. *(built in preview 2026-10-20)* Next: read the full email body when the preview text has no date; group a payee's different sending domains (billing@ vs payments@); a "bills this month" total on Today.
 - **Deliveries [google].** "Arriving today" and "delivered" from shipping emails, advancing as new emails arrive. *(in backlog)*
 - **Leave-on-time [google][free].** The next event with a location gets a travel-time estimate and a "leave in 10 min" heads-up.
 - **Subscriptions and renewals [google].** Recurring charges found in receipts, plus "renews in 3 days" alerts and a monthly total.
@@ -42,6 +42,7 @@ Promote an idea by adding it to `backlog.json` with acceptance criteria.
 - **Medication and refill reminders [google].** Refill-ready emails from the pharmacy.
 
 ## Money (modules)
+- **Subscription audit [google].** From the bills list: every renewal Pip has seen, monthly total, and which ones went up in price.
 - **Spending snapshot [google].** Totals from receipt and order emails by category.
 - **Watchlist [free/relay].** A few stocks or crypto, and Pip reacts to big moves.
 
