@@ -92,6 +92,24 @@ addBill('b7', 'Chase <offers@chase.com>', 'Earn 5% cash back this month', 'Limit
 addBill('b8', 'SoCal Edison <billing@sce.com>', 'Payment received: thank you', 'We received your payment of $84.12 for account ending 1234.', 0);
 const billIds = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
 let billQ = '';
+// packages: an Amazon charger shipped then out for delivery today (same order), REI via UPS arriving in 2 days, a Target order
+// not shipped yet, a Best Buy order running late, an Etsy order delivered 2 days ago, a sale email and a "how was your delivery" survey.
+// p8 is the delivery email that arrives later.
+const wkday = d => d.toLocaleDateString('en-US', { weekday: 'long' });
+const PKGS = {};
+const addPkg = (...a) => { PKGS[a[0]] = bmsg(...a); };
+addPkg('p1', 'Amazon.com <shipment-tracking@amazon.com>', 'Shipped: "Anker USB-C Charger 65W..."', `Your package is on the way. Arriving ${wkday(dayOff(-2))}. Order #113-1234567-1234567`, 2);
+addPkg('p2', 'Amazon.com <shipment-tracking@amazon.com>', 'Out for delivery: "Anker USB-C Charger 65W..."', 'Arriving today by 8 PM. Order #113-1234567-1234567', 0);
+addPkg('p3', 'UPS <mcinfo@ups.com>', `UPS Update: Package Scheduled for Delivery ${wkday(dayOff(-2))}`, `Shipment from REI. Tracking Number 1Z999AA10123456784. Scheduled delivery: ${wkday(dayOff(-2))}`, 1);
+addPkg('p4', 'Target <orders@target.com>', 'Thanks for your order!', "Order #102938475. We'll let you know when it ships.", 1);
+addPkg('p5', 'Best Buy <BestBuyInfo@emailinfo.bestbuy.com>', 'Your order is delayed', `Sorry, your order is running late. New delivery date: ${mdShort(dayOff(-4))}. Order #BBY01-806543`, 1);
+addPkg('p6', 'Etsy <transaction@etsy.com>', 'Your Etsy order has been delivered', 'Order #2849301 from PixelPrints was delivered.', 2);
+addPkg('p7', 'Big Store <deals@store.com>', '48 hour SALE: free shipping on everything', 'Your order ships free', 0, ['INBOX', 'CATEGORY_PROMOTIONS']);
+addPkg('p9', 'Amazon.com <no-reply@amazon.com>', 'How was your delivery?', 'Rate your experience with your recent order', 0);
+addPkg('p8', 'Amazon.com <shipment-tracking@amazon.com>', 'Delivered: "Anker USB-C Charger 65W..."', 'Your package was delivered. It was handed to a resident. Order #113-1234567-1234567', 0);
+PKGS.p8.internalDate = String(Date.now() - 60e3);
+const pkgIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p9'];
+let pkgQ = '';
 const topo = { type: 'Topology', transform: { scale: [1, 1], translate: [0, 0] }, objects: { land: { type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', arcs: [[[0]], [[1]]] }] } },
   arcs: [[[-125, 50], [55, 0], [0, -25], [-45, 0], [-10, -10]], [[-80, 10], [45, 0], [0, -55], [-35, 0], [-10, 55]]] };
 
@@ -114,11 +132,13 @@ async function mock(page) {
       if (u.includes('/attachments/a1')) return r.fulfill({ json: { data: b64(GYM_CSV) } });
       const j = u.match(/messages\/([js]\d)/); if (j) return r.fulfill({ json: JOBS[j[1]] });
       const b = u.match(/messages\/(b\d)/); if (b) return r.fulfill({ json: BILLS[b[1]] });
+      const pk = u.match(/messages\/(p\d)/); if (pk) return r.fulfill({ json: PKGS[pk[1]] });
       const g = u.match(/messages\/(g\d)/); if (g) return r.fulfill({ json: GYM[g[1]] });
       const m = u.match(/messages\/(m\d)/); if (m) return r.fulfill({ json: gmsg(MAIL.find(x => x.id === m[1])) });
       if (u.includes('/messages?')) {
         const dq = decodeURIComponent(u);
         if (dq.includes('q=in:sent')) return r.fulfill({ json: { messages: [{ id: 's1' }, { id: 's2' }] } });
+        if (dq.includes('newer_than:21d')) { pkgQ = dq; return r.fulfill({ json: { messages: pkgIds.map(id => ({ id })) } }); }
         if (dq.includes('newer_than:45d')) { billQ = dq; return r.fulfill({ json: { messages: billIds.map(id => ({ id })) } }); }
         if (dq.includes('newer_than:30d')) { jobQ = dq; return r.fulfill({ json: { messages: ['m1', 'j1', 'j2', 'j3', 'j4', 'j5', 'j6'].map(id => ({ id })) } }); }
         if (decodeURIComponent(u).includes('24hourfitness')) return r.fulfill({ json: { messages: Object.keys(GYM).map(id => ({ id })) } });
@@ -186,6 +206,12 @@ function fakeBluetooth() {
   check('Pip goes stern when a bill is due within 3 days', stern && /Your SoCal Edison bill \(\$84\.12\) is due in 2 days/.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
   await page.screenshot({ path: path.join(OUT, '0b-bill-due.png') });
   await page.waitForFunction(() => !/BILL DUE/.test(document.querySelector('#mood').textContent), null, { timeout: 8000 }).catch(() => {});
+  // package out for delivery: Pip carries a box right after the bill (queued, not talking over it)
+  const boxDay = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'DELIVERY DAY', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(2000);
+  check('Pip carries a box when a package is out for delivery', boxDay && /Your Anker USB-C Charger 65W from Amazon is out for delivery\. Arriving today\./.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 90));
+  await page.screenshot({ path: path.join(OUT, '0c-delivery-day.png') });
+  await page.waitForFunction(() => !/DELIVERY DAY/.test(document.querySelector('#mood').textContent), null, { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(1500);
 
   check('weather loads', (await t('#temp')).trim() === '72', await t('#temp'));
@@ -279,6 +305,38 @@ function fakeBluetooth() {
   await page.screenshot({ path: path.join(OUT, '2d-bill-paid.png') });
   check('paid bill leaves the Today countdown', !/SoCal Edison/.test(await t('#bInT')), await t('#bInT'));
   await page.waitForFunction(() => !/PAID!/.test(document.querySelector('#mood').textContent), null, { timeout: 8000 }).catch(() => {});
+  await page.click('#tab-inbox'); await page.click('.fchip[data-f="imp"]'); await page.waitForTimeout(300);
+
+  // packages
+  check('packages search covers 3 weeks of shipping mail', /newer_than:21d/.test(pkgQ) && /out for delivery/.test(pkgQ) && /-in:sent/.test(pkgQ), pkgQ.slice(0, 80));
+  const etaParse = await page.evaluate(() => { const { etaOf, trackOf } = window.__pipPkgs, base = new Date(2026, 9, 21, 9).getTime(), k = t => t == null ? null : new Date(t).toDateString();
+    return [k(etaOf('Arriving Friday', base)), k(etaOf('Estimated delivery: Oct 27', base)), k(etaOf('Expected delivery 11/02', base)), k(etaOf('Arriving tomorrow by 9 PM', base)), k(etaOf('Out for delivery', base)), k(etaOf('Scheduled for Delivery Wednesday', base)), k(etaOf('Thanks for your order', base)), (trackOf('Tracking Number 1Z999AA10123456784') || {}).carrier, (trackOf('USPS 9400111899223817572490') || {}).carrier]; });
+  check('delivery dates and tracking numbers read from common shipping wording', JSON.stringify(etaParse) === JSON.stringify(['Fri Oct 23 2026', 'Tue Oct 27 2026', 'Mon Nov 02 2026', 'Thu Oct 22 2026', 'Wed Oct 21 2026', 'Wed Oct 21 2026', null, 'UPS', 'USPS']), JSON.stringify(etaParse));
+  await page.click('.fchip[data-f="pkgs"]'); await page.waitForTimeout(900);
+  const prows = await page.$$eval('#mlist .prow', rs => rs.map(r => r.textContent));
+  check('PACKAGES joins emails about one order and lists arriving today first', prows.length === 5 && /^Amazon\s*TODAY/.test(prows[0]) && /OUT FOR DELIVERY · Anker USB-C Charger 65W/.test(prows[0]) && /^Best Buy\s*DELAYED/.test(prows[1]) && /RUNNING LATE · NOW/.test(prows[1]), prows.join(' | ').slice(0, 300));
+  check('a carrier email is named for the store and dated', prows.some(r => /^REI\s*SHIPPED/.test(r) && new RegExp('Arrives ' + new Date(Date.now() + 2 * 864e5).toLocaleDateString([], { weekday: 'long' }) + ' .*UPS').test(r)), prows.find(r => /REI|UPS/.test(r)));
+  check('ordered and delivered packages show their state', prows.some(r => /^Target\s*ORDERED/.test(r)) && prows.some(r => /^Etsy\s*DELIVERED/.test(r) && /Delivered 2 days ago/.test(r)), prows.join(' | ').slice(0, 300));
+  check('sale emails and delivery surveys are skipped', !prows.some(r => /SALE|How was your delivery|Big Store/i.test(r)), prows.join(' | ').slice(0, 300));
+  check('packages summary counts arriving today and on the way', (await t('#inImp')).trim() === '1' && (await t('#inUnread')).trim() === '4' && /Arriving today/i.test(await t('#inImpL')), (await t('#inImp')) + '/' + (await t('#inUnread')));
+  await page.click('#mlist .prow:nth-child(3)'); await page.waitForTimeout(2600);
+  check('tapping a package makes Pip explain it, with a tracking link', /^Your REI package shipped with UPS\. It should arrive /.test(await t('#say')) && await page.$('#mlist .prow.open a[href^="https://www.ups.com/track?tracknum=1Z999AA10123456784"]') !== null && await page.$('#mlist .prow.open a[href*="mail.google.com"]') !== null, (await t('#say')).slice(0, 100));
+  await page.screenshot({ path: path.join(OUT, '2e-packages.png') });
+  reply = await ask('where are my packages');
+  check('Ask Pip sums up packages', /^4 on the way: Anker USB-C Charger 65W from Amazon arrives today; Best Buy package is running late; REI package arrives \w+\. 1 delivered recently\./.test(reply), reply.slice(0, 200));
+  reply = await ask('hide delivery emails');
+  check('"hide delivery emails" still makes an inbox rule', /hiding delivery emails/i.test(reply), reply.slice(0, 80));
+  await ask('show delivery emails');
+  await page.click('#tab-brief'); await page.waitForTimeout(700);
+  check('Today shows package day on the inbox card', /^Package day: Anker USB-C Charger 65W from Amazon arrives today\./.test(await t('#bInT')), await t('#bInT'));
+  pkgIds.push('p8');
+  await page.evaluate(() => { const { PK, loadPkgs } = window.__pipPkgs; PK.at = 0; return loadPkgs(); });
+  const landed = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'DELIVERED!', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(1800);
+  check('Pip cheers when the delivery email arrives', landed && /Your Anker USB-C Charger 65W from Amazon was delivered\. Go grab it\./.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
+  await page.screenshot({ path: path.join(OUT, '2f-delivered.png') });
+  check('delivered package leaves the Today card', !/Package day/.test(await t('#bInT')) && !/out for delivery/.test(await t('#bTips')), await t('#bInT'));
+  await page.waitForFunction(() => !/DELIVERED!/.test(document.querySelector('#mood').textContent), null, { timeout: 8000 }).catch(() => {});
   await page.click('#tab-inbox'); await page.click('.fchip[data-f="imp"]'); await page.waitForTimeout(300);
 
   await page.click('#tab-gym'); await page.waitForTimeout(1500);
@@ -394,6 +452,10 @@ function fakeBluetooth() {
   const bFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && [...document.querySelectorAll('#mlist .brow .mfrom')].every(e => e.getBoundingClientRect().width > 40) && [...document.querySelectorAll('.filters .fchip')].filter(b => !b.hidden).every(b => b.getBoundingClientRect().bottom <= innerHeight));
   check('bills list and filter chips fit on phone landscape', bFit);
   await page.screenshot({ path: path.join(OUT, '7e-phone-bills.png') });
+  await page.click('.fchip[data-f="pkgs"]'); await page.waitForTimeout(700);
+  const pFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && document.querySelectorAll('#mlist .prow').length > 0 && [...document.querySelectorAll('#mlist .prow .mfrom')].every(e => e.getBoundingClientRect().width > 40));
+  check('packages list fits on phone landscape', pFit);
+  await page.screenshot({ path: path.join(OUT, '7f-phone-packages.png') });
 
   await page.click('#tab-car'); await page.waitForTimeout(600);
   const carFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && ['crSpeed', 'crVolt', 'crLoad', 'crGo'].every(id => { const r = document.getElementById(id).getBoundingClientRect(); return r.width > 20 && r.bottom <= innerHeight + 1; }));

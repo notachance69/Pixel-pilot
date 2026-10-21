@@ -233,6 +233,8 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .mtag[data-k="APPLIED"]{background:var(--cyan)}.mtag[data-k="SCREEN"]{background:var(--sun)}.mtag[data-k="INTERVIEW"]{background:var(--pink)}
 .mtag[data-k="OFFER"]{background:var(--lime)}.mtag[data-k="CLOSED"]{background:var(--c-2)}
 .mtag[data-k="DUE"]{background:var(--sun)}.mtag[data-k="OVERDUE"]{background:var(--crit);color:var(--paper)}.mtag[data-k="AUTOPAY"]{background:var(--cyan)}.mtag[data-k="PAID"]{background:var(--lime)}
+.mtag[data-k="ORDERED"]{background:var(--cyan)}.mtag[data-k="SHIPPED"]{background:#c7a6ff}.mtag[data-k="TODAY"]{background:var(--sun)}.mtag[data-k="DELAYED"]{background:var(--crit);color:var(--paper)}.mtag[data-k="DELIVERED"]{background:var(--lime)}
+.mmore a.trk{margin-right:12px}
 .jrow.owe{border-left-color:var(--sun)}.jrow.closed{opacity:.55}.jrow .msub b{color:var(--sun);font-weight:600}
 .jhist{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
 .mmore{grid-column:2/4;font-size:13px;line-height:1.45;color:var(--text);white-space:normal;padding-top:4px;display:flex;flex-direction:column;gap:6px}
@@ -528,6 +530,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
             <button class="fchip" type="button" data-f="unread" aria-pressed="false">UNREAD</button>
             <button class="fchip" type="button" data-f="all" aria-pressed="false">ALL</button>
             <button class="fchip" type="button" data-f="bills" aria-pressed="false">BILLS</button>
+            <button class="fchip" type="button" data-f="pkgs" aria-pressed="false">PACKAGES</button>
             <button class="fchip" type="button" data-f="jobs" data-mod="jobs" aria-pressed="false">JOBS</button>
           </div>
           <span class="note" id="inNote"></span>
@@ -739,7 +742,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
-const BUILD='20261020-130453'; // stamped at publish; the page compares it with the live copy to update itself
+const BUILD='20261021-131449'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -1511,6 +1514,7 @@ async function loadMail(){
   if(G.on&&!G.err&&CAL.ok&&Date.now()-CAL.at>5*60e3)loadCal();
   if(MODS.jobs&&G.on&&!G.err&&Date.now()-JB.at>30*60e3)loadJobs();
   if(G.on&&!G.err&&Date.now()-BL.at>30*60e3)loadBills();
+  if(G.on&&!G.err&&Date.now()-PK.at>(pkgToday()?10:30)*60e3)loadPkgs();   // check more often on delivery day
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&G.on&&Date.now()-G.at>60e3)loadMail()});
 function newMail(list){
@@ -1529,6 +1533,7 @@ function renderInbox(){
   document.querySelectorAll('.fchip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===G.filter)));
   if(G.filter==='jobs'){renderJobs();return}
   if(G.filter==='bills'){renderBills();return}
+  if(G.filter==='pkgs'){renderPkgs();return}
   $('inImpL').textContent='Important';$('inUnreadL').textContent='Unread · 3 days';
   if(G.list){tween($('inImp'),imp.length);tween($('inUnread'),unread.length)}
   $('inNote').textContent=G.err||(G.at?`CHECKED ${fmtTime(new Date(G.at)).toUpperCase()}${nHid?` · ${nHid} HIDDEN BY YOUR RULES`:' · TAP AN EMAIL'}`:'LOADING YOUR INBOX...');
@@ -1549,7 +1554,7 @@ function renderInbox(){
     ul.appendChild(li);
   });
 }
-document.querySelectorAll('.fchip').forEach(b=>b.addEventListener('click',()=>{G.filter=b.dataset.f;store.set('pp.gFilter',G.filter);sfx('tap');G.open=null;JB.open=null;BL.open=null;renderInbox();restart($('mlist'),'reveal')}));
+document.querySelectorAll('.fchip').forEach(b=>b.addEventListener('click',()=>{G.filter=b.dataset.f;store.set('pp.gFilter',G.filter);sfx('tap');G.open=null;JB.open=null;BL.open=null;PK.open=null;renderInbox();restart($('mlist'),'reveal')}));
 $('gOpen').onclick=()=>gLogin(false);
 
 /* ---------- Job tracker: a pipeline built from job emails ---------- */
@@ -1761,7 +1766,7 @@ function billNews(){ // Pip goes stern once a day for a bill due within 3 days, 
     if(o){line=o.status==='OVERDUE'?`Your ${o.name} bill${o.amount!=null?` (${usd(o.amount)})`:''} was due ${billWhen(o)}. I haven't seen a payment yet.`
       :`Your ${o.name} bill${o.amount!=null?` (${usd(o.amount)})`:''} is due ${billWhen(o)}. Don't forget.`;mood='bill';BL.nudged[o.key]=today;store.set('pp.billNudged',BL.nudged)}}
   BL.seen={};BL.list.forEach(g=>{BL.seen[g.key]=g.status});store.set('pp.billSeen',BL.seen);
-  if(line){const now=performance.now();S.billMood=mood;S.billLine=line;S.billAt=Math.max(now,S.jobUntil||0,S.mailUntil||0);S.billUntil=S.billAt+4800;flagTab('inbox');flagTab('brief')}
+  if(line){const now=performance.now();S.billMood=mood;S.billLine=line;S.billAt=Math.max(now,S.jobUntil||0,S.mailUntil||0);S.billUntil=S.billAt+4800;if((S.pkgUntil||0)>S.billAt){const d=S.pkgUntil-S.pkgAt;S.pkgAt=S.billUntil;S.pkgUntil=S.billUntil+d}flagTab('inbox');flagTab('brief')}
 }
 function renderBills(){
   const L=BL.list,un=L?L.filter(g=>g.status==='DUE'||g.status==='OVERDUE'):[],soon=un.filter(g=>g.days==null||g.days<=7);
@@ -1807,6 +1812,165 @@ function billLine(){
 }
 function billTip(){const g=BL.list&&BL.list.find(billUrgent);return g?(g.status==='OVERDUE'?`${g.name} bill${g.amount!=null?' ('+usd(g.amount)+')':''} was due ${billWhen(g)}. No payment email yet.`:`${g.name} bill${g.amount!=null?' ('+usd(g.amount)+')':''} is due ${billWhen(g)}.`):null}
 window.__pipBills={BL,dueOf,amountOf,buildBills,readBill,loadBills};   // test hook
+
+/* ---------- Packages: what's on the way, from your email ---------- */
+// Reads 21 days of order, shipping and delivery emails (headers and preview text only). Emails about the same order are joined by
+// order number, tracking number, item name or thread, and the newest one sets the status. Only package -> status and nudge dates are stored.
+const PK_RANK={ORDERED:1,SHIPPED:2,DELAYED:2,TODAY:3,DELIVERED:4};
+const PK_DONE=/\b(?:has been|was|been|got|package|order|item|shipment|it)s? delivered\b|^\s*delivered\b|\bdelivered(?: today| at| to| on)\b|\b(?:left|placed) (?:at|in|by) (?:your |the )?(?:front )?(?:door|porch|mailbox|garage|reception|mailroom|parcel locker)\b|\bhanded (?:directly )?to (?:a )?resident\b/i;
+const PK_OUT=/\b(out for delivery|arriving today|arrives today|delivery today|coming today|on the truck)\b/i;
+const PK_LATE=/\b(delayed|running late|delivery exception|attempted delivery|delivery attempt|unable to deliver|missed delivery|new delivery date|held at)\b/i;
+const PK_SHIP=/\b(shipped|has shipped|on (?:its|the) way|in transit|tracking (?:number|info)|track (?:your )?(?:package|shipment|order)|arriving|label created|picked up|dispatched|en route)\b/i;
+const PK_ORDER=/\b(order (?:confirmed|confirmation|received|placed|#)|thanks for (?:your )?(?:order|purchase)|thank you for (?:your )?(?:order|purchase)|(?:we've|we have) received your order|your order of)\b/i;
+const PK_NOISE=/\b(\d+% off|sale|deals?|free shipping|shop now|newsletter|webinar|coupon|recommended for you|rate (?:your|the)|review (?:your|the)|how did we do|feedback|survey|return (?:label|request|started|received)|refund|interview|application|statement|bill\b)/i;
+const CARRIERS=[['UPS',/(^|\.)ups\.com$|\bups\b/i],['USPS',/(^|\.)usps\.com$|\busps\b|postal service/i],['FedEx',/(^|\.)fedex\.com$|\bfedex\b/i],['DHL',/(^|\.)dhl\.com$|\bdhl\b/i],['Amazon',/(^|\.)amazon\.[a-z.]+$|\bamazon logistics\b/i],['OnTrac',/ontrac/i]];
+const PK={list:null,at:0,busy:false,err:'',cache:new Map(),open:null,seen:store.get('pp.pkgSeen')||{},nudged:store.get('pp.pkgNudged')||{}};
+const WKD=['sun','mon','tue','wed','thu','fri','sat'];
+const ETA_LEAD='(?:scheduled (?:for )?delivery(?: date)?|arriving|arrives?|expected(?: delivery)?(?: date)?|estimated (?:delivery|arrival)(?: date)?|delivery (?:date|expected|by|on)|deliver(?:ed|y)? by|get it by|should arrive|new delivery date)\\s*(?:on|by|is|:|-)?\\s*';
+const ETA_MON=new RegExp(ETA_LEAD+'(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\\.?,?\\s*)?'+MON_RE+'\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b','i');
+const ETA_NUM=new RegExp(ETA_LEAD+'(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\\.?,?\\s*)?(\\d{1,2})/(\\d{1,2})(?:/\\d{2,4})?\\b','i');
+const ETA_DAY=new RegExp(ETA_LEAD+'(today|tomorrow|(?:mon|tues?|wed(?:nes)?|thu(?:rs)?|fri|sat(?:ur)?|sun)(?:day)?)\\b','i');
+function etaOf(text,sent){ // the expected delivery day as local midnight, or null
+  const s=text.replace(/\s+/g,' '),base=dayStart(sent||Date.now());let m;
+  if((m=s.match(ETA_MON))||(m=s.match(ETA_NUM))){
+    const mo=isNaN(+m[1])?['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[1].slice(0,3).toLowerCase()):+m[1]-1,d=+m[2];
+    if(mo<0||mo>11||d<1||d>31)return null;
+    const y=new Date(base).getFullYear();let t=new Date(y,mo,d).getTime();if(t<base-60*864e5)t=new Date(y+1,mo,d).getTime();return t}
+  if((m=s.match(ETA_DAY))){const w=m[1].toLowerCase();if(w==='today')return base;if(w==='tomorrow')return base+864e5;
+    const want=WKD.indexOf(w.slice(0,3)),have=new Date(base).getDay();return base+((want-have+7)%7)*864e5}
+  if(PK_OUT.test(s))return base;
+  return null;
+}
+function trackOf(text){ // a tracking number and the carrier it belongs to, when the email shows one
+  let m;
+  if((m=text.match(/\b1Z[0-9A-Z]{16}\b/)))return{no:m[0],carrier:'UPS',url:'https://www.ups.com/track?tracknum='+m[0]};
+  if((m=text.match(/\b(9[2-5]\d{20})\b/)))return{no:m[1],carrier:'USPS',url:'https://tools.usps.com/go/TrackConfirmAction?tLabels='+m[1]};
+  if((m=text.match(/\b(?:fedex|tracking)[^0-9]{0,24}(\d{12}|\d{15})\b/i)))return{no:m[1],carrier:'FedEx',url:'https://www.fedex.com/fedextrack/?trknbr='+m[1]};
+  if((m=text.match(/\b(TBA\d{10,13})\b/)))return{no:m[1],carrier:'Amazon',url:null};
+  return null;
+}
+function readPkg(e){ // what this shipping email says, and the ids that tie it to an order
+  const text=e.subject+' . '+e.snippet,dom=e.addr.split('@')[1]||'';
+  const status=PK_DONE.test(text)&&!/\b(will|to|should|expected to|scheduled to) be delivered\b/i.test(text)?'DELIVERED':PK_OUT.test(text)?'TODAY':PK_LATE.test(text)?'DELAYED':PK_SHIP.test(text)?'SHIPPED':PK_ORDER.test(text)?'ORDERED':null;
+  const tr=trackOf(text),ids=[];
+  const on=text.match(/\b(\d{3}-\d{7}-\d{7})\b/)||text.match(/\border\s*(?:#|number|no\.?)\s*:?\s*#?\s*([A-Z0-9][A-Z0-9-]{4,})\b/i);
+  if(on)ids.push('o:'+on[1].toUpperCase());if(tr)ids.push('t:'+tr.no);
+  const q=e.subject.match(/["“]([^"”]{3,60})/),item=q?q[1].replace(/\.{2,}|…/g,'').trim():'';
+  if(item)ids.push('i:'+item.toLowerCase().slice(0,30));ids.push('h:'+e.thread);
+  let carrier=tr&&tr.carrier;if(!carrier){const c=CARRIERS.find(([,re])=>re.test(dom)||re.test(e.name));carrier=c?c[0]:null}
+  let who=payeeOf(e).name;const isCarrier=CARRIERS.some(([n,re])=>n!=='Amazon'&&re.test(dom));
+  if(isCarrier){const f=text.match(/\bfrom ([A-Z][\w&']*(?: [A-Z][\w&']*){0,2})/);who=f?f[1].replace(/\.+$/,''):carrier}
+  who=who.replace(/\.(com|net|org|co)$/i,'')
+  return Object.assign(e,{status,eta:status==='DELIVERED'?null:etaOf(text,e.t),track:tr,ids,item,carrier,who,isCarrier});
+}
+const PK_ORDER_SHOW={TODAY:0,DELAYED:1,SHIPPED:2,ORDERED:3,DELIVERED:4};
+function buildPkgs(msgs){
+  const groups=[],byId=new Map(),now=Date.now(),today=dayStart(now);
+  msgs.filter(e=>e.status).sort((a,b)=>a.t-b.t).forEach(e=>{
+    const hit=[...new Set(e.ids.map(i=>byId.get(i)).filter(Boolean))];let g=hit[0];
+    if(!g){g={msgs:[],ids:new Set()};groups.push(g)}
+    hit.slice(1).forEach(o=>{o.msgs.forEach(x=>g.msgs.push(x));o.ids.forEach(i=>{g.ids.add(i);byId.set(i,g)});groups.splice(groups.indexOf(o),1)});
+    g.msgs.push(e);e.ids.forEach(i=>{g.ids.add(i);byId.set(i,g)});
+  });
+  const out=[];
+  groups.forEach(g=>{
+    g.msgs.sort((a,b)=>b.t-a.t);
+    const last=g.msgs[0],done=g.msgs.find(e=>e.status==='DELIVERED');
+    g.last=last;g.status=done?'DELIVERED':last.status;
+    if(g.status==='TODAY'&&dayStart(last.t)<today)g.status='SHIPPED';   // "out for delivery" from an earlier day, no delivery email yet
+    const named=g.msgs.find(e=>!e.isCarrier)||last;g.name=named.who;g.key=[...g.ids].sort()[0];   // display key only (stable within one load)
+    g.item=(g.msgs.find(e=>e.item)||{}).item||'';
+    g.track=(g.msgs.find(e=>e.track)||{}).track||null;g.carrier=(g.msgs.find(e=>e.carrier&&e.carrier!==g.name)||{}).carrier||null;
+    const withEta=g.msgs.find(e=>e.eta!=null);g.eta=g.status==='DELIVERED'?null:g.status==='TODAY'?today:withEta?withEta.eta:null;
+    if(g.eta!=null&&g.eta<today&&g.status!=='DELAYED')g.eta=null;   // an old estimate that passed: don't show a date in the past
+    g.days=g.eta!=null?Math.round((g.eta-today)/864e5):null;
+    if(g.status==='TODAY'||(g.days===0&&g.status!=='DELIVERED'))g.status=g.status==='DELAYED'?'DELAYED':'TODAY';
+    if(done){g.at=done.t;if(now-done.t>3*864e5)return}
+    else if(now-last.t>14*864e5)return;    // two weeks with no news: probably arrived without an email
+    out.push(g);
+  });
+  return out.sort((a,b)=>(PK_ORDER_SHOW[a.status]-PK_ORDER_SHOW[b.status])||((a.days??99)-(b.days??99))||(b.last.t-a.last.t));
+}
+const PKG_Q='newer_than:21d -in:sent -in:chats -category:social (shipped OR "has shipped" OR "out for delivery" OR delivered OR arriving OR "on its way" OR "on the way" OR "in transit" OR "tracking number" OR "order confirmed" OR "order confirmation" OR "thanks for your order" OR "thank you for your order" OR "delivery exception" OR delayed)';
+async function loadPkgs(){
+  if(!G.on||!G.tok||G.needTap||PK.busy||Date.now()>G.tok.exp-60e3)return;
+  PK.busy=true;PK.at=Date.now();
+  try{
+    const hdr='&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=List-Unsubscribe';
+    const L=await gApi('messages?maxResults=50&q='+encodeURIComponent(PKG_Q));
+    await Promise.all((L.messages||[]).filter(m=>!PK.cache.has(m.id)).map(m=>gApi(`messages/${m.id}?format=metadata${hdr}`).then(x=>PK.cache.set(m.id,parseMsg(x))).catch(()=>null)));
+    const ids=new Set((L.messages||[]).map(m=>m.id));
+    const msgs=[...PK.cache].filter(([id])=>ids.has(id)).map(([,e])=>readPkg(Object.assign({},e)))
+      .filter(e=>!PK_NOISE.test(e.subject)&&!/(doordash|ubereats|uber|grubhub|postmates|seamless)\.com$/.test(e.addr)&&!(e.promo&&e.status==='ORDERED')&&!GYM_SUBJECT.test(e.subject)&&!RL.hideFrom.some(f=>(e.name+' '+e.addr).toLowerCase().includes(f)));
+    PK.list=buildPkgs(msgs);PK.err='';
+    pkgNews();
+  }catch(e){PK.err=e.status===401?'RENEWING YOUR GOOGLE SIGN-IN...':navigator.onLine?"COULDN'T CHECK FOR PACKAGES. RETRYING SOON.":'OFFLINE.';PK.at=Date.now()-25*60e3}
+  PK.busy=false;renderInbox();renderBrief();
+}
+const pkgToday=()=>!!(PK.list&&PK.list.some(g=>g.status==='TODAY'));
+const pkgWhat=g=>g.item?`${g.item.length>28?g.item.slice(0,26).replace(/\s+\S*$/,'')+'...':g.item} from ${g.name}`:`${g.name} package`;
+const pkgWhen=g=>g.days==null?'':g.days===0?'today':g.days===1?'tomorrow':g.days<7?new Date(g.eta).toLocaleDateString([],{weekday:'long'}):new Date(g.eta).toLocaleDateString([],{month:'short',day:'numeric'});
+const pkHid=s=>{let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i))>>>0;return h.toString(36)};   // stored keys are short hashes, never item names
+const pkPrev=g=>{for(const i of g.ids){const v=PK.seen[pkHid(i)];if(v)return v}return null};
+const pkNudged=(g,st,day)=>[...g.ids].some(i=>PK.nudged[pkHid(i)+st]===day);
+function pkgNews(){ // Pip carries a box on delivery day and cheers when it lands
+  const first=!Object.keys(PK.seen).length,today=dayKey(new Date());let line='',mood='';
+  for(const g of PK.list){const prev=pkPrev(g);
+    if(!first&&g.status==='DELIVERED'&&prev&&prev!=='DELIVERED'&&Date.now()-g.at<6*3600e3){line=`Your ${pkgWhat(g)} was delivered. Go grab it.`;mood='dlvd';break}}
+  if(!line){const o=PK.list.find(g=>(g.status==='TODAY'||(g.status==='DELAYED'&&pkPrev(g)!=='DELAYED'))&&!pkNudged(g,g.status,today));
+    if(o){line=o.status==='DELAYED'?`Heads up: your ${pkgWhat(o)} is running late.${o.days!=null&&o.days>=0?` Now expected ${pkgWhen(o)}.`:''}`
+      :`Your ${pkgWhat(o)} is out for delivery. Arriving today.`;mood=o.status==='DELAYED'?'pkglate':'pkg';
+      Object.keys(PK.nudged).forEach(k=>{if(PK.nudged[k]!==today)delete PK.nudged[k]});o.ids.forEach(i=>{PK.nudged[pkHid(i)+o.status]=today});store.set('pp.pkgNudged',PK.nudged)}}
+  PK.seen={};PK.list.forEach(g=>g.ids.forEach(i=>{PK.seen[pkHid(i)]=g.status}));store.set('pp.pkgSeen',PK.seen);
+  if(line){const now=performance.now();S.pkgMood=mood;S.pkgLine=line;S.pkgAt=Math.max(now,S.jobUntil||0,S.mailUntil||0,S.billUntil||0);S.pkgUntil=S.pkgAt+4800;flagTab('inbox');flagTab('brief')}
+}
+function renderPkgs(){
+  const L=PK.list,live=L?L.filter(g=>g.status!=='DELIVERED'):[];
+  $('inImpL').textContent='Arriving today';$('inUnreadL').textContent='On the way';
+  if(L){tween($('inImp'),L.filter(g=>g.status==='TODAY').length);tween($('inUnread'),live.length)}else{$('inImp')._to=null;$('inImp').textContent='--';$('inUnread')._to=null;$('inUnread').textContent='--'}
+  $('inNote').textContent=PK.err||(L?`${L.length} PACKAGE${L.length===1?'':'S'} FROM 3 WEEKS OF EMAIL · TAP ONE`:'LOOKING FOR PACKAGES IN YOUR EMAIL...');
+  if(!L&&!PK.busy)loadPkgs();
+  const ul=$('mlist');ul.innerHTML='';
+  if(!L||!L.length){const li=document.createElement('li');li.className='empty';li.textContent=!L?'FINDING YOUR PACKAGES...':'NOTHING ON THE WAY. ORDERS SHOW UP HERE BY THEMSELVES.';ul.appendChild(li);return}
+  L.forEach(g=>{
+    const li=document.createElement('li'),hot=g.status==='TODAY'||g.status==='DELAYED';
+    li.className='mrow tap jrow prow'+(hot?' owe':'')+(g.status==='DELIVERED'?' closed':'')+(PK.open===g.key?' open':'');
+    li.dataset.say='pkg';li.dataset.k=g.key;li.tabIndex=0;li.setAttribute('role','button');
+    li.innerHTML='<span class="mdot"></span><span class="mfrom"></span><span class="mtime"></span><span class="msub"></span>';
+    li.querySelector('.mdot').classList.toggle('read',!hot);
+    const f=li.querySelector('.mfrom');f.textContent=g.name;const tg=document.createElement('span');tg.className='mtags';
+    const s=document.createElement('span');s.className='mtag';s.dataset.k=g.status;s.textContent=g.status;tg.appendChild(s);f.appendChild(tg);
+    li.querySelector('.mtime').textContent=g.status==='DELIVERED'?relTime(g.at):g.eta!=null?(g.days===0?'TODAY':g.days===1?'TMRW':new Date(g.eta).toLocaleDateString([],{month:'short',day:'numeric'}).toUpperCase()):relTime(g.last.t);
+    const sub=li.querySelector('.msub'),what=g.item||(g.last.isCarrier?'':g.last.subject),via=g.carrier?`${what?' · ':''}${g.carrier}`:'';
+    if(g.status==='TODAY'){const b=document.createElement('b');b.textContent='OUT FOR DELIVERY · ';sub.append(b,what+via)}
+    else if(g.status==='DELAYED'){const b=document.createElement('b');b.textContent=`RUNNING LATE${g.days!=null&&g.days>=0?' · NOW '+pkgWhen(g).toUpperCase():''} · `;sub.append(b,what+via)}
+    else sub.textContent=g.status==='DELIVERED'?`Delivered ${agoWords(g.at)}. ${what}`:g.status==='SHIPPED'?`${g.eta!=null?'Arrives '+pkgWhen(g):'On the way'}${what||via?' · ':''}${what}${via}`:`Ordered ${agoWords(g.last.t)} · ${what}`;
+    if(PK.open===g.key){const d=document.createElement('div');d.className='mmore';const h=document.createElement('div');h.className='jhist';
+      g.msgs.slice(0,3).forEach(e=>{const r=document.createElement('span');r.textContent=`${new Date(e.t).toLocaleDateString([],{month:'short',day:'numeric'}).toUpperCase()} · ${e.subject}`;h.appendChild(r)});
+      d.appendChild(h);
+      if(g.track&&g.track.url){const t=document.createElement('a');t.href=g.track.url;t.target='_blank';t.rel='noopener';t.textContent=`TRACK ON ${g.track.carrier.toUpperCase()} ›`;t.className='trk';d.appendChild(t)}
+      const a=document.createElement('a');a.href=`https://mail.google.com/mail/u/0/#all/${g.last.thread}`;a.target='_blank';a.rel='noopener';a.textContent='OPEN IN GMAIL ›';d.appendChild(a);li.appendChild(d)}
+    ul.appendChild(li);
+  });
+}
+function pkgAbout(g){
+  const w=pkgWhat(g),via=g.carrier&&g.carrier!==g.name?` with ${g.carrier}`:'';
+  if(g.status==='DELIVERED')return`Your ${w} was delivered ${agoWords(g.at)}.`;
+  if(g.status==='TODAY')return`Your ${w} is out for delivery${via}. It should show up today.`;
+  if(g.status==='DELAYED')return`Your ${w} is running late${via}.${g.days!=null&&g.days>=0?` The new estimate is ${pkgWhen(g)}.`:' No new date yet.'} I'll keep watching.`;
+  if(g.status==='SHIPPED')return`Your ${w} shipped${via}.${g.eta!=null?` It should arrive ${pkgWhen(g)}.`:' No delivery date in the email yet.'} I'll update this as emails come in.`;
+  return`You ordered ${g.item?`"${g.item}"`:'something'} from ${g.name} ${agoWords(g.last.t)}. I'll tell you when it ships.`;
+}
+function pkgLine(){
+  if(!G.on)return'Connect Google and I\'ll track your packages from your shipping emails. No typing.';
+  if(!PK.list){if(!PK.busy)loadPkgs();return'Looking through your email for packages. Ask me again in a sec.'}
+  const live=PK.list.filter(g=>g.status!=='DELIVERED'),done=PK.list.length-live.length;
+  if(!live.length)return done?`Nothing on the way. ${done} delivered in the last few days.`:'Nothing on the way right now.';
+  const parts=live.slice(0,3).map(g=>`${pkgWhat(g)} ${g.status==='TODAY'?'arrives today':g.status==='DELAYED'?'is running late':g.status==='ORDERED'?'is ordered, not shipped yet':g.eta!=null?'arrives '+pkgWhen(g):'is on the way'}`);
+  return`${live.length} on the way: ${parts.join('; ')}.${done?` ${done} delivered recently.`:''}`;
+}
+function pkgTip(){const g=PK.list&&PK.list.find(x=>x.status==='TODAY'||x.status==='DELAYED');return g?(g.status==='TODAY'?`Package day: ${pkgWhat(g)} is out for delivery.`:`Your ${pkgWhat(g)} is running late.`):null}
+window.__pipPkgs={PK,etaOf,trackOf,readPkg,buildPkgs,loadPkgs};   // test hook
 
 /* ---------- Calendar: what's next ---------- */
 // Read-only primary calendar, today through the next 7 days, kept in memory on this device only.
@@ -1906,6 +2070,7 @@ function briefTips(){
   const gt=MODS.gym?gymTip():null;if(gt)t.push(gt);
   const ct=carTip();if(ct)t.push(ct);
   const v=nextPasses().find(p=>p.visible&&p.start-Date.now()<24*3600e3);if(v)t.push(`ISS visible ${when(v.start).toLowerCase()}. Look ${dirW(v.azStart)}.`);
+  const pt=G.on?pkgTip():null;if(pt&&t.length<4)t.splice(nx&&nx.start-Date.now()<3*3600e3?1:0,0,pt);   // package day goes near the top when there's room
   if(!t.length)t.push(S.wx||G.list?'Nothing urgent. Enjoy the day.':'Set your location and connect Gmail so I can plan your day.');
   return t.slice(0,4);
 }
@@ -1919,8 +2084,8 @@ function renderBrief(){
   $('bWxT').textContent=c?`${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.`:SANDBOX?'Weather loads on the live link.':'Set a location.';
   const imp=shown().filter(e=>e.imp),iu=imp.filter(e=>e.unread);
   $('bIn').textContent=G.on&&G.list?`${iu.length} new`:'--';
-  const ub=G.on&&BL.list&&BL.list.find(billUrgent);
-  $('bInT').textContent=ub?`${ub.name}${ub.amount!=null?' '+usd(ub.amount):''} ${ub.status==='OVERDUE'?'was due':'due'} ${billWhen(ub)}.${iu.length?` Top: "${iu[0].subject}".`:''}`:!G.on?'Connect Google to see the emails that matter.':G.needTap?'Gmail needs a reconnect.':!G.list?'Checking your inbox...':iu.length?`Top: "${iu[0].subject}" from ${iu[0].name}.`:imp.length?'All important mail is read.':'Nothing important in 3 days.';
+  const ub=G.on&&BL.list&&BL.list.find(billUrgent),pk2=G.on&&PK.list&&PK.list.find(g=>g.status==='TODAY'),pd=!ub&&pk2;
+  $('bInT').textContent=pd?`Package day: ${pkgWhat(pd)} arrives today.${iu.length?` Top: "${iu[0].subject}".`:''}`:ub?`${ub.name}${ub.amount!=null?' '+usd(ub.amount):''} ${ub.status==='OVERDUE'?'was due':'due'} ${billWhen(ub)}.${pk2?` ${pkgTip()}`:iu.length?` Top: "${iu[0].subject}".`:''}`:!G.on?'Connect Google to see the emails that matter.':G.needTap?'Gmail needs a reconnect.':!G.list?'Checking your inbox...':iu.length?`Top: "${iu[0].subject}" from ${iu[0].name}.`:imp.length?'All important mail is read.':'Nothing important in 3 days.';
   const si=sunInfo(),v=nextPasses().find(p=>p.visible),mo=moonInfo();
   $('bSky').textContent=si?fmtTime(new Date(si.day?si.set:si.nextRise)):`${n(mo.illum*100)}%`;
   $('bSkyT').textContent=(si?(si.day?'Sunset. ':'Sunrise. '):'Moon lit. ')+(v?`ISS visible ${when(v.start).toLowerCase()}.`:`${mo.name}, ${n(mo.illum*100)}% lit.`);
@@ -1941,7 +2106,7 @@ $('bRead').onclick=()=>{
   if(c)lines.push(`It's ${n(c.temperature_2m)}° and ${(WXNAME[c.weather_code]||'').toLowerCase()} in ${place()}.`);
   const iu=shown().filter(e=>e.imp&&e.unread);
   if(G.on&&G.list)lines.push(iu.length?`You have ${iu.length} important unread email${iu.length>1?'s':''}.`:'No important emails waiting.');
-  const tips=briefTips(),bt=billTip();if(bt&&!tips.includes(bt))lines.push(bt);
+  const tips=briefTips(),bt=billTip(),pt=G.on?pkgTip():null;if(bt&&!tips.includes(bt))lines.push(bt);if(pt&&!tips.includes(pt))lines.push(pt);
   lines.push(...tips);speakLines(lines);
 };
 document.addEventListener('click',e=>{const c=e.target.closest('[data-go]');if(c){sfx('tap');restart(c,'hit');setTab(c.dataset.go)}});
@@ -2254,7 +2419,7 @@ function askPip(raw){
   const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
   let m;
   if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
-    return 'Try: "what\'s next", "will it rain", "any important email", "what bills are due", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
+    return 'Try: "what\'s next", "will it rain", "any important email", "what bills are due", "where are my packages", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
   if(/^(set ?up|setup|run setup|start over)( again)?$|^set me up$/.test(s)){setTimeout(()=>openSetup(0),600);return'Sure, let\'s go through setup.'}
   if((m=s.match(/^(turn on|switch on|enable|add|turn off|switch off|disable|remove) (?:the |my )?(gym|workouts?|jobs?|job search|car|space station|iss)(?: tab| module| tracker| visits)?$/))){
     const on=/on|enable|add/.test(m[1]),k=/gym|workout/.test(m[2])?'gym':/job/.test(m[2])?'jobs':/car/.test(m[2])?'car':'iss';
@@ -2273,6 +2438,8 @@ function askPip(raw){
     const w=clean(m[1]);addTo('pp.kw',w);rulesChanged();return`I'll flag anything mentioning "${w}".`}
   if(/\b(bills?|what do i owe|anything (?:due|to pay)|payments? due)\b/.test(s)&&(!hideV.test(s)&&!showV.test(s)||/^(show|let me see)( me)? (my |the )?bills?$/.test(s))){
     if(G.on){G.filter='bills';store.set('pp.gFilter','bills');setTab('inbox',false);renderInbox()}return billLine()}
+  if(/\b(packages?|parcels?|deliver(?:y|ies)|shipments?|where('s| is| are) my (?:stuff|order|orders|package|packages|delivery)|anything (?:arriving|coming)|track(?:ing)? my)\b/.test(s)&&!hideV.test(s)&&!showV.test(s)||/^(show|let me see)( me)? (my |the )?packages$/.test(s)){
+    if(G.on){G.filter='pkgs';store.set('pp.gFilter','pkgs');setTab('inbox',false);renderInbox()}return pkgLine()}
   if(/\b(pipeline|job (search|hunt|status|tracker|apps?)|my (job )?applications|any offers?|who('s| is) waiting on me|where do i stand)\b/.test(s)){
     if(G.on){G.filter='jobs';store.set('pp.gFilter','jobs');setTab('inbox',false);renderInbox()}return jobLine()}
   const verb=hideV.test(s)?'hide':showV.test(s)?'show':null;
@@ -2436,6 +2603,7 @@ function moodLine(m){
     case'gym':return S.gymLine||'Gains!';
     case'job':return S.jobLine||'Job news!';
     case'bill':case'paid':return S.billLine||'Bill news!';
+    case'pkg':case'dlvd':case'pkglate':return S.pkgLine||'Package news!';
     case'cruise':return CAR.d?`Cruising at ${n(CAR.d.speed)} mph. Eyes on the road, I've got the gauges.`:'Cruising.';
     case'redline':return CAR.d?`Easy! ${n(CAR.d.rpm).toLocaleString()} RPM. That's redline territory.`:'Redline!';
     case'carhot':return CAR.d?`Engine's running hot: ${n(CAR.d.cool)}°F. Pull over when it's safe and let it cool.`:'Engine hot!';
@@ -2509,6 +2677,7 @@ function about(key,el){
     case'carVolt':{const d=CAR.d;if(!d||!d.volt)return carLine();const run=d.rpm>400;return`Battery reads ${d.volt.toFixed(1)} V. ${run?(d.volt<12.5?'Low for a running engine. The alternator may not be charging.':'The alternator is charging it. 13.5 to 14.7 is normal while running.'):d.volt<12.2?'Low. A drive or a charger would help.':'Healthy for an engine that\'s off. 12.4 to 12.7 is normal.'}`}
     case'carThr':{const d=CAR.d;return d&&d.thr!=null&&carFresh()?`Throttle is ${n(d.thr)}% open.`:'Throttle shows up while the car is connected and running.'}
     case'carLoad':{const d=CAR.d;return d&&d.load!=null&&carFresh()?`The engine is working at ${n(d.load)}% of what it can do right now.`:'Engine load shows up while the car is connected and running.'}
+    case'pkg':{const g=(PK.list||[]).find(x=>x.key===el.dataset.k);if(!g)return'';PK.open=PK.open===g.key?null:g.key;setTimeout(renderInbox,0);return pkgAbout(g)}
     case'bill':{const g=(BL.list||[]).find(x=>x.key===el.dataset.k);if(!g)return'';BL.open=BL.open===g.key?null:g.key;setTimeout(renderInbox,0);return billAbout(g)}
     case'job':{const g=(JB.list||[]).find(x=>x.key===el.dataset.k);if(!g)return'';JB.open=JB.open===g.key?null:g.key;setTimeout(renderInbox,0);return jobAbout(g)}
     case'hour':{const h=nextHours()[+el.dataset.i];if(!h)return NOWX;return`${+el.dataset.i===0?'This hour':'At '+fmtHour(h.t)}: ${n(h.temp)}°, ${(WXNAME[h.code]||'').toLowerCase()}, ${h.p}% chance of rain.`}
@@ -2591,6 +2760,9 @@ const MOODS={
   job:{label:'JOB NEWS',s:'hype',b:'#c6ff7a',d:'#7ccf2a'},
   bill:{label:'BILL DUE',s:'warn',b:'#ffe34d',d:'#e0a623'},
   paid:{label:'PAID!',s:'hype',b:'#c6ff7a',d:'#7ccf2a'},
+  pkg:{label:'DELIVERY DAY',s:'hype',b:'#ffb13b',d:'#d97a1c'},
+  dlvd:{label:'DELIVERED!',s:'hype',b:'#c6ff7a',d:'#7ccf2a'},
+  pkglate:{label:'RUNNING LATE',s:'warn',b:'#ffe34d',d:'#e0a623'},
   cruise:{label:'CRUISING',s:'ok',b:'#8ff3ff',d:'#3fb5d6'},
   redline:{label:'REDLINE',s:'crit',b:'#ff6a4d',d:'#d6333f'},
   carhot:{label:'ENGINE HOT',s:'crit',b:'#ff6a4d',d:'#d6333f'},
@@ -2621,6 +2793,7 @@ function moodFor(now){
   if(now<(S.gymUntil||0))return'gym';
   if(now<(S.jobUntil||0))return'job';
   if(now>=(S.billAt||0)&&now<(S.billUntil||0))return S.billMood;
+  if(now>=(S.pkgAt||0)&&now<(S.pkgUntil||0))return S.pkgMood;
   if(calHeads())return'heads';
   if(carCruise())return'cruise';
   if(MODS.iss&&navigator.onLine&&ISS.overhead)return'iss';
@@ -2636,10 +2809,11 @@ function setMood(m,now){
   if(prev&&!reduce)S.trans={from:prev,t0:now,quick,burst:false};
   if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt|bill)$/.test(m)?'alarm':'mood')}
   if(m==='bill'||m==='paid'){flagTab('inbox');faceBurst(m==='paid'?'star':'spark',m==='paid'?10:4)}
+  if(m==='pkg'||m==='dlvd'||m==='pkglate'){flagTab('inbox');faceBurst(m==='dlvd'?'star':'spark',m==='dlvd'?12:5)}
   if(/^(redline|carhot|lowvolt)$/.test(m)){flagTab('car');faceBurst('spark',6)}
   if(m==='heads'&&prev!=='poke'&&prev!=='dizzy'){flagTab('brief');faceBurst('star',4);renderBrief()}
   // don't talk over a fresh Ask Pip answer unless this mood is an alert
-  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss|job|bill|paid|redline|carhot|lowvolt)$/.test(m))return;
+  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss|job|bill|paid|pkg|dlvd|pkglate|redline|carhot|lowvolt)$/.test(m))return;
   say((prev==='poke'||prev==='dizzy')&&m!=='dizzy'&&m!=='poke'?nextFact():moodLine(m));
 }
 function poke(e){
@@ -2733,6 +2907,9 @@ const FACE={
   job:{eye:'star',mouth:'o',blush:1,per:200,squash:1,orb:220,fx:'case'},
   bill:{eye:'stern',mouth:'flat',per:480,orb:900,fx:'bill'},
   paid:{eye:'happy',mouth:'grin',blush:1,per:180,squash:1,orb:220,fx:'bill'},
+  pkg:{eye:'happy',mouth:'grin',blush:1,per:200,squash:1,orb:240,fx:'box'},
+  dlvd:{eye:'star',mouth:'big',blush:1,per:150,squash:1,orb:180,fx:'box'},
+  pkglate:{eye:'dot',mouth:'flat',per:520,orb:900,fx:'box'},
   cruise:{eye:'shades',mouth:'smile',per:380,orb:500,fx:'speed'},
   redline:{eye:'x',mouth:'teeth',per:120,orb:120,shake:1,fx:'speed'},
   carhot:{eye:'x',mouth:'teeth',per:160,orb:260,shake:1,fx:'steam'},
@@ -2741,6 +2918,8 @@ const FACE={
 const BRIEFCASE=["...#####...","...#...#...","###########","#ooooooooo#","#####y#####","#ooooooooo#","#ooooooooo#","###########"];
 const CLOCK=["yy.....yy","y.#####.y",".#WWWWW#.","#WWW#WWW#","#WWW#WWW#","#WWW##WW#","#WWWWWWW#",".#WWWWW#.","..#####..",".#.....#."];
 const BILLSPR=["#########","#WWW#WWW#","#WW###WW#","#W#W#WWW#","#WW###WW#","#WWW#W#W#","#WW###WW#","#WWW#WWW#","#########"];
+const BOX=["##########","#oooyyooo#","##########","#oooyyooo#","#oooyyooo#","##########"];
+const MINIBOX=["#######","#ooyoo#","#######","#ooyoo#","#######"];
 const BATTERY=["....#.#....","###########","#ppWWWWWWW#","#ppWWWWWWW#","###########"];
 const DUMBBELL=["#L#...#L#","#S#LLL#S#","#L#...#L#"];
 const ENVELOPE=["###########","#W#WWWWW#W#","#WW#WWW#WW#","#WWW#p#WWW#","#WWWWWWWWW#","###########"];
@@ -2859,6 +3038,9 @@ function drawFace(t){
   if(f.fx==='case'){const bob=reduce?0:Math.round(Math.sin(t/140)*2);spr(BRIEFCASE,cx-5,Math.max(0,cy-ry-9+bob))}
   if(f.fx==='bill'){const paid=m==='paid',sw=reduce?0:Math.round(Math.sin(t/(paid?120:300))*(paid?2:1));   // a bill waves over Pip's head; it turns green once paid
     spr(paid?BILLSPR.map((r,i)=>i&&i<8?'#'+r.slice(1,-1).replace(/#/g,'l')+'#':r):BILLSPR,cx-4+sw,Math.max(0,cy-ry-10+(paid?-Math.abs(sw):0)))}
+  if(f.fx==='box'){const m2=m==='dlvd',hop=reduce?0:m2?-Math.abs(Math.round(Math.sin(t/110)*3)):Math.round(Math.sin(t/200)*1);   // Pip holds a parcel up; it hops when it lands
+    spr(BOX,cx-5,cy+ry-2+hop);if(m2&&!reduce&&Math.floor(t/150)%2)sparkAt(cx+8,cy+ry-3,true)}
+  else if(pkgToday()&&!/^(bill|case|clock|battery|mail|gym|umbrella|dizzy)$/.test(f.fx||'')){spr(MINIBOX,cx+rx-3,cy+ry-5)}   // on delivery day Pip keeps a little box by his side
   if(f.fx==='battery'){const lowBar=reduce||Math.floor(t/400)%2;spr(BATTERY.map(r=>lowBar?r:r.replace(/p/g,'.')),cx-5,Math.max(0,cy-ry-8))}
   if(f.fx==='mail'){const bob=reduce?0:Math.round(Math.sin(t/160)*2);spr(ENVELOPE,cx-5,Math.max(0,cy-ry-8+bob))}
   drawOrbit(32,40,ot,true,orbPer);

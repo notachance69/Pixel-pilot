@@ -19,7 +19,7 @@ Promote an idea by adding it to `backlog.json` with acceptance criteria.
 
 ## Every day (core)
 - **Bills and due dates [google].** Due dates and amounts from bill emails. A payment-confirmation email marks the bill paid. *(built in preview 2026-10-20)* Next: read the full email body when the preview text has no date; group a payee's different sending domains (billing@ vs payments@); a "bills this month" total on Today.
-- **Deliveries [google].** "Arriving today" and "delivered" from shipping emails, advancing as new emails arrive. *(in backlog)*
+- **Deliveries [google].** "Arriving today" and "delivered" from shipping emails, advancing as new emails arrive. *(built in preview 2026-10-21)* Next: a carrier tracking feed behind a relay for live scan events; "porch pirate" heads-up if a delivered package sits for hours after dark (needs a doorbell feed).
 - **Leave-on-time [google][free].** The next event with a location gets a travel-time estimate and a "leave in 10 min" heads-up.
 - **Subscriptions and renewals [google].** Recurring charges found in receipts, plus "renews in 3 days" alerts and a monthly total.
 - **Appointments and reservations [google].** Doctor, dentist, haircut, restaurant and flight confirmations pulled from email onto Today, even if they never made it to the calendar.

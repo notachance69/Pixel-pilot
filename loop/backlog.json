@@ -162,13 +162,14 @@
    "id": "packages",
    "priority": 2,
    "title": "Packages: delivery status from DELIVERY emails",
-   "passes": false,
+   "passes": true,
    "acceptance": [
     "carrier and status parsed from shipping emails (Amazon, UPS, USPS, FedEx)",
     "status advances automatically as new emails arrive",
     "Pip carries a box on delivery day",
     "mocked in the smoke test"
-   ]
+   ],
+   "notes": "Built 2026-10-21 (preview). PACKAGES chip in the Inbox (not a module). 21 days of order/shipping/delivery emails (metadata + preview text only). Emails joined by order number, tracking number, quoted item name or thread; newest status wins, a delivery email always wins. Statuses ORDERED, SHIPPED (with ETA from 'arriving Friday', 'estimated delivery Oct 27', 'scheduled for delivery Thursday'), TODAY (out for delivery), DELAYED, DELIVERED (kept 3 days). Carrier emails are named for the store ('Shipment from REI'); UPS/USPS/FedEx tracking links. Pip: DELIVERY DAY mood holding a box, RUNNING LATE, DELIVERED! cheer; a small box by his side all delivery day. Today inbox card shows package day; Brief tip when there is room; read-aloud always. Ask Pip: 'where are my packages'. Polls every 10 min on delivery day, else 30. Stored on device: hashed package ids -> status and nudge dates only. Food-delivery senders skipped. Not yet checked against real shipping emails."
   },
   {
    "id": "quakes",
