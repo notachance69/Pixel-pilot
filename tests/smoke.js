@@ -110,6 +110,12 @@ addPkg('p8', 'Amazon.com <shipment-tracking@amazon.com>', 'Delivered: "Anker USB
 PKGS.p8.internalDate = String(Date.now() - 60e3);
 const pkgIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p9'];
 let pkgQ = '';
+// air quality: Open-Meteo US AQI. Clean by default so the other mood checks are unaffected; the air checks raise it.
+let AIR = 42, AIRPEAK = 48, airQ = '';
+function air() {
+  const times = []; for (let i = -2; i < 30; i++) times.push(Math.floor(now / H) * H + i * H);
+  return { current: { time: now, us_aqi: AIR, pm2_5: AIR / 4 }, hourly: { time: times, us_aqi: times.map((t, i) => i > 7 && i < 12 ? AIRPEAK : AIR) } };
+}
 const topo = { type: 'Topology', transform: { scale: [1, 1], translate: [0, 0] }, objects: { land: { type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', arcs: [[[0]], [[1]]] }] } },
   arcs: [[[-125, 50], [55, 0], [0, -25], [-45, 0], [-10, -10]], [[-80, 10], [45, 0], [0, -55], [-35, 0], [-10, 55]]] };
 
@@ -119,6 +125,7 @@ async function mock(page) {
     if (u.startsWith('file:')) return r.continue();
     if (u.includes('satellite.min.js')) return r.fulfill({ body: fs.readFileSync(path.join(__dirname, 'satmock.js'), 'utf8'), contentType: 'application/javascript' });
     if (u.includes('land-110m.json')) return r.fulfill({ json: topo });
+    if (u.includes('air-quality-api.open-meteo.com')) { airQ = u; return r.fulfill({ json: air() }); }
     if (u.includes('api.open-meteo.com')) return r.fulfill({ json: weather() });
     if (u.includes('bigdatacloud')) return r.fulfill({ json: { city: 'Northridge' } });
     if (u.includes('api.wheretheiss.at')) return r.fulfill({ json: { line1: '1 25544U', line2: '2 25544' } });
@@ -416,6 +423,32 @@ function fakeBluetooth() {
   check('disconnect keeps last readings on the device', !!last && Math.round(last.speed) === 42 && /last seen/i.test(await t('#crSpeedL')) && /RECONNECT CAR/.test(await t('#crGo')), JSON.stringify(last));
   check('Pip stops cruising after disconnect', (await t('#mood')).trim() !== 'CRUISING', await t('#mood'));
 
+  // air quality: tile on the weather tab, Pip masks up when it's bad, brief tip, Ask Pip, forecast warning
+  const airReload = async (a, pk) => { AIR = a; AIRPEAK = pk; await page.evaluate(() => { window.__pipAir.AQ.tried = 0; return window.__pipAir.loadAir(); }); await page.waitForTimeout(400); };
+  await page.click('#tab-fc'); await page.waitForTimeout(700);
+  check('air quality fetched for your spot (US AQI, next hours)', /latitude=34\.24/.test(airQ) && /us_aqi/.test(airQ) && /hourly=us_aqi/.test(airQ), airQ.slice(0, 120));
+  check('weather tab shows the air quality tile', (await t('#aqi')).replace(/\s/g, '') === '42GOOD', await t('#aqi'));
+  reply = await ask("how's the air today");
+  check('Ask Pip answers how the air is', /^Air in Northridge is good: AQI 42, fine particles 11 µg\/m³\. Breathe easy\./.test(reply), reply.slice(0, 100));
+  await airReload(165, 170);
+  const masked = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'BAD AIR', null, { timeout: 5000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(2600);
+  check('Pip masks up when the air is bad', masked && /Bad air in Northridge: AQI 165\. Mask on, windows shut/.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
+  check('air tile turns red with BAD', (await t('#aqi')).replace(/\s/g, '') === '165BAD' && await page.$eval('#airTile', e => e.dataset.l) === '4', await t('#aqi'));
+  await page.screenshot({ path: path.join(OUT, '1b-bad-air.png') });
+  await page.click('#airTile'); await page.waitForTimeout(3600);
+  check('tapping the air tile makes Pip explain AQI', /^Air quality index 165: unhealthy\. Under 50 is clean/.test(await t('#say')), (await t('#say')).slice(0, 80));
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('pp.air') || 'null'));
+  check('last air reading kept on the device', !!stored && stored.d.aqi === 165 && stored.k === '34.24,-118.53', JSON.stringify(stored || {}).slice(0, 80));
+  await page.click('#tab-brief'); await page.waitForTimeout(800);
+  check('brief warns about bad air', /Air quality is unhealthy \(AQI 165\)\. Keep windows shut/.test(await t('#bTips')) && /Air: AQI 165\./.test(await t('#bWxT')), (await t('#bTips')).slice(0, 200));
+  await page.screenshot({ path: path.join(OUT, '3f-brief-bad-air.png') });
+  await airReload(45, 125);
+  await page.waitForTimeout(1500);
+  check('Pip drops the mask once the air clears', !/BAD AIR|HAZY AIR/.test(await t('#mood')), await t('#mood'));
+  check('brief warns when the air gets worse later', /Air gets worse around .* \(AQI 125\)\. Get outside earlier/.test(await t('#bTips')), (await t('#bTips')).slice(0, 200));
+  await airReload(42, 48);
+
   await page.click('#tab-music'); await page.waitForTimeout(900);
   check('spotify now playing', (await t('#mTitle')).includes('Midnight Pixel Drive'));
   await page.screenshot({ path: path.join(OUT, '4-music.png') });
@@ -460,6 +493,11 @@ function fakeBluetooth() {
   await page.click('#tab-car'); await page.waitForTimeout(600);
   const carFit = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && ['crSpeed', 'crVolt', 'crLoad', 'crGo'].every(id => { const r = document.getElementById(id).getBoundingClientRect(); return r.width > 20 && r.bottom <= innerHeight + 1; }));
   check('car tab fits on phone landscape', carFit);
+  await page.click('#tab-fc'); await page.waitForTimeout(600);
+  const airFit = await page.evaluate(() => { const a = document.getElementById('airTile').getBoundingClientRect(), b = document.getElementById('aqi'); return document.documentElement.scrollWidth <= innerWidth + 1 && a.width > 30 && a.right <= innerWidth && b.scrollWidth <= b.clientWidth + 1; });
+  check('air tile fits on phone landscape', airFit);
+  await page.screenshot({ path: path.join(OUT, '7g-phone-weather.png') });
+  await page.click('#tab-car'); await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(OUT, '7d-phone-car.png') });
 
   // iPhone/iPad: no Web Bluetooth, so the car tab explains why and hides the button

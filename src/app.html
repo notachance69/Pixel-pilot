@@ -86,6 +86,11 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .cond{font-family:var(--f-talk);font-weight:600;font-size:clamp(14px,4vh,20px);line-height:1.2;color:var(--text)}
 .trio,.today{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .today{border-top:2px dashed var(--edge);padding-top:7px}
+.trio{grid-template-columns:repeat(4,minmax(0,1fr))}
+.trio .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:900px){.trio .lbl{letter-spacing:.04em}#aqi small{display:none}}
+#aqi small{color:var(--lime)}#airTile[data-l="2"] #aqi small{color:var(--sun)}#airTile[data-l="3"] #aqi small{color:#ffb13b}
+#airTile[data-l="4"] #aqi,#airTile[data-l="5"] #aqi{color:var(--crit)}#airTile[data-l="4"] #aqi small,#airTile[data-l="5"] #aqi small{color:var(--crit)}
 .mini{display:flex;flex-direction:column;gap:2px;min-width:0}
 .big{font-family:var(--f-num);font-size:clamp(22px,7vh,34px);line-height:.95;font-variant-numeric:tabular-nums;white-space:nowrap}
 .big small{font-family:var(--f-label);font-size:9px;color:var(--muted);margin-left:3px}
@@ -430,6 +435,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
         <div class="mini tap" data-say="feels"><span class="lbl">Feels</span><span class="big" id="feels">--</span></div>
         <div class="mini tap" data-say="hum"><span class="lbl">Humidity</span><span class="big" id="hum">--</span></div>
         <div class="mini tap" data-say="wind"><span class="lbl">Wind</span><span class="big" id="wind">--</span></div>
+        <div class="mini tap" data-say="aqi" id="airTile"><span class="lbl">Air</span><span class="big" id="aqi">--</span></div>
       </div>
       <div class="today" id="wxToday" hidden>
         <div class="mini tap" data-say="hilo"><span class="lbl">Hi / Lo</span><span class="big"><span id="hi">--</span><small>/</small><span id="lo">--</span></span></div>
@@ -827,7 +833,7 @@ $('placeBtn').onclick=openSheet;$('openSearch').onclick=openSheet;$('sheetClose'
 sheet.addEventListener('click',e=>{if(e.target===sheet)closeSheet()});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)closeSheet()});
 function setLoc(loc){
-  S.loc=loc;store.set('pp.loc',loc);setTimeout(()=>{if(typeof suRender==='function')suRender()},0);S.wx=null;S.wxErr=null;S.revealed=false;
+  S.loc=loc;store.set('pp.loc',loc);setTimeout(()=>{if(typeof suRender==='function')suRender()},0);S.wx=null;S.wxErr=null;S.revealed=false;AQ.d=null;AQ.at=0;AQ.tried=0;renderAir();
   ['temp','feels','hum','wind','hi','lo','rainMax','uv'].forEach(id=>{$(id)._to=null});
   closeSheet();renderPlace();restart($('placeBtn'),'flip');loadWeather();computePasses();renderISS();
 }
@@ -890,6 +896,7 @@ async function loadWeather(){
     if(!SANDBOX)wxTimer=setTimeout(loadWeather,60*1000);
   }
   S.loading=false;$('wxPanel').classList.remove('scanning');
+  if(!AQ.busy&&Date.now()-AQ.tried>(AQ.err?2:25)*60e3)loadAir();   // air updates hourly; it rides the weather poll
   const first=S.wx&&!S.revealed;
   renderWx();renderHours(first);drawArc();renderBrief();
   if(first){S.revealed=true;reveal($('wxLive'),0);reveal($('wxTrio'),140);reveal($('wxToday'),280);reveal($('wxNote'),420);
@@ -921,8 +928,56 @@ function renderWx(){
   tween($('wind'),n(c.wind_speed_10m),{suffix:`<small>${COMPASS[Math.round(c.wind_direction_10m/22.5)%16]}</small>`,count});
   tween($('hi'),n(d.temperature_2m_max[0]),{count});tween($('lo'),n(d.temperature_2m_min[0]),{count});
   tween($('rainMax'),d.precipitation_probability_max[0]??0,{suffix:'<small>%</small>',count});
-  tween($('uv'),d.uv_index_max[0]??0,{count});
+  tween($('uv'),d.uv_index_max[0]??0,{count});renderAir();
   $('wxNote').textContent=`UPDATED ${fmtTime(new Date(S.wxAt))} · OPEN-METEO`;
+}
+
+/* ---------- air quality (Open-Meteo, US AQI) ---------- */
+// No key needed. Polls about every 30 minutes with the weather; the last reading is kept on the device for 3 hours.
+const AQ={d:null,at:0,tried:0,busy:false,err:null};
+{const a=store.get('pp.air');if(a&&a.d&&Date.now()-a.at<3*3600e3&&S.loc&&a.k===`${S.loc.lat},${S.loc.lon}`){AQ.d=a.d;AQ.at=a.at}}
+const AQI_LV=[[50,'Good','GOOD'],[100,'Moderate','OK'],[150,'Unhealthy for sensitive groups','POOR'],[200,'Unhealthy','BAD'],[300,'Very unhealthy','V.BAD'],[1e9,'Hazardous','HAZARD']];
+const aqiLevel=v=>v==null?-1:AQI_LV.findIndex(([m])=>v<=m);
+async function loadAir(){
+  if(!S.loc||AQ.busy)return;AQ.busy=true;AQ.tried=Date.now();
+  const{lat,lon}=S.loc,k=`${lat},${lon}`;
+  try{
+    const r=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi,pm2_5&hourly=us_aqi&timezone=auto&timeformat=unixtime&forecast_days=2`,{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const j=await r.json(),c=j.current||{};
+    if(S.loc&&`${S.loc.lat},${S.loc.lon}`!==k)return;   // location changed while loading
+    if(c.us_aqi==null)throw new Error('no aqi');
+    AQ.d={aqi:Math.round(c.us_aqi),pm:c.pm2_5,ht:(j.hourly&&j.hourly.time)||[],ha:(j.hourly&&j.hourly.us_aqi)||[]};AQ.at=Date.now();AQ.err=null;
+    store.set('pp.air',{k,at:AQ.at,d:AQ.d});
+  }catch(e){AQ.err=SANDBOX?'sandbox':'net'}
+  finally{AQ.busy=false}
+  renderAir();renderBrief();
+}
+function airNow(){return AQ.d&&Date.now()-AQ.at<3*3600e3?AQ.d.aqi:null}
+function airPeak(){   // worst hour in the next 12, if it is worse than now
+  const d=AQ.d;if(!d)return null;const now=Date.now()/1000;let best=null;
+  d.ht.forEach((t,i)=>{if(t>now&&t<now+12*3600&&d.ha[i]!=null&&(!best||d.ha[i]>best.v))best={t:t*1000,v:Math.round(d.ha[i])}});
+  return best&&best.v>(airNow()??0)?best:null;
+}
+function renderAir(){
+  const v=airNow(),l=aqiLevel(v),el=$('aqi'),h=v==null?'--':`${v}<small>${AQI_LV[l][2]}</small>`;
+  if(el._h!==h){el._h=h;el.innerHTML=h;if(v!=null&&S.revealed)restart(el,'pop')}
+  $('airTile').dataset.l=l+1;
+}
+window.__pipAir={AQ,loadAir};   // test hook for the smoke test
+function airTip(){
+  const v=airNow();if(v==null)return null;const l=aqiLevel(v),pk=airPeak();
+  if(l>=3)return`Air quality is ${AQI_LV[l][1].toLowerCase()} (AQI ${v}). Keep windows shut and skip hard workouts outside.`;
+  if(l===2)return`Air is unhealthy for sensitive groups (AQI ${v}). Go easy outside if smoke bothers you.`;
+  if(pk&&aqiLevel(pk.v)>=2)return`Air gets worse around ${fmtHour(pk.t)} (AQI ${pk.v}). Get outside earlier if you can.`;
+  return null;
+}
+function airLine(){
+  if(!S.loc)return"Set a location and I'll check the air where you are.";
+  const v=airNow();if(v==null)return SANDBOX?'Air quality loads on the live link.':AQ.busy||!AQ.tried?'Checking the air now...':"I couldn't reach the air quality service. I'll try again in a few minutes.";
+  const l=aqiLevel(v),pk=airPeak(),tip=airTip();
+  const base=`Air in ${place()} is ${AQI_LV[l][1].toLowerCase()}: AQI ${v}${AQ.d.pm!=null?`, fine particles ${n(AQ.d.pm)} µg/m³`:''}.`;
+  return tip&&l>=2?`${base} ${l>=3?'Keep windows shut and skip hard workouts outside.':'Go easy outside if smoke bothers you.'}`:pk&&aqiLevel(pk.v)>aqiLevel(v)?`${base} It gets worse around ${fmtHour(pk.t)} (AQI ${pk.v}).`:`${base} ${l===0?'Breathe easy.':'Fine for most people.'}`;
 }
 
 /* hourly strip */
@@ -2049,6 +2104,7 @@ function briefTips(){
   const money=bt?null:iu.find(e=>e.tags.includes('MONEY'));if(money)et.push(`Money: "${money.subject}" from ${money.name}.`);
   const dl=iu.find(e=>e.tags.includes('DEADLINE')&&e!==money&&e!==job);if(dl)et.push(`Deadline: "${dl.subject}".`);
   t.push(...et.slice(0,2));
+  const at=airTip();if(at)t.push(at);
   if(c){
     const wet=nextHours().find(h=>h.p>=50);if(wet)t.push(`Rain likely around ${fmtHour(wet.t)}. Grab an umbrella.`);
     const uv=d.uv_index_max[0]??0;if(uv>=6&&si&&si.day)t.push(`UV peaks at ${uv.toFixed(0)}. Sunscreen if you're outside.`);
@@ -2068,7 +2124,7 @@ function renderBrief(){
   if(ul._k!==key){ul._k=key;ul.innerHTML='';tips.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});if(tab==='brief')restart(ul,'reveal')}
   const c=S.wx&&S.wx.current,d=S.wx&&S.wx.daily;
   $('bWx').textContent=c?`${n(c.temperature_2m)}°`:'--';
-  $('bWxT').textContent=c?`${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.`:SANDBOX?'Weather loads on the live link.':'Set a location.';
+  $('bWxT').textContent=c?`${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.${aqiLevel(airNow())>=2?` Air: AQI ${airNow()}.`:''}`:SANDBOX?'Weather loads on the live link.':'Set a location.';
   const imp=shown().filter(e=>e.imp),iu=imp.filter(e=>e.unread);
   $('bIn').textContent=G.on&&G.list?`${iu.length} new`:'--';
   const ub=G.on&&BL.list&&BL.list.find(billUrgent),pk2=G.on&&PK.list&&PK.list.find(g=>g.status==='TODAY'),pd=!ub&&pk2;
@@ -2406,7 +2462,7 @@ function askPip(raw){
   const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
   let m;
   if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
-    return 'Try: "what\'s next", "will it rain", "any important email", "what bills are due", "where are my packages", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
+    return 'Try: "what\'s next", "will it rain", "how\'s the air", "any important email", "what bills are due", "where are my packages", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
   if(/^(set ?up|setup|run setup|start over)( again)?$|^set me up$/.test(s)){setTimeout(()=>openSetup(0),600);return'Sure, let\'s go through setup.'}
   if((m=s.match(/^(turn on|switch on|enable|add|turn off|switch off|disable|remove) (?:the |my )?(gym|workouts?|jobs?|job search|car|space station|iss)(?: tab| module| tracker| visits)?$/))){
     const on=/on|enable|add/.test(m[1]),k=/gym|workout/.test(m[2])?'gym':/job/.test(m[2])?'jobs':/car/.test(m[2])?'car':'iss';
@@ -2455,6 +2511,7 @@ function askPip(raw){
   if(/calendar|meetings?|\bevents?\b|schedule|agenda|appointment|what's next|whats next|am i free|busy/.test(s))return calLine();
   if(/^(connect|pair|link) (my |the )?car\b/.test(s)){setTab('car');if(CAR.hasBT&&!CAR.live){carConnect();return'Pick your OBD adapter from the list.'}return CAR.live?'Already connected.':carNoBT()}
   if(/\b(car|engine|coolant|obd|battery voltage|my battery)\b/.test(s))return carLine();
+  if(/\b(air|aqi|smoke|smoky|haze|hazy|pollution|pm ?2\.?5|wildfire smoke)\b/.test(s)&&!/\bair ?pods?\b/.test(s))return airLine();
   if(/weather|temperature|how (hot|cold)|outside/.test(s))return about('temp')+' '+about('feels');
   if(/rain|umbrella/.test(s))return about('rain');
   if(/how many|unread|any (new )?e-?mails?|inbox/.test(s)){const iu=shown().filter(e=>e.imp&&e.unread);return G.on&&G.list?(iu.length?`${iu.length} important unread. Top: "${iu[0].subject}" from ${iu[0].name}.`:'No important unread email.'):'Gmail isn\'t connected yet. Tap Inbox to connect.'}
@@ -2585,6 +2642,8 @@ function moodLine(m){
     case'night':return`Night in ${place()}. ${t}° under a ${moonInfo().name.toLowerCase()}.`;
     case'sunny':return`${t}° and sunny in ${place()}. Shades on.`;
     case'cloudy':return`${t}° and ${cond} in ${place()}.`;
+    case'haze':return`The air's a bit smoky in ${place()} (AQI ${airNow()}). Mask on. Go easy outside if it bothers you.`;
+    case'smoke':return`Bad air in ${place()}: AQI ${airNow()}. Mask on, windows shut, and skip the hard workout outside.`;
     case'dizzy':return"Whoa, whoa. Too many pokes. Everything's spinning...";
     case'mail':return S.mailLine||"You've got mail!";
     case'gym':return S.gymLine||'Gains!';
@@ -2622,6 +2681,7 @@ function about(key,el){
     case'wind':return c?`Wind is ${n(c.wind_speed_10m)} mph from the ${COMPASS[Math.round(c.wind_direction_10m/22.5)%16]}. ${c.wind_speed_10m>20?'Hold onto your hat!':'Nice and calm.'}`:NOWX;
     case'hilo':return d?`Today tops out at ${n(d.temperature_2m_max[0])}° and bottoms out at ${n(d.temperature_2m_min[0])}°. Tomorrow's high is ${n(d.temperature_2m_max[1])}°.`:NOWX;
     case'rain':{if(!d)return NOWX;const wet=nextHours().find(h=>h.p>=40);return wet?`Rain chance peaks at ${d.precipitation_probability_max[0]}% today. First real chance is around ${fmtHour(wet.t)}.`:`Rain chance tops out at ${d.precipitation_probability_max[0]??0}% today. You're probably fine.`}
+    case'aqi':{const v=airNow();return v==null?airLine():`Air quality index ${v}: ${AQI_LV[aqiLevel(v)][1].toLowerCase()}. Under 50 is clean, over 100 is rough on sensitive lungs, over 150 is bad for everyone.`}
     case'uv':{if(!d)return NOWX;const uv=d.uv_index_max[0]??0;return`UV peaks at ${uv.toFixed(0)}. ${uv>=8?'Very high. Sunscreen for sure.':uv>=6?'High. Sunscreen!':uv>=3?'Moderate.':'Low today.'}`}
     case'sun':return si?(si.day?`The sun's ${n(si.f*100)}% of the way across the sky. Sunset at ${fmtTime(new Date(si.set))}.`:`The sun's down. It comes back at ${fmtTime(new Date(si.nextRise))}.`):SANDBOX?'Sun times load on the live Safari link.':'Set a location and I\'ll track the sun for you.';
     case'moon':return`${mo.name}, ${n(mo.illum*100)}% lit. ${mo.name==='Full moon'?'Look up tonight!':`Full moon in about ${Math.round(mo.daysToFull)} days.`}`;
@@ -2750,6 +2810,8 @@ const MOODS={
   pkg:{label:'DELIVERY DAY',s:'hype',b:'#ffb13b',d:'#d97a1c'},
   dlvd:{label:'DELIVERED!',s:'hype',b:'#c6ff7a',d:'#7ccf2a'},
   pkglate:{label:'RUNNING LATE',s:'warn',b:'#ffe34d',d:'#e0a623'},
+  haze:{label:'HAZY AIR',s:'warn',b:'#d9c7a0',d:'#a8906a'},
+  smoke:{label:'BAD AIR',s:'crit',b:'#c9b49a',d:'#8f7660'},
   cruise:{label:'CRUISING',s:'ok',b:'#8ff3ff',d:'#3fb5d6'},
   redline:{label:'REDLINE',s:'crit',b:'#ff6a4d',d:'#d6333f'},
   carhot:{label:'ENGINE HOT',s:'crit',b:'#ff6a4d',d:'#d6333f'},
@@ -2762,8 +2824,10 @@ function weatherMood(){
   if(!S.wx)return S.wxErr?'nodata':'loading';
   const c=S.wx.current,code=c.weather_code,t=c.temperature_2m;
   if(code>=95)return'storm';
+  const al=aqiLevel(airNow());if(al>=3)return'smoke';
   if(t>=90)return'hot';
   if(t<=45)return'cold';
+  if(al===2)return'haze';
   if((code>=71&&code<=77)||code===85||code===86)return'snow';
   if((code>=51&&code<=67)||(code>=80&&code<=82))return'rain';
   const h=new Date().getHours();if(h>=23||h<5)return'sleep';
@@ -2785,7 +2849,7 @@ function moodFor(now){
   if(carCruise())return'cruise';
   if(MODS.iss&&navigator.onLine&&ISS.overhead)return'iss';
   const w=weatherMood();
-  if(M.state&&M.state.playing&&w!=='storm'&&w!=='offline'&&w!=='nodata')return'music';
+  if(M.state&&M.state.playing&&!/^(storm|smoke|offline|nodata)$/.test(w))return'music';
   return w;
 }
 function setMood(m,now){
@@ -2794,13 +2858,14 @@ function setMood(m,now){
   el.dataset.s=MOODS[m].s;restart(el,'flip');
   const quick=m==='poke'||prev==='poke';
   if(prev&&!reduce)S.trans={from:prev,t0:now,quick,burst:false};
-  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt|bill)$/.test(m)?'alarm':'mood')}
+  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt|bill|smoke)$/.test(m)?'alarm':'mood')}
+  if(m==='haze'||m==='smoke'){flagTab('fc');faceBurst('spark',4)}
   if(m==='bill'||m==='paid'){flagTab('inbox');faceBurst(m==='paid'?'star':'spark',m==='paid'?10:4)}
   if(m==='pkg'||m==='dlvd'||m==='pkglate'){flagTab('inbox');faceBurst(m==='dlvd'?'star':'spark',m==='dlvd'?12:5)}
   if(/^(redline|carhot|lowvolt)$/.test(m)){flagTab('car');faceBurst('spark',6)}
   if(m==='heads'&&prev!=='poke'&&prev!=='dizzy'){flagTab('brief');faceBurst('star',4);renderBrief()}
   // don't talk over a fresh Ask Pip answer unless this mood is an alert
-  if(now<(S.askHold||0)&&!/^(heads|mail|storm|iss|job|bill|paid|pkg|dlvd|pkglate|redline|carhot|lowvolt)$/.test(m))return;
+  if(now<(S.askHold||0)&&!/^(heads|mail|storm|smoke|iss|job|bill|paid|pkg|dlvd|pkglate|redline|carhot|lowvolt)$/.test(m))return;
   say((prev==='poke'||prev==='dizzy')&&m!=='dizzy'&&m!=='poke'?nextFact():moodLine(m));
 }
 function poke(e){
@@ -2897,6 +2962,8 @@ const FACE={
   pkg:{eye:'happy',mouth:'grin',blush:1,per:200,squash:1,orb:240,fx:'box'},
   dlvd:{eye:'star',mouth:'big',blush:1,per:150,squash:1,orb:180,fx:'box'},
   pkglate:{eye:'dot',mouth:'flat',per:520,orb:900,fx:'box'},
+  haze:{eye:'open',mouth:'tiny',per:520,orb:1000,fx:'mask'},
+  smoke:{eye:'stern',mouth:'tiny',per:420,orb:1200,fx:'mask'},
   cruise:{eye:'shades',mouth:'smile',per:380,orb:500,fx:'speed'},
   redline:{eye:'x',mouth:'teeth',per:120,orb:120,shake:1,fx:'speed'},
   carhot:{eye:'x',mouth:'teeth',per:160,orb:260,shake:1,fx:'steam'},
@@ -3016,6 +3083,15 @@ function drawFace(t){
   else if(morphing)mk='o';
   else if(talking&&m!=='sleep'&&m!=='dizzy'&&Math.floor(t/110)%2)mk='o';
   const M=MOUTH[mk];spr(M,cx-Math.floor(M[0].length/2),cy+4);
+  if(f.fx==='mask'){   // a pleated face mask over the mouth, straps to the sides, smoke drifting past
+    const puff=!reduce&&talking&&Math.floor(t/110)%2?1:0;
+    for(let x=cx-rx+2;x<cx-6;x++){fc.fillStyle=COL.L;fc.fillRect(x,cy+1+Math.round((x-(cx-rx+2))*.15),1,1)}
+    for(let x=cx+7;x<cx+rx-1;x++){fc.fillStyle=COL.L;fc.fillRect(x,cy+1+Math.round((cx+rx-2-x)*.15),1,1)}
+    spr(["..#########..",".#WWWWWWWWW#.","#WWWWWWWWWWW#","#SSSSSSSSSSS#","#WWWWWWWWWWW#","#SSSSSSSSSSS#",".#WWWWWWWWW#.","..#########.."].map((r,i)=>puff&&i===2?r.replace(/W/g,'w'):r),cx-6,cy+1-puff);
+    fc.fillStyle=m==='smoke'?'#8f7660':'#bfae8e';
+    for(let i=0;i<5;i++){const ph=((reduce?0:t)/60+i*17)%80,x=Math.round(-8+ph),y=6+i*10+Math.round(Math.sin((ph+i*9)/9)*2);
+      fc.globalAlpha=m==='smoke'?.55:.35;fc.fillRect(x,y,4,1);fc.fillRect(x+1,y-1,2,1);fc.fillRect(x+5,y+1,3,1)}
+    fc.globalAlpha=1}
   if(f.fx==='music')headphones(cx,cy,rx,ry,t);
   if(f.fx==='gym'){const lift=reduce?0:(Math.floor(t/280)%2)*4;
     fc.fillStyle='#ff4fb8';for(let x=cx-rx+3;x<=cx+rx-3;x++)fc.fillRect(x,cy-9,1,2);   // sweatband

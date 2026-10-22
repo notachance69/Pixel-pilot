@@ -136,7 +136,8 @@
    "id": "air-quality",
    "priority": 3,
    "title": "Air quality (US AQI, PM2.5) from Open-Meteo; Pip wears a mask on smoky days",
-   "passes": false
+   "passes": true,
+   "notes": "Built 2026-10-22 (preview). AIR tile on the Weather tab (US AQI + GOOD/OK/POOR/BAD, colored) from Open-Meteo's free air-quality API, polled about every 30 min with the weather, last reading kept 3 h on device. Pip: HAZY AIR (AQI 101-150) and BAD AIR (151+, alarm) moods with a face mask and drifting smoke; bad air beats heat and music. Brief tip when air is poor now or gets worse in the next 12 h; Today weather card adds 'Air: AQI n.' when poor. Ask Pip: how's the air / smoke / aqi."
   },
   {
    "id": "alerts",

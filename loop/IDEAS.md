@@ -29,7 +29,7 @@ Promote an idea by adding it to `backlog.json` with acceptance criteria.
 - **Reply drafts [relay].** Pip suggests a short reply to important emails, and you send it from Gmail.
 
 ## Home and surroundings
-- **Air quality and smoke [free].** *(in backlog)*
+- **Air quality and smoke [free].** *(built 2026-10-22, preview)* Next: pollen (Open-Meteo has alder/birch/grass/ragweed for Europe only; US needs another source) and a UV + AQI "good time to be outside" window.
 - **Severe weather alerts [free].** *(in backlog)*
 - **Earthquakes [free].** *(in backlog; useful mostly on the West Coast, so it's a module)*
 - **Trash and recycling day.** Set once, with a reminder the night before. Some cities have open APIs.
