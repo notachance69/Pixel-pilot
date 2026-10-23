@@ -102,6 +102,20 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 #aqi small{color:var(--lime)}#airTile[data-l="2"] #aqi small{color:var(--sun)}#airTile[data-l="3"] #aqi small{color:#ffb13b}
 #airTile[data-l="4"] #aqi,#airTile[data-l="5"] #aqi{color:var(--crit)}#airTile[data-l="4"] #aqi small,#airTile[data-l="5"] #aqi small{color:var(--crit)}
 .mini{display:flex;flex-direction:column;gap:2px;min-width:0}
+/* NWS alert banner: takes the place of the "Weather now" label while an alert is active */
+.wxAlert{display:flex;align-items:center;gap:6px;align-self:stretch;min-width:0;border:0;cursor:pointer;font-family:var(--f-label);font-size:10px;letter-spacing:.08em;
+  padding:3px 7px;text-align:left;background:var(--sun);color:var(--ink);box-shadow:0 0 10px rgba(255,227,77,.45)}
+.wxAlert[hidden]{display:none}
+.wxAlert span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.wxAlert b,.wxAlert em,.wxAlert u{font:inherit;font-style:normal;text-decoration:none}
+@media (max-width:900px){.wxAlert em{display:none}.wxAlert{padding:2px 6px;font-size:9px}}
+.wxAlert i{flex:none;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid var(--ink);position:relative}
+.wxAlert i::after{content:"";position:absolute;left:-1px;top:3px;width:2px;height:4px;background:var(--sun)}
+.wxAlert[data-t="0"]{background:var(--cyan);box-shadow:0 0 10px rgba(68,241,255,.4)}.wxAlert[data-t="0"] i::after{background:var(--cyan)}
+.wxAlert[data-t="2"]{background:var(--crit);color:#fff;box-shadow:0 0 12px rgba(255,59,92,.6);animation:alertPulse 1.6s steps(2) infinite}
+.wxAlert[data-t="2"] i{border-bottom-color:#fff}.wxAlert[data-t="2"] i::after{background:var(--crit)}
+@keyframes alertPulse{50%{box-shadow:0 0 2px rgba(255,59,92,.3)}}
+@media (prefers-reduced-motion:reduce){.wxAlert[data-t="2"]{animation:none}}
 .big{font-family:var(--f-num);font-size:clamp(22px,7vh,34px);line-height:.95;font-variant-numeric:tabular-nums;white-space:nowrap}
 .big small{font-family:var(--f-label);font-size:9px;color:var(--muted);margin-left:3px}
 .note{font-family:var(--f-label);font-size:9px;letter-spacing:.08em;color:var(--muted)}
@@ -437,6 +451,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
     <section class="panel frame spread" id="wxPanel" aria-label="Weather now" data-boot style="--bd:.5s">
       <span class="spark pin" style="--s:22px;top:-12px;left:-12px;--d:.4s" aria-hidden="true"></span>
       <span class="lbl" id="wxLbl">Weather now</span>
+      <button class="wxAlert" id="wxAlert" type="button" data-say="alert" hidden><i aria-hidden="true"></i><span id="wxAlertT"></span></button>
       <div id="wxLive" class="tap" data-say="temp" hidden>
         <div class="nowRow">
           <canvas class="px" id="wxIcon" width="16" height="16" aria-hidden="true"></canvas>
@@ -748,7 +763,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
-const BUILD='20261022-130841'; // stamped at publish; the page compares it with the live copy to update itself
+const BUILD='20261023-131228'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -846,7 +861,7 @@ $('placeBtn').onclick=openSheet;$('openSearch').onclick=openSheet;$('sheetClose'
 sheet.addEventListener('click',e=>{if(e.target===sheet)closeSheet()});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)closeSheet()});
 function setLoc(loc){
-  S.loc=loc;store.set('pp.loc',loc);setTimeout(()=>{if(typeof suRender==='function')suRender()},0);S.wx=null;S.wxErr=null;S.revealed=false;AQ.d=null;AQ.at=0;AQ.tried=0;renderAir();
+  S.loc=loc;store.set('pp.loc',loc);setTimeout(()=>{if(typeof suRender==='function')suRender()},0);S.wx=null;S.wxErr=null;S.revealed=false;AQ.d=null;AQ.at=0;AQ.tried=0;renderAir();WA.list=[];WA.at=0;WA.tried=0;WA.na=false;renderAlerts();
   ['temp','feels','hum','wind','hi','lo','rainMax','uv'].forEach(id=>{$(id)._to=null});
   closeSheet();renderPlace();restart($('placeBtn'),'flip');loadWeather();computePasses();renderISS();
 }
@@ -910,6 +925,7 @@ async function loadWeather(){
   }
   S.loading=false;$('wxPanel').classList.remove('scanning');
   if(!AQ.busy&&Date.now()-AQ.tried>(AQ.err?2:25)*60e3)loadAir();   // air updates hourly; it rides the weather poll
+  if(!WA.busy&&!WA.na&&Date.now()-WA.tried>(WA.err?2:8)*60e3)loadAlerts();   // NWS alerts ride it too
   const first=S.wx&&!S.revealed;
   renderWx();renderHours(first);drawArc();renderBrief();
   if(first){S.revealed=true;reveal($('wxLive'),0);reveal($('wxTrio'),140);reveal($('wxToday'),280);reveal($('wxNote'),420);
@@ -941,7 +957,7 @@ function renderWx(){
   tween($('wind'),n(c.wind_speed_10m),{suffix:`<small>${COMPASS[Math.round(c.wind_direction_10m/22.5)%16]}</small>`,count});
   tween($('hi'),n(d.temperature_2m_max[0]),{count});tween($('lo'),n(d.temperature_2m_min[0]),{count});
   tween($('rainMax'),d.precipitation_probability_max[0]??0,{suffix:'<small>%</small>',count});
-  tween($('uv'),d.uv_index_max[0]??0,{count});renderAir();
+  tween($('uv'),d.uv_index_max[0]??0,{count});renderAir();renderAlerts();
   $('wxNote').textContent=`UPDATED ${fmtTime(new Date(S.wxAt))} · OPEN-METEO`;
 }
 
@@ -991,6 +1007,91 @@ function airLine(){
   const l=aqiLevel(v),pk=airPeak(),tip=airTip();
   const base=`Air in ${place()} is ${AQI_LV[l][1].toLowerCase()}: AQI ${v}${AQ.d.pm!=null?`, fine particles ${n(AQ.d.pm)} µg/m³`:''}.`;
   return tip&&l>=2?`${base} ${l>=3?'Keep windows shut and skip hard workouts outside.':'Go easy outside if smoke bothers you.'}`:pk&&aqiLevel(pk.v)>aqiLevel(v)?`${base} It gets worse around ${fmtHour(pk.t)} (AQI ${pk.v}).`:`${base} ${l===0?'Breathe easy.':'Fine for most people.'}`;
+}
+
+/* ---------- weather alerts (US National Weather Service) ---------- */
+// Public feed, no key. Checked with the weather poll (about every 10 minutes). Outside the US the feed has nothing,
+// so Pip stops asking until the location changes. The last list is kept on the device for an hour.
+const WA={list:[],at:0,tried:0,busy:false,err:null,na:false,seen:store.get('pp.wxaSeen')||{}};
+const waKey=()=>S.loc?`${S.loc.lat},${S.loc.lon}`:'';
+{const a=store.get('pp.wxa');if(a&&S.loc&&a.k===waKey()&&Date.now()-a.at<3600e3){WA.list=a.list||[];WA.at=a.at;WA.na=!!a.na}}
+const WA_SEV={Extreme:3,Severe:2,Moderate:1,Minor:0};
+const waTier=a=>/warning|emergency/i.test(a.ev)||a.sev==='Extreme'||a.sev==='Severe'?2:/watch|advisory/i.test(a.ev)?1:0;
+async function loadAlerts(){
+  if(!S.loc||WA.busy)return;WA.busy=true;WA.tried=Date.now();
+  const k=waKey(),pt=v=>+(+v).toFixed(4);
+  try{
+    const r=await fetch(`https://api.weather.gov/alerts/active?point=${pt(S.loc.lat)},${pt(S.loc.lon)}`,{cache:'no-store'});
+    if(waKey()!==k)return;   // location changed while loading
+    if(r.status===400||r.status===404){WA.na=true;WA.list=[];WA.err=null}   // not a US point
+    else{
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const j=await r.json(),now=Date.now();
+      WA.list=(j.features||[]).map(f=>f.properties||{}).filter(p=>p.event&&(p.status||'Actual')==='Actual'&&p.messageType!=='Cancel'&&!/\btest\b/i.test(p.event))
+        .map(p=>({id:p.id||p.event+(p.onset||p.effective||''),ev:p.event,sev:p.severity||'Unknown',start:Date.parse(p.onset||p.effective)||now,end:Date.parse(p.ends||p.expires)||0,
+          instr:String(p.instruction||'').replace(/\s+/g,' ').trim()}))
+        .filter(a=>!a.end||a.end>now);
+      const seen=new Set();WA.list=WA.list.filter(a=>{const d=a.ev+'|'+Math.round(a.end/6e5);if(seen.has(d))return false;seen.add(d);return true});   // NWS repeats an alert per zone
+      WA.list.sort((a,b)=>waTier(b)-waTier(a)||(WA_SEV[b.sev]??0)-(WA_SEV[a.sev]??0)||a.start-b.start);
+      WA.na=false;WA.err=null;
+    }
+    WA.at=Date.now();store.set('pp.wxa',{k,at:WA.at,na:WA.na,list:WA.list});
+  }catch(e){WA.err=SANDBOX?'sandbox':'net'}
+  finally{WA.busy=false}
+  renderAlerts();renderBrief();waAnnounce();
+}
+function alertsNow(){const now=Date.now();return WA.list.filter(a=>(!a.end||a.end>now)&&a.start<now+12*3600e3)}
+function waWarning(){const a=alertsNow()[0];return a&&waTier(a)===2?a:null}
+function waUntil(a){
+  if(!a.end)return'';const e=new Date(a.end),d=new Date(),h=fmtHour(a.end).replace(':00','');
+  const t=e.getMinutes()?fmtTime(e):h;
+  if(a.start>Date.now()+15*60e3)return` from ${dayKey(new Date(a.start))===dayKey(d)?'':new Date(a.start).toLocaleDateString([],{weekday:'short'})+' '}${fmtHour(a.start)}`;
+  return` until ${dayKey(e)===dayKey(d)?'':dayKey(e)===dayKey(new Date(Date.now()+864e5))?'tomorrow ':e.toLocaleDateString([],{weekday:'short'})+' '}${t}`;
+}
+function waShort(a){return a.ev.length<=18?a.ev.toUpperCase():/warning/i.test(a.ev)?'WEATHER WARNING':/watch/i.test(a.ev)?'WEATHER WATCH':'WEATHER ALERT'}
+const WA_TIPS=[
+  [/tornado/i,'Get to an inside room on the lowest floor now.'],
+  [/red flag|fire weather|fire warning/i,'Fire danger is high. No sparks outside, and keep your phone charged.'],
+  [/heat/i,'Drink water and stay out of the afternoon sun.'],
+  [/severe thunderstorm|lightning/i,'Head indoors and stay away from windows.'],
+  [/flash flood|flood/i,"Don't drive through water on the road."],
+  [/blizzard|winter storm|ice storm|snow|winter weather|freezing rain/i,'Roads may be icy. Leave extra time.'],
+  [/wind chill|freeze|frost|extreme cold|cold weather/i,'Bundle up and bring pets and plants inside.'],
+  [/wind/i,'Strong gusts. Tie down loose stuff outside and watch for falling branches.'],
+  [/dust|smoke|air quality|air stagnation/i,'Keep windows shut and go easy outside.'],
+  [/fog/i,'Slow down on the road and use low beams.'],
+  [/hurricane|tropical|storm surge/i,'Follow what local officials tell you.'],
+  [/rip current|surf|beach|marine|small craft/i,'Stay out of the water.']
+];
+function waTip(a){const m=WA_TIPS.find(([re])=>re.test(a.ev));if(m)return m[1];const s=a.instr.split(/(?<=\.)\s/)[0];return s&&s.length<=110?s:'Check local news for details.'}
+function waSentence(a){return`${a.ev}${waUntil(a)}.`}
+function renderAlerts(){
+  const al=alertsNow(),a=al[0],b=$('wxAlert');
+  const esc=x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
+  const h=a?`<b>${esc(waShort(a))}</b><em>${esc(waUntil(a).toUpperCase().replace(' UNTIL ',' · UNTIL ').replace(' FROM ',' · FROM '))}</em>${al.length>1?`<u> +${al.length-1}</u>`:''}`:'';
+  b.hidden=!a;$('wxLbl').hidden=!!a;
+  if(a){b.dataset.t=waTier(a);const tx=$('wxAlertT');if(tx._h!==h){tx._h=h;tx.innerHTML=h;restart(b,'pop')}b.setAttribute('aria-label','Weather alert: '+waSentence(a))}
+}
+function waMood(){   // label and colors for Pip's alert mood follow the alert
+  const a=S.wxaAlert&&performance.now()<(S.wxaUntil||0)?S.wxaAlert:waWarning()||alertsNow()[0],crit=a&&waTier(a)===2,M=MOODS.wxalert;
+  M.label=a?waShort(a):'WEATHER ALERT';M.s=crit?'crit':'warn';M.b=crit?'#ff6a4d':'#ffb13b';M.d=crit?'#d6333f':'#d97a1c';return a;
+}
+function waAnnounce(){   // Pip calls out each new watch or warning once a day
+  const today=dayKey(new Date()),a=alertsNow().find(x=>waTier(x)>=1&&WA.seen[x.id]!==today);if(!a)return;
+  WA.seen[a.id]=today;Object.keys(WA.seen).forEach(k=>{if(WA.seen[k]!==today&&!WA.list.some(x=>x.id===k))delete WA.seen[k]});store.set('pp.wxaSeen',WA.seen);
+  const now=performance.now(),urgent=waTier(a)===2;
+  S.wxaAlert=a;S.wxaAt=urgent?now:Math.max(now,S.jobUntil||0,S.billUntil||0,S.pkgUntil||0);S.wxaUntil=S.wxaAt+5200;
+  flagTab('fc');flagTab('brief');
+}
+setInterval(()=>{if(WA.list.length)renderAlerts()},60e3);   // drop expired alerts without waiting for the next poll
+window.__pipAlerts={WA,loadAlerts};   // test hook for the smoke test
+function alertTip(){const a=alertsNow()[0];return a&&waTier(a)>=1?`${waSentence(a)} ${waTip(a)}`:null}
+function alertLine(){
+  if(!S.loc)return"Set a location and I'll watch for weather alerts where you are.";
+  if(WA.na)return'Weather alerts come from the US National Weather Service, so they only cover the US.';
+  const al=alertsNow();
+  if(!al.length)return WA.at?`No weather alerts for ${place()} right now.`:SANDBOX?'Weather alerts load on the live link.':WA.err?"I couldn't reach the weather alert service. I'll try again in a few minutes.":'Checking for alerts now...';
+  const a=al[0];return`${waSentence(a)} ${waTip(a)}${al.length>1?` Also: ${al.slice(1,3).map(x=>x.ev).join(', ')}.`:''}`;
 }
 
 /* hourly strip */
@@ -2118,6 +2219,7 @@ function briefTips(){
   const dl=iu.find(e=>e.tags.includes('DEADLINE')&&e!==money&&e!==job);if(dl)et.push(`Deadline: "${dl.subject}".`);
   t.push(...et.slice(0,2));
   const at=airTip();if(at)t.push(at);
+  const wt=alertTip(),wTop=wt&&waWarning();if(wt&&!wTop)t.push(wt);
   if(c){
     const wet=nextHours().find(h=>h.p>=50);if(wet)t.push(`Rain likely around ${fmtHour(wet.t)}. Grab an umbrella.`);
     const uv=d.uv_index_max[0]??0;if(uv>=6&&si&&si.day)t.push(`UV peaks at ${uv.toFixed(0)}. Sunscreen if you're outside.`);
@@ -2127,6 +2229,7 @@ function briefTips(){
   const ct=carTip();if(ct)t.push(ct);
   const v=nextPasses().find(p=>p.visible&&p.start-Date.now()<24*3600e3);if(v)t.push(`ISS visible ${when(v.start).toLowerCase()}. Look ${dirW(v.azStart)}.`);
   const pt=G.on?pkgTip():null;if(pt&&t.length<4)t.splice(nx&&nx.start-Date.now()<3*3600e3?1:0,0,pt);   // package day goes near the top when there's room
+  if(wTop)t.unshift(wt);   // a warning leads the day
   if(!t.length)t.push(S.wx||G.list?'Nothing urgent. Enjoy the day.':'Set your location and connect Gmail so I can plan your day.');
   return t.slice(0,4);
 }
@@ -2137,7 +2240,7 @@ function renderBrief(){
   if(ul._k!==key){ul._k=key;ul.innerHTML='';tips.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});if(tab==='brief')restart(ul,'reveal')}
   const c=S.wx&&S.wx.current,d=S.wx&&S.wx.daily;
   $('bWx').textContent=c?`${n(c.temperature_2m)}°`:'--';
-  $('bWxT').textContent=c?`${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.${aqiLevel(airNow())>=2?` Air: AQI ${airNow()}.`:''}`:SANDBOX?'Weather loads on the live link.':'Set a location.';
+  $('bWxT').textContent=c?`${alertsNow().length?`${waSentence(alertsNow()[0])} `:''}${WXNAME[c.weather_code]||'Weather'}. High ${n(d.temperature_2m_max[0])}°, low ${n(d.temperature_2m_min[0])}°, rain ${d.precipitation_probability_max[0]??0}%.${aqiLevel(airNow())>=2?` Air: AQI ${airNow()}.`:''}`:SANDBOX?'Weather loads on the live link.':'Set a location.';
   const imp=shown().filter(e=>e.imp),iu=imp.filter(e=>e.unread);
   $('bIn').textContent=G.on&&G.list?`${iu.length} new`:'--';
   const ub=G.on&&BL.list&&BL.list.find(billUrgent),pk2=G.on&&PK.list&&PK.list.find(g=>g.status==='TODAY'),pd=!ub&&pk2;
@@ -2475,7 +2578,7 @@ function askPip(raw){
   const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
   let m;
   if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
-    return 'Try: "what\'s next", "will it rain", "how\'s the air", "any important email", "what bills are due", "where are my packages", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
+    return 'Try: "what\'s next", "will it rain", "how\'s the air", "any weather alerts", "any important email", "what bills are due", "where are my packages", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
   if(/^(set ?up|setup|run setup|start over)( again)?$|^set me up$/.test(s)){setTimeout(()=>openSetup(0),600);return'Sure, let\'s go through setup.'}
   if((m=s.match(/^(turn on|switch on|enable|add|turn off|switch off|disable|remove) (?:the |my )?(gym|workouts?|jobs?|job search|car|space station|iss)(?: tab| module| tracker| visits)?$/))){
     const on=/on|enable|add/.test(m[1]),k=/gym|workout/.test(m[2])?'gym':/job/.test(m[2])?'jobs':/car/.test(m[2])?'car':'iss';
@@ -2524,6 +2627,7 @@ function askPip(raw){
   if(/calendar|meetings?|\bevents?\b|schedule|agenda|appointment|what's next|whats next|am i free|busy/.test(s))return calLine();
   if(/^(connect|pair|link) (my |the )?car\b/.test(s)){setTab('car');if(CAR.hasBT&&!CAR.live){carConnect();return'Pick your OBD adapter from the list.'}return CAR.live?'Already connected.':carNoBT()}
   if(/\b(car|engine|coolant|obd|battery voltage|my battery)\b/.test(s))return carLine();
+  if(/\b(weather |storm |fire |heat |wind |flood )?(alerts?|warnings?|advisor(y|ies))\b|red flag|\bnws\b/.test(s)&&!/e-?mail|\bmail\b|security|sign-?in/.test(s))return alertLine();
   if(/\b(air|aqi|smoke|smoky|haze|hazy|pollution|pm ?2\.?5|wildfire smoke)\b/.test(s)&&!/\bair ?pods?\b/.test(s))return airLine();
   if(/weather|temperature|how (hot|cold)|outside/.test(s))return about('temp')+' '+about('feels');
   if(/rain|umbrella/.test(s))return about('rain');
@@ -2656,6 +2760,7 @@ function moodLine(m){
     case'sunny':return`${t}° and sunny in ${place()}. Shades on.`;
     case'cloudy':return`${t}° and ${cond} in ${place()}.`;
     case'haze':return`The air's a bit smoky in ${place()} (AQI ${airNow()}). Mask on. Go easy outside if it bothers you.`;
+    case'wxalert':{const a=waMood();return a?`${a.ev} for ${place()}${waUntil(a)}. ${waTip(a)}`:'Weather alert!'}
     case'smoke':return`Bad air in ${place()}: AQI ${airNow()}. Mask on, windows shut, and skip the hard workout outside.`;
     case'dizzy':return"Whoa, whoa. Too many pokes. Everything's spinning...";
     case'mail':return S.mailLine||"You've got mail!";
@@ -2694,6 +2799,7 @@ function about(key,el){
     case'wind':return c?`Wind is ${n(c.wind_speed_10m)} mph from the ${COMPASS[Math.round(c.wind_direction_10m/22.5)%16]}. ${c.wind_speed_10m>20?'Hold onto your hat!':'Nice and calm.'}`:NOWX;
     case'hilo':return d?`Today tops out at ${n(d.temperature_2m_max[0])}° and bottoms out at ${n(d.temperature_2m_min[0])}°. Tomorrow's high is ${n(d.temperature_2m_max[1])}°.`:NOWX;
     case'rain':{if(!d)return NOWX;const wet=nextHours().find(h=>h.p>=40);return wet?`Rain chance peaks at ${d.precipitation_probability_max[0]}% today. First real chance is around ${fmtHour(wet.t)}.`:`Rain chance tops out at ${d.precipitation_probability_max[0]??0}% today. You're probably fine.`}
+    case'alert':{const al=alertsNow(),a=al[0];return a?`${waSentence(a)} ${waTip(a)}${al.length>1?` Also: ${al.slice(1,3).map(x=>x.ev).join(', ')}.`:''}`:alertLine()}
     case'aqi':{const v=airNow();return v==null?airLine():`Air quality index ${v}: ${AQI_LV[aqiLevel(v)][1].toLowerCase()}. Under 50 is clean, over 100 is rough on sensitive lungs, over 150 is bad for everyone.`}
     case'uv':{if(!d)return NOWX;const uv=d.uv_index_max[0]??0;return`UV peaks at ${uv.toFixed(0)}. ${uv>=8?'Very high. Sunscreen for sure.':uv>=6?'High. Sunscreen!':uv>=3?'Moderate.':'Low today.'}`}
     case'sun':return si?(si.day?`The sun's ${n(si.f*100)}% of the way across the sky. Sunset at ${fmtTime(new Date(si.set))}.`:`The sun's down. It comes back at ${fmtTime(new Date(si.nextRise))}.`):SANDBOX?'Sun times load on the live Safari link.':'Set a location and I\'ll track the sun for you.';
@@ -2825,6 +2931,7 @@ const MOODS={
   pkglate:{label:'RUNNING LATE',s:'warn',b:'#ffe34d',d:'#e0a623'},
   haze:{label:'HAZY AIR',s:'warn',b:'#d9c7a0',d:'#a8906a'},
   smoke:{label:'BAD AIR',s:'crit',b:'#c9b49a',d:'#8f7660'},
+  wxalert:{label:'WEATHER ALERT',s:'warn',b:'#ffb13b',d:'#d97a1c'},
   cruise:{label:'CRUISING',s:'ok',b:'#8ff3ff',d:'#3fb5d6'},
   redline:{label:'REDLINE',s:'crit',b:'#ff6a4d',d:'#d6333f'},
   carhot:{label:'ENGINE HOT',s:'crit',b:'#ff6a4d',d:'#d6333f'},
@@ -2834,6 +2941,7 @@ function weatherMood(){
   if(!navigator.onLine)return'offline';
   if(SANDBOX&&!S.wx)return'sandbox';
   if(!S.loc)return'hello';
+  if(waWarning())return'wxalert';   // an active NWS warning outranks the sky
   if(!S.wx)return S.wxErr?'nodata':'loading';
   const c=S.wx.current,code=c.weather_code,t=c.temperature_2m;
   if(code>=95)return'storm';
@@ -2853,6 +2961,7 @@ function moodFor(now){
   if(now<S.dizzyUntil)return'dizzy';
   if(now<S.pokeUntil)return'poke';
   {const ca=carAlert();if(ca)return ca}
+  if(now>=(S.wxaAt||0)&&now<(S.wxaUntil||0))return'wxalert';
   if(now<(S.mailUntil||0))return'mail';
   if(now<(S.gymUntil||0))return'gym';
   if(now<(S.jobUntil||0))return'job';
@@ -2862,23 +2971,24 @@ function moodFor(now){
   if(carCruise())return'cruise';
   if(MODS.iss&&navigator.onLine&&ISS.overhead)return'iss';
   const w=weatherMood();
-  if(M.state&&M.state.playing&&!/^(storm|smoke|offline|nodata)$/.test(w))return'music';
+  if(M.state&&M.state.playing&&!/^(storm|smoke|wxalert|offline|nodata)$/.test(w))return'music';
   return w;
 }
 function setMood(m,now){
-  const prev=S.mood;S.mood=m;const el=$('mood');
+  const prev=S.mood;S.mood=m;const el=$('mood');if(m==='wxalert')waMood();
   el.textContent=m==='cloudy'&&S.wx&&(S.wx.current.weather_code===45||S.wx.current.weather_code===48)?'FOGGY':MOODS[m].label;
   el.dataset.s=MOODS[m].s;restart(el,'flip');
   const quick=m==='poke'||prev==='poke';
   if(prev&&!reduce)S.trans={from:prev,t0:now,quick,burst:false};
-  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt|bill|smoke)$/.test(m)?'alarm':'mood')}
+  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt|bill|smoke)$/.test(m)||m==='wxalert'&&MOODS.wxalert.s==='crit'?'alarm':'mood')}
   if(m==='haze'||m==='smoke'){flagTab('fc');faceBurst('spark',4)}
+  if(m==='wxalert'){flagTab('fc');faceBurst('spark',6)}
   if(m==='bill'||m==='paid'){flagTab('inbox');faceBurst(m==='paid'?'star':'spark',m==='paid'?10:4)}
   if(m==='pkg'||m==='dlvd'||m==='pkglate'){flagTab('inbox');faceBurst(m==='dlvd'?'star':'spark',m==='dlvd'?12:5)}
   if(/^(redline|carhot|lowvolt)$/.test(m)){flagTab('car');faceBurst('spark',6)}
   if(m==='heads'&&prev!=='poke'&&prev!=='dizzy'){flagTab('brief');faceBurst('star',4);renderBrief()}
   // don't talk over a fresh Ask Pip answer unless this mood is an alert
-  if(now<(S.askHold||0)&&!/^(heads|mail|storm|smoke|iss|job|bill|paid|pkg|dlvd|pkglate|redline|carhot|lowvolt)$/.test(m))return;
+  if(now<(S.askHold||0)&&!/^(heads|mail|storm|smoke|wxalert|iss|job|bill|paid|pkg|dlvd|pkglate|redline|carhot|lowvolt)$/.test(m))return;
   say((prev==='poke'||prev==='dizzy')&&m!=='dizzy'&&m!=='poke'?nextFact():moodLine(m));
 }
 function poke(e){
@@ -2977,6 +3087,7 @@ const FACE={
   pkglate:{eye:'dot',mouth:'flat',per:520,orb:900,fx:'box'},
   haze:{eye:'open',mouth:'tiny',per:520,orb:1000,fx:'mask'},
   smoke:{eye:'stern',mouth:'tiny',per:420,orb:1200,fx:'mask'},
+  wxalert:{eye:'open',mouth:'o',per:200,orb:320,fx:'siren'},
   cruise:{eye:'shades',mouth:'smile',per:380,orb:500,fx:'speed'},
   redline:{eye:'x',mouth:'teeth',per:120,orb:120,shake:1,fx:'speed'},
   carhot:{eye:'x',mouth:'teeth',per:160,orb:260,shake:1,fx:'steam'},
@@ -2986,6 +3097,7 @@ const BRIEFCASE=["...#####...","...#...#...","###########","#ooooooooo#","#####y
 const CLOCK=["yy.....yy","y.#####.y",".#WWWWW#.","#WWW#WWW#","#WWW#WWW#","#WWW##WW#","#WWWWWWW#",".#WWWWW#.","..#####..",".#.....#."];
 const BILLSPR=["#########","#WWW#WWW#","#WW###WW#","#W#W#WWW#","#WW###WW#","#WWW#W#W#","#WW###WW#","#WWW#WWW#","#########"];
 const BOX=["##########","#oooyyooo#","##########","#oooyyooo#","#oooyyooo#","##########"];
+const SIREN=["....#....","...#y#...","...#y#...","..#y#y#..","..#y#y#..",".#yy#yy#.",".#yyyyy#.","#yyy#yyy#","#########"];
 const MINIBOX=["#######","#ooyoo#","#######","#ooyoo#","#######"];
 const BATTERY=["....#.#....","###########","#ppWWWWWWW#","#ppWWWWWWW#","###########"];
 const DUMBBELL=["#L#...#L#","#S#LLL#S#","#L#...#L#"];
@@ -3116,7 +3228,10 @@ function drawFace(t){
     spr(paid?BILLSPR.map((r,i)=>i&&i<8?'#'+r.slice(1,-1).replace(/#/g,'l')+'#':r):BILLSPR,cx-4+sw,Math.max(0,cy-ry-10+(paid?-Math.abs(sw):0)))}
   if(f.fx==='box'){const m2=m==='dlvd',hop=reduce?0:m2?-Math.abs(Math.round(Math.sin(t/110)*3)):Math.round(Math.sin(t/200)*1);   // Pip holds a parcel up; it hops when it lands
     spr(BOX,cx-5,cy+ry-2+hop);if(m2&&!reduce&&Math.floor(t/150)%2)sparkAt(cx+8,cy+ry-3,true)}
-  else if(pkgToday()&&!/^(bill|case|clock|battery|mail|gym|umbrella|dizzy)$/.test(f.fx||'')){spr(MINIBOX,cx+rx-3,cy+ry-5)}   // on delivery day Pip keeps a little box by his side
+  else if(pkgToday()&&!/^(bill|case|clock|battery|mail|gym|umbrella|dizzy|siren)$/.test(f.fx||'')){spr(MINIBOX,cx+rx-3,cy+ry-5)}   // on delivery day Pip keeps a little box by his side
+  if(f.fx==='siren'){const on=reduce||Math.floor(t/350)%2,crit=MOODS.wxalert.s==='crit',bob=reduce?0:Math.round(Math.sin(t/180));   // a warning sign over Pip's head, flashing
+    spr(SIREN.map(r=>on?r:r.replace(/y/g,'o')),cx-4,Math.max(0,cy-ry-11+bob));
+    if(crit&&on&&!reduce){fc.fillStyle=C.crit;fc.fillRect(cx-9,cy-ry-6+bob,2,1);fc.fillRect(cx+8,cy-ry-6+bob,2,1);fc.fillRect(cx-10,cy-ry-3+bob,2,1);fc.fillRect(cx+9,cy-ry-3+bob,2,1)}}
   if(f.fx==='battery'){const lowBar=reduce||Math.floor(t/400)%2;spr(BATTERY.map(r=>lowBar?r:r.replace(/p/g,'.')),cx-5,Math.max(0,cy-ry-8))}
   if(f.fx==='mail'){const bob=reduce?0:Math.round(Math.sin(t/160)*2);spr(ENVELOPE,cx-5,Math.max(0,cy-ry-8+bob))}
   drawOrbit(32,40,ot,true,orbPer);

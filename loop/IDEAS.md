@@ -76,3 +76,7 @@ These need routine input, so they don't get built unless an automatic source tur
 - **Focus timer:** revisit if it can start from calendar focus blocks.
 - **Manual water and step logging:** replaced by the Apple Health Shortcut.
 - **Manual to-do capture:** replaced by "To-dos without typing".
+
+## From round 15 (weather alerts)
+- **Alert push [free].** When the Home Screen app is closed, a Web Push for warnings needs a relay; park under "needs a relay" unless iOS adds local scheduled notifications.
+- **Alert map [free].** Draw the NWS alert polygon on a tiny pixel map when the feed includes geometry.

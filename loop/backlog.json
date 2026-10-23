@@ -143,7 +143,8 @@
    "id": "alerts",
    "priority": 4,
    "title": "National Weather Service alerts for your spot (red flag, heat, wind)",
-   "passes": false
+   "passes": true,
+   "notes": "Built 2026-10-23 (preview). Active NWS alerts for the point (api.weather.gov, no key, CORS), checked with the weather poll about every 10 min; zone duplicates, expired, test and cancel messages dropped; last list kept 1 h on device; a 400/404 (non-US point) stops polling until the location changes. Banner replaces the 'Weather now' label (red + pulse for warnings, yellow for watches/advisories, cyan for statements; time hidden on phone). Pip WEATHER ALERT mood (label = event name, warning sign over his head): watches/advisories called out once a day, warnings stay up and sound the alarm. A warning leads the Brief; Today weather card leads with it. Ask Pip: 'any weather alerts', 'warnings', 'red flag'. Not yet checked against the live feed (the build sandbox could not reach api.weather.gov)."
   },
   {
    "id": "bills",

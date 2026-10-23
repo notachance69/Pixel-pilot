@@ -116,6 +116,11 @@ function air() {
   const times = []; for (let i = -2; i < 30; i++) times.push(Math.floor(now / H) * H + i * H);
   return { current: { time: now, us_aqi: AIR, pm2_5: AIR / 4 }, hourly: { time: times, us_aqi: times.map((t, i) => i > 7 && i < 12 ? AIRPEAK : AIR) } };
 }
+// weather alerts: NWS active alerts for the point. None by default; the alert checks swap in a list (or a 400 for a non-US point).
+let NWS = [], NWS_STATUS = 200, nwsQ = '';
+const nwsA = (event, severity, endsH, extra = {}) => ({ properties: Object.assign({ id: 'urn:oid:' + event.replace(/\W/g, '') + endsH, event, severity, status: 'Actual', messageType: 'Alert',
+  effective: iso(Date.now() - H * 1e3), onset: iso(Date.now() - H * 1e3), ends: iso(Date.now() + endsH * H * 1e3), expires: iso(Date.now() + endsH * H * 1e3),
+  headline: event + ' issued', description: 'Details.', instruction: 'Use caution.', areaDesc: 'Los Angeles County' }, extra) });
 const topo = { type: 'Topology', transform: { scale: [1, 1], translate: [0, 0] }, objects: { land: { type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', arcs: [[[0]], [[1]]] }] } },
   arcs: [[[-125, 50], [55, 0], [0, -25], [-45, 0], [-10, -10]], [[-80, 10], [45, 0], [0, -55], [-35, 0], [-10, 55]]] };
 
@@ -125,6 +130,7 @@ async function mock(page) {
     if (u.startsWith('file:')) return r.continue();
     if (u.includes('satellite.min.js')) return r.fulfill({ body: fs.readFileSync(path.join(__dirname, 'satmock.js'), 'utf8'), contentType: 'application/javascript' });
     if (u.includes('land-110m.json')) return r.fulfill({ json: topo });
+    if (u.includes('api.weather.gov/alerts')) { nwsQ = u; return NWS_STATUS !== 200 ? r.fulfill({ status: NWS_STATUS, json: { title: 'Bad Request' } }) : r.fulfill({ json: { type: 'FeatureCollection', features: NWS } }); }
     if (u.includes('air-quality-api.open-meteo.com')) { airQ = u; return r.fulfill({ json: air() }); }
     if (u.includes('api.open-meteo.com')) return r.fulfill({ json: weather() });
     if (u.includes('bigdatacloud')) return r.fulfill({ json: { city: 'Northridge' } });
@@ -449,6 +455,51 @@ function fakeBluetooth() {
   check('brief warns when the air gets worse later', /Air gets worse around .* \(AQI 125\)\. Get outside earlier/.test(await t('#bTips')), (await t('#bTips')).slice(0, 200));
   await airReload(42, 48);
 
+  // weather alerts: banner on the weather panel, Pip calls out advisories once and keeps warnings up, brief, Ask Pip, non-US
+  const nwsReload = async (list, status = 200) => { NWS = list; NWS_STATUS = status; await page.evaluate(() => { const W = window.__pipAlerts.WA; W.tried = 0; W.na = false; return window.__pipAlerts.loadAlerts(); }); await page.waitForTimeout(400); };
+  await page.click('#tab-fc'); await page.waitForTimeout(500);
+  check('weather alerts checked for your spot (NWS)', /api\.weather\.gov\/alerts\/active\?point=34\.24,-118\.53/.test(nwsQ), nwsQ.slice(0, 100));
+  check('no alert banner on a calm day', await page.isHidden('#wxAlert') && await page.isVisible('#wxLbl'));
+  reply = await ask('any weather alerts?');
+  check('Ask Pip says when there are no alerts', /^No weather alerts for Northridge right now\./.test(reply), reply.slice(0, 80));
+  await nwsReload([nwsA('Wind Advisory', 'Moderate', 5)]);
+  const windy = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'WIND ADVISORY', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(2600);
+  check('Pip calls out a new wind advisory', windy && /^Wind Advisory for Northridge until .*\. Strong gusts\./.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 80));
+  check('alert banner replaces the weather label', await page.isVisible('#wxAlert') && await page.isHidden('#wxLbl') && /^WIND ADVISORY · UNTIL /.test(await t('#wxAlertT')) && await page.$eval('#wxAlert', e => e.dataset.t) === '1', await t('#wxAlertT'));
+  await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() !== 'WIND ADVISORY', null, { timeout: 7000 }).catch(() => {});
+  check('an advisory is called out once, not kept up', (await t('#mood')).trim() !== 'WIND ADVISORY', await t('#mood'));
+  await nwsReload([nwsA('Wind Advisory', 'Moderate', 5)]); await page.waitForTimeout(1200);
+  check('the same advisory is not called out twice', (await t('#mood')).trim() !== 'WIND ADVISORY', await t('#mood'));
+  const rfw = nwsA('Red Flag Warning', 'Severe', 30), rfw2 = { properties: Object.assign({}, rfw.properties, { id: 'urn:oid:zone2' }) };   // same alert issued for a second zone
+  await nwsReload([rfw, rfw2, nwsA('Wind Advisory', 'Moderate', 5),
+    nwsA('Heat Advisory', 'Moderate', -1), nwsA('Test Message', 'Unknown', 4), nwsA('Frost Advisory', 'Minor', 6, { messageType: 'Cancel' })]);
+  const flagged = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'RED FLAG WARNING', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(2600);
+  check('Pip raises the alarm for a red flag warning', flagged && /^Red Flag Warning for Northridge until tomorrow .*\. Fire danger is high\./.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 90));
+  check('warning banner is red and counts the other alert (duplicates, expired, tests and cancels dropped)', /^RED FLAG WARNING · UNTIL TOMORROW .* \+1$/.test(await t('#wxAlertT')) && await page.$eval('#wxAlert', e => e.dataset.t) === '2', await t('#wxAlertT'));
+  await page.screenshot({ path: path.join(OUT, '1c-red-flag.png') });
+  await page.waitForTimeout(5500);
+  check('Pip keeps the warning up while it lasts', (await t('#mood')).trim() === 'RED FLAG WARNING', await t('#mood'));
+  await page.click('#wxAlert'); await page.waitForTimeout(3800);
+  check('tapping the banner makes Pip explain the alert', /^Red Flag Warning until tomorrow .*\. Fire danger is high\. No sparks outside, and keep your phone charged\. Also: Wind Advisory\.$/.test(await t('#say')), (await t('#say')).slice(0, 140));
+  const wStored = await page.evaluate(() => JSON.parse(localStorage.getItem('pp.wxa') || 'null'));
+  check('last alerts kept on the device', !!wStored && wStored.k === '34.24,-118.53' && wStored.list.length === 2, JSON.stringify(wStored || {}).slice(0, 80));
+  await page.click('#tab-brief'); await page.waitForTimeout(800);
+  check('a warning leads the brief and the weather card', /^Red Flag Warning until tomorrow .*Fire danger is high/.test(await t('#bTips li')) && /Red Flag Warning until tomorrow/.test(await t('#bWxT')), (await t('#bTips')).slice(0, 120) + ' | ' + await t('#bWxT'));
+  await page.screenshot({ path: path.join(OUT, '3g-brief-red-flag.png') });
+  reply = await ask('are there any warnings');
+  check('Ask Pip lists active alerts', /^Red Flag Warning until tomorrow .*Also: Wind Advisory\./.test(reply), reply.slice(0, 120));
+  reply = await ask('hide security alert emails');
+  check('email alert rules still go to the inbox, not weather', !/Red Flag|weather alert/i.test(reply), reply.slice(0, 80));
+  await ask('show security alert emails');
+  await nwsReload([]); await page.waitForTimeout(1500);
+  check('banner and alarm clear when the alert ends', await page.isHidden('#wxAlert') && !/RED FLAG/.test(await t('#mood')), await t('#mood'));
+  await nwsReload([], 400);
+  reply = await ask('any weather alerts');
+  check('outside the US Pip explains alerts are US-only', /only cover the US/.test(reply), reply.slice(0, 80));
+  await nwsReload([]);
+
   await page.click('#tab-music'); await page.waitForTimeout(900);
   check('spotify now playing', (await t('#mTitle')).includes('Midnight Pixel Drive'));
   await page.screenshot({ path: path.join(OUT, '4-music.png') });
@@ -497,6 +548,12 @@ function fakeBluetooth() {
   const airFit = await page.evaluate(() => { const a = document.getElementById('airTile').getBoundingClientRect(), b = document.getElementById('aqi'); return document.documentElement.scrollWidth <= innerWidth + 1 && a.width > 30 && a.right <= innerWidth && b.scrollWidth <= b.clientWidth + 1; });
   check('air tile fits on phone landscape', airFit);
   await page.screenshot({ path: path.join(OUT, '7g-phone-weather.png') });
+  await nwsReload([nwsA('Red Flag Warning', 'Severe', 30), nwsA('Wind Advisory', 'Moderate', 5)]); await page.waitForTimeout(600);
+  const alFit = await page.evaluate(() => { const b = document.getElementById('wxAlert').getBoundingClientRect(), p = document.getElementById('wxPanel').getBoundingClientRect(), s = document.getElementById('wxAlertT');
+    return document.documentElement.scrollWidth <= innerWidth + 1 && b.width > 100 && b.right <= p.right && b.top >= p.top && s.textContent.length > 10; });
+  check('alert banner fits on phone landscape', alFit);
+  await page.screenshot({ path: path.join(OUT, '7h-phone-alert.png') });
+  await nwsReload([]);
   await page.click('#tab-car'); await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(OUT, '7d-phone-car.png') });
 
