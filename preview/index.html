@@ -115,6 +115,10 @@ button.tag[aria-pressed="true"]{background:var(--cyan);color:var(--ink)}
 .wxAlert[data-t="2"]{background:var(--crit);color:#fff;box-shadow:0 0 12px rgba(255,59,92,.6);animation:alertPulse 1.6s steps(2) infinite}
 .wxAlert[data-t="2"] i{border-bottom-color:#fff}.wxAlert[data-t="2"] i::after{background:var(--crit)}
 @keyframes alertPulse{50%{box-shadow:0 0 2px rgba(255,59,92,.3)}}
+.wxAlert.eq i{border:0;width:12px;height:8px;background:linear-gradient(90deg,transparent 0 1px,currentColor 1px 2px,transparent 2px 4px,currentColor 4px 5px,transparent 5px 7px,currentColor 7px 8px,transparent 8px 10px,currentColor 10px 11px,transparent 11px);clip-path:polygon(0 50%,15% 50%,25% 0,40% 100%,55% 10%,70% 90%,80% 50%,100% 50%,100% 60%,80% 60%,70% 100%,55% 20%,40% 100%,25% 10%,15% 60%,0 60%)}
+.wxAlert.eq i::after{display:none}
+.rumble{animation:rumble .5s steps(10)}
+@keyframes rumble{10%,50%,90%{transform:translate(-3px,1px)}30%,70%{transform:translate(3px,-1px)}20%,60%{transform:translate(2px,2px)}40%,80%{transform:translate(-2px,-1px)}100%{transform:none}}
 @media (prefers-reduced-motion:reduce){.wxAlert[data-t="2"]{animation:none}}
 .big{font-family:var(--f-num);font-size:clamp(22px,7vh,34px);line-height:.95;font-variant-numeric:tabular-nums;white-space:nowrap}
 .big small{font-family:var(--f-label);font-size:9px;color:var(--muted);margin-left:3px}
@@ -394,6 +398,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
   .logo{font-size:22px} .sub{display:none} .panel{padding:6px 10px;gap:4px}
   .hr canvas{width:20px;height:20px} .hr .v{font-size:16px} .pbar,.hr .p{display:none}
   .moonTxt{font-size:11px}
+  #temp{font-size:min(17vh,150px)} #wxIcon{width:34px} .cond{font-size:14px} .today{padding-top:4px} #wxNote{display:none}   /* keep the Hi/Lo row inside the weather panel */
   .deck{height:92px;padding:4px 8px} .tab{padding:5px 9px;font-size:10px}
   .ctrl{width:36px;height:32px} .issStats .mini:nth-child(n+4){display:none}
 }
@@ -408,7 +413,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
 }
 @media (prefers-reduced-motion:reduce){
   #crt{display:none}
-  [data-boot],.reveal,.pop,.bubble.boing,.flip,.hit,.glitch,.sheet,.sheetBox,.sheet.out,.sheet.out .sheetBox{animation:none!important}
+  [data-boot],.reveal,.pop,.bubble.boing,.flip,.hit,.glitch,.rumble,.sheet,.sheetBox,.sheet.out,.sheet.out .sheetBox{animation:none!important}
   .caret,.mood[data-s="crit"],.spark,.panel.scanning::after,.badge{animation:none}
   .pbar i{transition:none}
 }
@@ -452,6 +457,7 @@ button:focus-visible,input:focus-visible,.tap:focus-visible{outline:2px solid va
       <span class="spark pin" style="--s:22px;top:-12px;left:-12px;--d:.4s" aria-hidden="true"></span>
       <span class="lbl" id="wxLbl">Weather now</span>
       <button class="wxAlert" id="wxAlert" type="button" data-say="alert" hidden><i aria-hidden="true"></i><span id="wxAlertT"></span></button>
+      <button class="wxAlert eq" id="eqBan" type="button" data-say="quake" hidden><i aria-hidden="true"></i><span id="eqBanT"></span></button>
       <div id="wxLive" class="tap" data-say="temp" hidden>
         <div class="nowRow">
           <canvas class="px" id="wxIcon" width="16" height="16" aria-hidden="true"></canvas>
@@ -763,7 +769,7 @@ const fmtHour=t=>new Date(t).toLocaleTimeString([],{hour:'numeric'});
 const fmtDur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`};
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const BOOT=reduce?0:performance.now()+1250;
-const BUILD='20261023-131228'; // stamped at publish; the page compares it with the live copy to update itself
+const BUILD='20261024-131549'; // stamped at publish; the page compares it with the live copy to update itself
 
 const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,revealed:false,
   fps:0,ping:null,taps:0,pokes:0,pokeT:[],pokeUntil:0,dizzyUntil:0,pokeE:0,start:Date.now(),
@@ -771,7 +777,7 @@ const S={loc:store.get('pp.loc'),wx:null,wxErr:null,wxAt:0,loading:false,reveale
   ptr:{x:0,y:0,t:-1e9},look:{gx:0,gy:0,until:0},trans:null};
 
 /* ---------- motion helpers ---------- */
-const ANIMS=['reveal','pop','boing','flip','hit','glitch'];
+const ANIMS=['reveal','pop','boing','flip','hit','glitch','rumble'];
 const restart=(el,cls)=>{if(reduce||!el)return;el.classList.remove(...ANIMS);void el.offsetWidth;el.classList.add(cls)};
 function reveal(el,delay=0){if(!el||reduce)return;el.style.animationDelay=delay+'ms';restart(el,'reveal');setTimeout(()=>{el.classList.remove('reveal');el.style.animationDelay=''},delay+600)}
 function tween(el,to,{suffix='',dec=0,ms=650,count=false}={}){
@@ -861,7 +867,7 @@ $('placeBtn').onclick=openSheet;$('openSearch').onclick=openSheet;$('sheetClose'
 sheet.addEventListener('click',e=>{if(e.target===sheet)closeSheet()});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!sheet.hidden)closeSheet()});
 function setLoc(loc){
-  S.loc=loc;store.set('pp.loc',loc);setTimeout(()=>{if(typeof suRender==='function')suRender()},0);S.wx=null;S.wxErr=null;S.revealed=false;AQ.d=null;AQ.at=0;AQ.tried=0;renderAir();WA.list=[];WA.at=0;WA.tried=0;WA.na=false;renderAlerts();
+  S.loc=loc;store.set('pp.loc',loc);setTimeout(()=>{if(typeof suRender==='function')suRender()},0);S.wx=null;S.wxErr=null;S.revealed=false;AQ.d=null;AQ.at=0;AQ.tried=0;renderAir();WA.list=[];WA.at=0;WA.tried=0;WA.na=false;EQ.list=[];EQ.at=0;EQ.tried=0;renderAlerts();
   ['temp','feels','hum','wind','hi','lo','rainMax','uv'].forEach(id=>{$(id)._to=null});
   closeSheet();renderPlace();restart($('placeBtn'),'flip');loadWeather();computePasses();renderISS();
 }
@@ -926,6 +932,7 @@ async function loadWeather(){
   S.loading=false;$('wxPanel').classList.remove('scanning');
   if(!AQ.busy&&Date.now()-AQ.tried>(AQ.err?2:25)*60e3)loadAir();   // air updates hourly; it rides the weather poll
   if(!WA.busy&&!WA.na&&Date.now()-WA.tried>(WA.err?2:8)*60e3)loadAlerts();   // NWS alerts ride it too
+  if(!EQ.busy&&Date.now()-EQ.tried>(EQ.err?2:5)*60e3)loadQuakes();   // and earthquakes
   const first=S.wx&&!S.revealed;
   renderWx();renderHours(first);drawArc();renderBrief();
   if(first){S.revealed=true;reveal($('wxLive'),0);reveal($('wxTrio'),140);reveal($('wxToday'),280);reveal($('wxNote'),420);
@@ -1069,7 +1076,7 @@ function renderAlerts(){
   const al=alertsNow(),a=al[0],b=$('wxAlert');
   const esc=x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
   const h=a?`<b>${esc(waShort(a))}</b><em>${esc(waUntil(a).toUpperCase().replace(' UNTIL ',' · UNTIL ').replace(' FROM ',' · FROM '))}</em>${al.length>1?`<u> +${al.length-1}</u>`:''}`:'';
-  b.hidden=!a;$('wxLbl').hidden=!!a;
+  b.hidden=!a;renderQuakeBan();
   if(a){b.dataset.t=waTier(a);const tx=$('wxAlertT');if(tx._h!==h){tx._h=h;tx.innerHTML=h;restart(b,'pop')}b.setAttribute('aria-label','Weather alert: '+waSentence(a))}
 }
 function waMood(){   // label and colors for Pip's alert mood follow the alert
@@ -1092,6 +1099,80 @@ function alertLine(){
   const al=alertsNow();
   if(!al.length)return WA.at?`No weather alerts for ${place()} right now.`:SANDBOX?'Weather alerts load on the live link.':WA.err?"I couldn't reach the weather alert service. I'll try again in a few minutes.":'Checking for alerts now...';
   const a=al[0];return`${waSentence(a)} ${waTip(a)}${al.length>1?` Also: ${al.slice(1,3).map(x=>x.ev).join(', ')}.`:''}`;
+}
+
+/* ---------- earthquakes (USGS) ---------- */
+// Public feed, no key, works worldwide. M2.5+ within 300 km over the last day. Checked every 5 minutes while the app is
+// open (it also rides the weather poll). Pip reacts to fresh M3+ quakes within 100 miles, or M5+ anywhere in range.
+const EQ={list:[],at:0,tried:0,busy:false,err:null,seen:store.get('pp.eqSeen')||{}};
+{const a=store.get('pp.eq');if(a&&S.loc&&a.k===waKey()&&Date.now()-a.at<3600e3){EQ.list=a.list||[];EQ.at=a.at}}
+const EQ_DIRS=['north','northeast','east','southeast','south','southwest','west','northwest'];
+function eqGeo(lat,lon){   // distance (km) and compass direction from you to the quake
+  const R=Math.PI/180,la1=S.loc.lat*R,la2=lat*R,dl=(lon-S.loc.lon)*R;
+  const km=6371*2*Math.asin(Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dl/2)**2));
+  const br=(Math.atan2(Math.sin(dl)*Math.cos(la2),Math.cos(la1)*Math.sin(la2)-Math.sin(la1)*Math.cos(la2)*Math.cos(dl))/R+360)%360;
+  return{km,dir:Math.round(br/45)%8};
+}
+async function loadQuakes(){
+  if(!S.loc||EQ.busy)return;EQ.busy=true;EQ.tried=Date.now();
+  const k=waKey(),pt=v=>(+v).toFixed(3),since=new Date(Math.floor((Date.now()-864e5)/6e4)*6e4).toISOString().slice(0,19);
+  let fresh=false;
+  try{
+    const r=await fetch(`https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=${pt(S.loc.lat)}&longitude=${pt(S.loc.lon)}&maxradiuskm=300&minmagnitude=2.5&starttime=${since}&orderby=time&limit=60`,{cache:'no-store'});
+    if(waKey()!==k)return;   // location changed while loading
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const j=await r.json();
+    EQ.list=(j.features||[]).filter(f=>f&&f.properties&&f.geometry&&(f.properties.type||'earthquake')==='earthquake'&&f.properties.mag!=null&&f.properties.status!=='deleted')
+      .map(f=>{const p=f.properties,c=f.geometry.coordinates,g=eqGeo(c[1],c[0]);
+        return{id:f.id||String(p.time),mag:Math.round(p.mag*10)/10,t:p.time,km:Math.round(g.km),dir:g.dir,
+          near:String(p.place||'').replace(/^.*?\bof\s+/i,'').trim(),tsu:!!p.tsunami}})
+      .sort((a,b)=>b.t-a.t);
+    EQ.err=null;EQ.at=Date.now();fresh=true;store.set('pp.eq',{k,at:EQ.at,list:EQ.list});
+  }catch(e){EQ.err=SANDBOX?'sandbox':'net'}
+  finally{EQ.busy=false}
+  renderQuakeBan();renderBrief();if(fresh)eqAnnounce();
+}
+const eqBig=q=>q.mag>=6||q.mag>=5&&q.km<=161;
+const eqNotable=q=>q.mag>=3&&q.km<=161||q.mag>=5;
+const eqMi=q=>Math.round(q.km*0.621);
+function eqRecent(h){const now=Date.now();return EQ.list.filter(q=>eqNotable(q)&&now-q.t<h*3600e3)}
+function eqTop(h){const l=eqRecent(h);return l.find(eqBig)||l[0]||null}   // a big one beats a newer small one
+function eqWhere(q){const mi=eqMi(q);return(mi<5?'right near you':`${mi} miles ${EQ_DIRS[q.dir]} of you`)+(q.near?`, near ${q.near}`:'')}
+function eqWhen(q){const d=new Date(q.t);return dayKey(d)===dayKey(new Date())?fmtTime(d):`${d.toLocaleDateString([],{weekday:'short'})} ${fmtTime(d)}`}
+function eqTip(q){
+  if(q.tsu)return'Possible tsunami. Stay away from the shore and check local alerts.';
+  if(eqBig(q))return'If it shakes again: drop, cover, hold on. Check for gas smells.';
+  if(q.mag>=4)return'You may have felt that. Check for anything that fell.';
+  return'Probably a light rattle. Nothing to do.';
+}
+function eqSentence(q){return`Magnitude ${q.mag.toFixed(1)} earthquake ${eqWhere(q)}, at ${eqWhen(q)}.`}
+function renderQuakeBan(){
+  const q=$('wxAlert').hidden?eqTop(6):null,b=$('eqBan');   // a weather alert keeps the banner spot
+  b.hidden=!q;$('wxLbl').hidden=!($('wxAlert').hidden&&b.hidden);
+  if(!q)return;
+  const h=`<b>M${q.mag.toFixed(1)} QUAKE</b><em> · ${eqMi(q)} MI ${['N','NE','E','SE','S','SW','W','NW'][q.dir]} · ${eqWhen(q).toUpperCase()}</em>`;
+  b.dataset.t=eqBig(q)?2:1;const tx=$('eqBanT');if(tx._h!==h){tx._h=h;tx.innerHTML=h;restart(b,'pop')}
+  b.setAttribute('aria-label','Earthquake: '+eqSentence(q));
+}
+function eqMood(){const q=S.eqQ||eqTop(6),M=MOODS.quake,big=q&&eqBig(q);M.label=big?'BIG QUAKE':'EARTHQUAKE';M.s=big?'crit':'warn';M.b=big?'#ff6a4d':'#ffe34d';M.d=big?'#d6333f':'#e0a623';return q}
+function eqAnnounce(){   // Pip reacts once to each fresh nearby quake (within 2 hours, so a morning reload doesn't replay last night)
+  const now=Date.now(),l=EQ.list.filter(q=>eqNotable(q)&&now-q.t<2*3600e3&&!EQ.seen[q.id]);if(!l.length)return;
+  l.forEach(q=>{EQ.seen[q.id]=now});Object.keys(EQ.seen).forEach(k=>{if(now-EQ.seen[k]>2*864e5)delete EQ.seen[k]});store.set('pp.eqSeen',EQ.seen);
+  const q=l.find(eqBig)||l[0],p=performance.now();
+  S.eqQ=q;S.eqAt=p;S.eqUntil=p+(eqBig(q)?9000:5600);
+  flagTab('fc');flagTab('brief');
+}
+setInterval(()=>{if(S.loc&&!document.hidden&&!EQ.busy&&Date.now()-EQ.tried>(EQ.err?2:5)*60e3)loadQuakes();if(EQ.list.length)renderQuakeBan()},60e3);
+window.__pipQuakes={EQ,loadQuakes};   // test hook for the smoke test
+function quakeTip(){const q=eqTop(12);return q?`${eqSentence(q)}${eqBig(q)||q.tsu?' '+eqTip(q):''}`:null}
+function quakeLine(){
+  if(!S.loc)return"Set a location and I'll watch for earthquakes near you.";
+  if(S.loc&&!EQ.busy&&Date.now()-EQ.tried>90e3)loadQuakes();   // "was that a quake?" deserves fresh data
+  if(!EQ.at)return SANDBOX?'Earthquakes load on the live link.':EQ.err?"I couldn't reach the USGS earthquake feed. I'll try again in a few minutes.":'Checking for earthquakes now...';
+  const l=eqRecent(24),all=EQ.list;
+  if(!l.length)return all.length?`No earthquakes you'd feel near ${place()} in the last day. ${all.length} small one${all.length>1?'s':''} farther out.`:`No earthquakes near ${place()} in the last day.`;
+  const q=eqTop(24),more=l.length-1;
+  return`${eqSentence(q)} ${eqTip(q)}${more?` ${more} more nearby in the last day.`:''}`;
 }
 
 /* hourly strip */
@@ -2220,6 +2301,7 @@ function briefTips(){
   t.push(...et.slice(0,2));
   const at=airTip();if(at)t.push(at);
   const wt=alertTip(),wTop=wt&&waWarning();if(wt&&!wTop)t.push(wt);
+  const qt=quakeTip(),qTop=qt&&eqBig(eqTop(12));if(qt&&!qTop)t.push(qt);
   if(c){
     const wet=nextHours().find(h=>h.p>=50);if(wet)t.push(`Rain likely around ${fmtHour(wet.t)}. Grab an umbrella.`);
     const uv=d.uv_index_max[0]??0;if(uv>=6&&si&&si.day)t.push(`UV peaks at ${uv.toFixed(0)}. Sunscreen if you're outside.`);
@@ -2229,6 +2311,7 @@ function briefTips(){
   const ct=carTip();if(ct)t.push(ct);
   const v=nextPasses().find(p=>p.visible&&p.start-Date.now()<24*3600e3);if(v)t.push(`ISS visible ${when(v.start).toLowerCase()}. Look ${dirW(v.azStart)}.`);
   const pt=G.on?pkgTip():null;if(pt&&t.length<4)t.splice(nx&&nx.start-Date.now()<3*3600e3?1:0,0,pt);   // package day goes near the top when there's room
+  if(qTop)t.unshift(qt);   // a big quake leads the day
   if(wTop)t.unshift(wt);   // a warning leads the day
   if(!t.length)t.push(S.wx||G.list?'Nothing urgent. Enjoy the day.':'Set your location and connect Gmail so I can plan your day.');
   return t.slice(0,4);
@@ -2578,7 +2661,7 @@ function askPip(raw){
   const showV=/^(show|unhide|un-hide|bring back|stop hiding|unmute|un-mute|unblock|i want to see|let me see|include)\b/;
   let m;
   if(/^(help|what can (you|i) (do|say)|commands|how do i)\b/.test(s))
-    return 'Try: "what\'s next", "will it rain", "how\'s the air", "any weather alerts", "any important email", "what bills are due", "where are my packages", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
+    return 'Try: "what\'s next", "will it rain", "how\'s the air", "any weather alerts", "any earthquakes", "any important email", "what bills are due", "where are my packages", "hide promo emails", "mute emails from LinkedIn", "make mom a VIP", "only show unread", "turn on gym", "what\'s playing", "sound on", "what are my rules", or "set up again".';
   if(/^(set ?up|setup|run setup|start over)( again)?$|^set me up$/.test(s)){setTimeout(()=>openSetup(0),600);return'Sure, let\'s go through setup.'}
   if((m=s.match(/^(turn on|switch on|enable|add|turn off|switch off|disable|remove) (?:the |my )?(gym|workouts?|jobs?|job search|car|space station|iss)(?: tab| module| tracker| visits)?$/))){
     const on=/on|enable|add/.test(m[1]),k=/gym|workout/.test(m[2])?'gym':/job/.test(m[2])?'jobs':/car/.test(m[2])?'car':'iss';
@@ -2627,6 +2710,7 @@ function askPip(raw){
   if(/calendar|meetings?|\bevents?\b|schedule|agenda|appointment|what's next|whats next|am i free|busy/.test(s))return calLine();
   if(/^(connect|pair|link) (my |the )?car\b/.test(s)){setTab('car');if(CAR.hasBT&&!CAR.live){carConnect();return'Pick your OBD adapter from the list.'}return CAR.live?'Already connected.':carNoBT()}
   if(/\b(car|engine|coolant|obd|battery voltage|my battery)\b/.test(s))return carLine();
+  if(/\b(earth ?quakes?|quakes?|tremors?|seismic|aftershocks?)\b|was that (a |an )?(quake|earthquake)|did (you|i|we) feel (that|it)|\busgs\b/.test(s))return quakeLine();
   if(/\b(weather |storm |fire |heat |wind |flood )?(alerts?|warnings?|advisor(y|ies))\b|red flag|\bnws\b/.test(s)&&!/e-?mail|\bmail\b|security|sign-?in/.test(s))return alertLine();
   if(/\b(air|aqi|smoke|smoky|haze|hazy|pollution|pm ?2\.?5|wildfire smoke)\b/.test(s)&&!/\bair ?pods?\b/.test(s))return airLine();
   if(/weather|temperature|how (hot|cold)|outside/.test(s))return about('temp')+' '+about('feels');
@@ -2761,6 +2845,7 @@ function moodLine(m){
     case'cloudy':return`${t}° and ${cond} in ${place()}.`;
     case'haze':return`The air's a bit smoky in ${place()} (AQI ${airNow()}). Mask on. Go easy outside if it bothers you.`;
     case'wxalert':{const a=waMood();return a?`${a.ev} for ${place()}${waUntil(a)}. ${waTip(a)}`:'Weather alert!'}
+    case'quake':{const q=eqMood();return q?`Earthquake! M${q.mag.toFixed(1)}, ${eqWhere(q)}, at ${eqWhen(q)}. ${eqTip(q)}`:'Earthquake!'}
     case'smoke':return`Bad air in ${place()}: AQI ${airNow()}. Mask on, windows shut, and skip the hard workout outside.`;
     case'dizzy':return"Whoa, whoa. Too many pokes. Everything's spinning...";
     case'mail':return S.mailLine||"You've got mail!";
@@ -2799,6 +2884,7 @@ function about(key,el){
     case'wind':return c?`Wind is ${n(c.wind_speed_10m)} mph from the ${COMPASS[Math.round(c.wind_direction_10m/22.5)%16]}. ${c.wind_speed_10m>20?'Hold onto your hat!':'Nice and calm.'}`:NOWX;
     case'hilo':return d?`Today tops out at ${n(d.temperature_2m_max[0])}° and bottoms out at ${n(d.temperature_2m_min[0])}°. Tomorrow's high is ${n(d.temperature_2m_max[1])}°.`:NOWX;
     case'rain':{if(!d)return NOWX;const wet=nextHours().find(h=>h.p>=40);return wet?`Rain chance peaks at ${d.precipitation_probability_max[0]}% today. First real chance is around ${fmtHour(wet.t)}.`:`Rain chance tops out at ${d.precipitation_probability_max[0]??0}% today. You're probably fine.`}
+    case'quake':return quakeLine();
     case'alert':{const al=alertsNow(),a=al[0];return a?`${waSentence(a)} ${waTip(a)}${al.length>1?` Also: ${al.slice(1,3).map(x=>x.ev).join(', ')}.`:''}`:alertLine()}
     case'aqi':{const v=airNow();return v==null?airLine():`Air quality index ${v}: ${AQI_LV[aqiLevel(v)][1].toLowerCase()}. Under 50 is clean, over 100 is rough on sensitive lungs, over 150 is bad for everyone.`}
     case'uv':{if(!d)return NOWX;const uv=d.uv_index_max[0]??0;return`UV peaks at ${uv.toFixed(0)}. ${uv>=8?'Very high. Sunscreen for sure.':uv>=6?'High. Sunscreen!':uv>=3?'Moderate.':'Low today.'}`}
@@ -2932,6 +3018,7 @@ const MOODS={
   haze:{label:'HAZY AIR',s:'warn',b:'#d9c7a0',d:'#a8906a'},
   smoke:{label:'BAD AIR',s:'crit',b:'#c9b49a',d:'#8f7660'},
   wxalert:{label:'WEATHER ALERT',s:'warn',b:'#ffb13b',d:'#d97a1c'},
+  quake:{label:'EARTHQUAKE',s:'warn',b:'#ffe34d',d:'#e0a623'},
   cruise:{label:'CRUISING',s:'ok',b:'#8ff3ff',d:'#3fb5d6'},
   redline:{label:'REDLINE',s:'crit',b:'#ff6a4d',d:'#d6333f'},
   carhot:{label:'ENGINE HOT',s:'crit',b:'#ff6a4d',d:'#d6333f'},
@@ -2961,6 +3048,7 @@ function moodFor(now){
   if(now<S.dizzyUntil)return'dizzy';
   if(now<S.pokeUntil)return'poke';
   {const ca=carAlert();if(ca)return ca}
+  if(now>=(S.eqAt||0)&&now<(S.eqUntil||0))return'quake';
   if(now>=(S.wxaAt||0)&&now<(S.wxaUntil||0))return'wxalert';
   if(now<(S.mailUntil||0))return'mail';
   if(now<(S.gymUntil||0))return'gym';
@@ -2975,20 +3063,21 @@ function moodFor(now){
   return w;
 }
 function setMood(m,now){
-  const prev=S.mood;S.mood=m;const el=$('mood');if(m==='wxalert')waMood();
+  const prev=S.mood;S.mood=m;const el=$('mood');if(m==='wxalert')waMood();if(m==='quake')eqMood();
   el.textContent=m==='cloudy'&&S.wx&&(S.wx.current.weather_code===45||S.wx.current.weather_code===48)?'FOGGY':MOODS[m].label;
   el.dataset.s=MOODS[m].s;restart(el,'flip');
   const quick=m==='poke'||prev==='poke';
   if(prev&&!reduce)S.trans={from:prev,t0:now,quick,burst:false};
-  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt|bill|smoke)$/.test(m)||m==='wxalert'&&MOODS.wxalert.s==='crit'?'alarm':'mood')}
+  if(!quick){kick(1);S.wash={c:MOODS[m].b,a:.22};sfx(/^(heads|redline|carhot|lowvolt|bill|smoke)$/.test(m)||(m==='wxalert'||m==='quake')&&MOODS[m].s==='crit'?'alarm':'mood')}
   if(m==='haze'||m==='smoke'){flagTab('fc');faceBurst('spark',4)}
   if(m==='wxalert'){flagTab('fc');faceBurst('spark',6)}
+  if(m==='quake'){flagTab('fc');faceBurst('spark',8);kick(2,1.5);['wxPanel','eqBan'].forEach(id=>restart($(id),'rumble'))}
   if(m==='bill'||m==='paid'){flagTab('inbox');faceBurst(m==='paid'?'star':'spark',m==='paid'?10:4)}
   if(m==='pkg'||m==='dlvd'||m==='pkglate'){flagTab('inbox');faceBurst(m==='dlvd'?'star':'spark',m==='dlvd'?12:5)}
   if(/^(redline|carhot|lowvolt)$/.test(m)){flagTab('car');faceBurst('spark',6)}
   if(m==='heads'&&prev!=='poke'&&prev!=='dizzy'){flagTab('brief');faceBurst('star',4);renderBrief()}
   // don't talk over a fresh Ask Pip answer unless this mood is an alert
-  if(now<(S.askHold||0)&&!/^(heads|mail|storm|smoke|wxalert|iss|job|bill|paid|pkg|dlvd|pkglate|redline|carhot|lowvolt)$/.test(m))return;
+  if(now<(S.askHold||0)&&!/^(heads|mail|storm|smoke|wxalert|quake|iss|job|bill|paid|pkg|dlvd|pkglate|redline|carhot|lowvolt)$/.test(m))return;
   say((prev==='poke'||prev==='dizzy')&&m!=='dizzy'&&m!=='poke'?nextFact():moodLine(m));
 }
 function poke(e){
@@ -3088,6 +3177,7 @@ const FACE={
   haze:{eye:'open',mouth:'tiny',per:520,orb:1000,fx:'mask'},
   smoke:{eye:'stern',mouth:'tiny',per:420,orb:1200,fx:'mask'},
   wxalert:{eye:'open',mouth:'o',per:200,orb:320,fx:'siren'},
+  quake:{eye:'x',mouth:'wave',per:140,orb:180,shake:1,fx:'seismo'},
   cruise:{eye:'shades',mouth:'smile',per:380,orb:500,fx:'speed'},
   redline:{eye:'x',mouth:'teeth',per:120,orb:120,shake:1,fx:'speed'},
   carhot:{eye:'x',mouth:'teeth',per:160,orb:260,shake:1,fx:'steam'},
@@ -3228,10 +3318,13 @@ function drawFace(t){
     spr(paid?BILLSPR.map((r,i)=>i&&i<8?'#'+r.slice(1,-1).replace(/#/g,'l')+'#':r):BILLSPR,cx-4+sw,Math.max(0,cy-ry-10+(paid?-Math.abs(sw):0)))}
   if(f.fx==='box'){const m2=m==='dlvd',hop=reduce?0:m2?-Math.abs(Math.round(Math.sin(t/110)*3)):Math.round(Math.sin(t/200)*1);   // Pip holds a parcel up; it hops when it lands
     spr(BOX,cx-5,cy+ry-2+hop);if(m2&&!reduce&&Math.floor(t/150)%2)sparkAt(cx+8,cy+ry-3,true)}
-  else if(pkgToday()&&!/^(bill|case|clock|battery|mail|gym|umbrella|dizzy|siren)$/.test(f.fx||'')){spr(MINIBOX,cx+rx-3,cy+ry-5)}   // on delivery day Pip keeps a little box by his side
+  else if(pkgToday()&&!/^(bill|case|clock|battery|mail|gym|umbrella|dizzy|siren|seismo)$/.test(f.fx||'')){spr(MINIBOX,cx+rx-3,cy+ry-5)}   // on delivery day Pip keeps a little box by his side
   if(f.fx==='siren'){const on=reduce||Math.floor(t/350)%2,crit=MOODS.wxalert.s==='crit',bob=reduce?0:Math.round(Math.sin(t/180));   // a warning sign over Pip's head, flashing
     spr(SIREN.map(r=>on?r:r.replace(/y/g,'o')),cx-4,Math.max(0,cy-ry-11+bob));
     if(crit&&on&&!reduce){fc.fillStyle=C.crit;fc.fillRect(cx-9,cy-ry-6+bob,2,1);fc.fillRect(cx+8,cy-ry-6+bob,2,1);fc.fillRect(cx-10,cy-ry-3+bob,2,1);fc.fillRect(cx+9,cy-ry-3+bob,2,1)}}
+  if(f.fx==='seismo'){const big=MOODS.quake.s==='crit',tt=reduce?0:t,y0=Math.max(3,cy-ry-6);   // a seismograph needle scribbles over Pip's head
+    fc.fillStyle=big?C.crit:C.sun;let py=y0;for(let x=cx-13;x<=cx+13;x++){const env=1-Math.abs(x-cx)/14,a=Math.sin(x*1.9+tt/45)*Math.sin(x*.7-tt/90),y=y0+Math.round(a*env*(big?4:3));fc.fillRect(x,Math.min(y,py),1,Math.abs(y-py)+1);py=y}
+    if(!reduce&&Math.floor(t/90)%3===0){fc.fillStyle='#ffffff';fc.fillRect(cx-15+Math.floor(t/30)%3,cy+ry+1,3,1);fc.fillRect(cx+12-Math.floor(t/30)%3,cy+ry+1,3,1)}}   // dust kicks up at his feet
   if(f.fx==='battery'){const lowBar=reduce||Math.floor(t/400)%2;spr(BATTERY.map(r=>lowBar?r:r.replace(/p/g,'.')),cx-5,Math.max(0,cy-ry-8))}
   if(f.fx==='mail'){const bob=reduce?0:Math.round(Math.sin(t/160)*2);spr(ENVELOPE,cx-5,Math.max(0,cy-ry-8+bob))}
   drawOrbit(32,40,ot,true,orbPer);

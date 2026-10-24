@@ -177,7 +177,8 @@
    "id": "quakes",
    "priority": 5,
    "title": "Nearby earthquakes (USGS feed), Pip reacts to M3+ within 100 mi",
-   "passes": false
+   "passes": true,
+   "notes": "Built 2026-10-24 (preview). USGS FDSN query (no key, worldwide): M2.5+ within 300 km over the last day, every 5 min while open (also rides the weather poll). Pip shakes (EARTHQUAKE) once per fresh quake (<2 h) M3+ within 100 mi; BIG QUAKE alarm for M5+ within 100 mi or M6+. Banner in the weather label spot (weather alerts win), Brief tip, Ask Pip 'any earthquakes' / 'was that an earthquake'. Not a module: it stays silent unless a quake is near, so it adds nothing to the screen elsewhere. Not tried against the live feed from the build sandbox."
   },
   {
    "id": "focus",

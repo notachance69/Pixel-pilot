@@ -121,6 +121,10 @@ let NWS = [], NWS_STATUS = 200, nwsQ = '';
 const nwsA = (event, severity, endsH, extra = {}) => ({ properties: Object.assign({ id: 'urn:oid:' + event.replace(/\W/g, '') + endsH, event, severity, status: 'Actual', messageType: 'Alert',
   effective: iso(Date.now() - H * 1e3), onset: iso(Date.now() - H * 1e3), ends: iso(Date.now() + endsH * H * 1e3), expires: iso(Date.now() + endsH * H * 1e3),
   headline: event + ' issued', description: 'Details.', instruction: 'Use caution.', areaDesc: 'Los Angeles County' }, extra) });
+// earthquakes: USGS FDSN query around the point. None by default; the quake checks swap in a list.
+let QUAKES = [], eqQ = '';
+const eqF = (id, mag, lat, lon, minsAgo, place, extra = {}) => ({ type: 'Feature', id, geometry: { type: 'Point', coordinates: [lon, lat, 8.2] },
+  properties: Object.assign({ mag, place, time: Date.now() - minsAgo * 60e3, type: 'earthquake', status: 'reviewed', tsunami: 0, url: 'https://earthquake.usgs.gov/x/' + id }, extra) });
 const topo = { type: 'Topology', transform: { scale: [1, 1], translate: [0, 0] }, objects: { land: { type: 'GeometryCollection', geometries: [{ type: 'MultiPolygon', arcs: [[[0]], [[1]]] }] } },
   arcs: [[[-125, 50], [55, 0], [0, -25], [-45, 0], [-10, -10]], [[-80, 10], [45, 0], [0, -55], [-35, 0], [-10, 55]]] };
 
@@ -131,6 +135,7 @@ async function mock(page) {
     if (u.includes('satellite.min.js')) return r.fulfill({ body: fs.readFileSync(path.join(__dirname, 'satmock.js'), 'utf8'), contentType: 'application/javascript' });
     if (u.includes('land-110m.json')) return r.fulfill({ json: topo });
     if (u.includes('api.weather.gov/alerts')) { nwsQ = u; return NWS_STATUS !== 200 ? r.fulfill({ status: NWS_STATUS, json: { title: 'Bad Request' } }) : r.fulfill({ json: { type: 'FeatureCollection', features: NWS } }); }
+    if (u.includes('earthquake.usgs.gov/fdsnws/event/1/query')) { eqQ = u; return r.fulfill({ json: { type: 'FeatureCollection', features: QUAKES } }); }
     if (u.includes('air-quality-api.open-meteo.com')) { airQ = u; return r.fulfill({ json: air() }); }
     if (u.includes('api.open-meteo.com')) return r.fulfill({ json: weather() });
     if (u.includes('bigdatacloud')) return r.fulfill({ json: { city: 'Northridge' } });
@@ -500,6 +505,50 @@ function fakeBluetooth() {
   check('outside the US Pip explains alerts are US-only', /only cover the US/.test(reply), reply.slice(0, 80));
   await nwsReload([]);
 
+  // earthquakes: USGS feed around you, Pip shakes for a fresh nearby quake, once; big ones sound the alarm; banner, brief, Ask Pip
+  const eqReload = async list => { QUAKES = list; await page.evaluate(() => { window.__pipQuakes.EQ.tried = 0; return window.__pipQuakes.loadQuakes(); }); await page.waitForTimeout(400); };
+  await page.click('#tab-fc'); await page.waitForTimeout(400);
+  check('earthquakes checked around your spot (USGS)', /earthquake\.usgs\.gov\/fdsnws\/event\/1\/query\?format=geojson&latitude=34\.240&longitude=-118\.530&maxradiuskm=300&minmagnitude=2\.5&starttime=/.test(eqQ), eqQ.slice(0, 140));
+  check('no quake banner on a quiet day', await page.isHidden('#eqBan') && await page.isVisible('#wxLbl'));
+  reply = await ask('any earthquakes?');
+  check('Ask Pip says when there are no quakes', /^No earthquakes near Northridge in the last day\./.test(reply), reply.slice(0, 80));
+  await eqReload([eqF('ci1', 3.62, 34.33, -118.42, 6, '9 km NE of Santa Clarita, CA'), eqF('ci2', 2.7, 36.2, -117.9, 30, '20 km S of Lone Pine, CA'),
+    eqF('ci3', 3.1, 34.30, -118.45, 12, '5 km E of Castaic, CA', { type: 'quarry blast' })]);
+  const shook = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'EARTHQUAKE', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(2600);
+  check('Pip shakes for a fresh M3+ quake within 100 miles', shook && /^Earthquake! M3\.6, 9 miles northeast of you, near Santa Clarita, CA, at .*\. Probably a light rattle\./.test(await t('#say')), (await t('#mood')) + ' / ' + (await t('#say')).slice(0, 110));
+  check('quake banner takes the weather label spot (small far quakes and blasts ignored)', await page.isVisible('#eqBan') && await page.isHidden('#wxLbl') && /^M3\.6 QUAKE · 9 MI NE · /.test(await t('#eqBanT')) && await page.$eval('#eqBan', e => e.dataset.t) === '1', await t('#eqBanT'));
+  await page.screenshot({ path: path.join(OUT, '1d-quake.png') });
+  await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() !== 'EARTHQUAKE', null, { timeout: 8000 }).catch(() => {});
+  await eqReload(QUAKES); await page.waitForTimeout(1200);
+  check('the same quake is not called out twice', (await t('#mood')).trim() !== 'EARTHQUAKE', await t('#mood'));
+  await eqReload([eqF('ci0', 3.3, 34.1, -118.6, 5 * 60, '10 km W of Encino, CA')]); await page.waitForTimeout(1200);
+  check('an old quake (5 hours ago) is not replayed, but shows on the banner', (await t('#mood')).trim() !== 'EARTHQUAKE' && /^M3\.3 QUAKE/.test(await t('#eqBanT')), (await t('#mood')) + ' / ' + await t('#eqBanT'));
+  await eqReload([eqF('ci5', 5.4, 34.55, -118.2, 2, '12 km NW of Palmdale, CA'), eqF('ci6', 3.4, 34.30, -118.5, 1, '3 km N of Granada Hills, CA')]);
+  const big = await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() === 'BIG QUAKE', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.waitForTimeout(3800);
+  check('a big quake sounds the alarm, even when a smaller one is newer', big && /^Earthquake! M5\.4, 29 miles northeast of you, near Palmdale, CA, at .*\. If it shakes again: drop, cover, hold on\. Check for gas smells\.$/.test(await t('#say')) && await page.$eval('#mood', e => e.dataset.s) === 'crit', (await page.$eval('#mood', e => e.dataset.s)) + ' / ' + (await t('#say')));
+  check('big quake banner is red', /^M5\.4 QUAKE · 29 MI NE/.test(await t('#eqBanT')) && await page.$eval('#eqBan', e => e.dataset.t) === '2', await t('#eqBanT'));
+  await page.screenshot({ path: path.join(OUT, '1e-big-quake.png') });
+  await page.waitForFunction(() => document.querySelector('#mood').textContent.trim() !== 'BIG QUAKE', null, { timeout: 12000 }).catch(() => {});
+  await page.click('#eqBan'); await page.waitForTimeout(3800); await settled();
+  check('tapping the quake banner makes Pip explain it', /^Magnitude 5\.4 earthquake 29 miles northeast of you, near Palmdale, CA, at .*\. If it shakes again.* 1 more nearby in the last day\.$/.test(await t('#say')), (await t('#say')).slice(0, 160));
+  const qStored = await page.evaluate(() => JSON.parse(localStorage.getItem('pp.eq') || 'null'));
+  check('last quakes kept on the device', !!qStored && qStored.k === '34.24,-118.53' && qStored.list.length === 2, JSON.stringify(qStored || {}).slice(0, 80));
+  await page.click('#tab-brief'); await page.waitForTimeout(800);
+  check('a big quake leads the brief', /^Magnitude 5\.4 earthquake 29 miles northeast of you.*drop, cover, hold on/.test(await t('#bTips li')), (await t('#bTips')).slice(0, 160));
+  await page.screenshot({ path: path.join(OUT, '3h-brief-quake.png') });
+  reply = await ask('was that an earthquake');
+  check('Ask Pip answers "was that an earthquake"', /^Magnitude 5\.4 earthquake .*1 more nearby in the last day\./.test(reply), reply.slice(0, 120));
+  await nwsReload([nwsA('Wind Advisory', 'Moderate', 5)]); await page.click('#tab-fc'); await page.waitForTimeout(600);
+  check('a weather alert keeps the banner spot over a quake', await page.isVisible('#wxAlert') && await page.isHidden('#eqBan'), await t('#wxAlertT'));
+  await nwsReload([]); await page.waitForTimeout(300);
+  check('quake banner comes back when the alert ends', await page.isVisible('#eqBan'));
+  await eqReload([eqF('ci9', 2.8, 34.3, -118.5, 10, '3 km N of Granada Hills, CA')]);
+  reply = await ask('any quakes');
+  check('tiny quakes are counted but not called out', /^No earthquakes you'd feel near Northridge in the last day\. 1 small one farther out\./.test(reply) && await page.isHidden('#eqBan'), reply.slice(0, 100));
+  await eqReload([]);
+
   await page.click('#tab-music'); await page.waitForTimeout(900);
   check('spotify now playing', (await t('#mTitle')).includes('Midnight Pixel Drive'));
   await page.screenshot({ path: path.join(OUT, '4-music.png') });
@@ -554,6 +603,14 @@ function fakeBluetooth() {
   check('alert banner fits on phone landscape', alFit);
   await page.screenshot({ path: path.join(OUT, '7h-phone-alert.png') });
   await nwsReload([]);
+  await eqReload([eqF('ci7', 4.6, 34.6, -118.1, 3, '15 km W of Lancaster, CA')]); await page.waitForTimeout(600);
+  const eqFit = await page.evaluate(() => { const b = document.getElementById('eqBan').getBoundingClientRect(), p = document.getElementById('wxPanel').getBoundingClientRect();
+    return document.documentElement.scrollWidth <= innerWidth + 1 && b.width > 80 && b.right <= p.right && b.top >= p.top; });
+  check('quake banner fits on phone landscape', eqFit);
+  await page.screenshot({ path: path.join(OUT, '7i-phone-quake.png') });
+  await eqReload([]);
+  const loFit = await page.evaluate(() => { const r = document.getElementById('wxToday').getBoundingClientRect(), p = document.getElementById('wxPanel').getBoundingClientRect(); return r.bottom <= p.bottom - 2; });
+  check('weather Hi/Lo row is not clipped on phone landscape', loFit);
   await page.click('#tab-car'); await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(OUT, '7d-phone-car.png') });
 

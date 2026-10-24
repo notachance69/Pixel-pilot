@@ -31,7 +31,7 @@ Promote an idea by adding it to `backlog.json` with acceptance criteria.
 ## Home and surroundings
 - **Air quality and smoke [free].** *(built 2026-10-22, preview)* Next: pollen (Open-Meteo has alder/birch/grass/ragweed for Europe only; US needs another source) and a UV + AQI "good time to be outside" window.
 - **Severe weather alerts [free].** *(in backlog)*
-- **Earthquakes [free].** *(in backlog; useful mostly on the West Coast, so it's a module)*
+- **Earthquakes [free].** *(built 2026-10-24; not a module after all: it stays silent unless a quake is near)*
 - **Trash and recycling day.** Set once, with a reminder the night before. Some cities have open APIs.
 - **Sun, pollen and UV [free].** Pollen from Open-Meteo, and "sunscreen" and "allergy" tips on Today.
 - **Smart home [relay or hw].** Home Assistant states (doors, lights, thermostat) as tiles.
